@@ -12,7 +12,7 @@ TODO 修改消息格式为 游戏名+消息
  */
 public class ConsoleSender implements Sender {
     private final String name;
-    private ConsoleSender(String name) {
+    public ConsoleSender(String name) {
         this.name = name;
     }
 
