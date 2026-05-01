@@ -11,9 +11,9 @@ import java.util.logging.Logger;
 TODO 修改消息格式为 游戏名+消息
  */
 public class ConsoleSender implements Sender {
-    private final AbstractGame game;
-    private ConsoleSender(AbstractGame game) {
-        this.game = game;
+    private final String name;
+    private ConsoleSender(String name) {
+        this.name = name;
     }
 
     private Logger getLogger() {
