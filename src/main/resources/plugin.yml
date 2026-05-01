@@ -1,0 +1,4 @@
+name: MCZJUGameCore
+version: '${project.version}'
+main: com.github.mczjuops.mczjugamecore.MCZJUGameCore
+api-version: '1.21.7'
