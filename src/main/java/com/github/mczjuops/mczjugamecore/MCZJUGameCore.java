@@ -3,6 +3,7 @@ package com.github.mczjuops.mczjugamecore;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.strategy.impl.SinglePlayerGame;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
+import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -41,5 +42,8 @@ public final class MCZJUGameCore extends JavaPlugin {
      */
     public static @NotNull AbstractGameManager  getGameManager(){
         return null;
+    }
+    public static @NotNull ConsoleSender getConsoleSender(){
+        return new ConsoleSender("MGC");
     }
 }
