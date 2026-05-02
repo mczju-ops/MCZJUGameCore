@@ -35,7 +35,7 @@ public class DefaultGameManager implements AbstractGameManager {
             }
             registerGameMap.put(gameClass, gameRoomClass);
             gameNameMap.put(name, gameClass);
-            GameRoomManager.getInstance().loadGameRoom(name, gameRoomClass);    // 加载并注册所有该游戏的游戏房间
+            MCZJUGameCore.getGameRoomManager().loadGameRoom(name, gameRoomClass);    // 加载并注册所有该游戏的游戏房间
         } catch (InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             logger.error(STR."无法注册游戏: \{gameClass} Reason: 无法创建游戏实例，由于无法访问无参构造器");
             throw new RuntimeException(e);

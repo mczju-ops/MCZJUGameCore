@@ -27,7 +27,7 @@ public class JsonGameRoomLoader implements GameRoomLoader{
                     gameRoom.setRoomName(roomName);
                     if (gameRoom.load()){
                         // 加载成功了
-                        GameRoomManager.getInstance().registerGameRoom(gameName, gameRoom);
+                        MCZJUGameCore.getGameRoomManager().registerGameRoom(gameName, gameRoom);
                         logger.info(STR."已加载地图\{gameName}-\{roomName}");
                     }else {
                         logger.error(STR."无法加载游戏\{gameName}的地图: \{roomName}");

@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore;
 
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
+import com.github.mczjuops.mczjugamecore.game.room.GameRoomManager;
 import com.github.mczjuops.mczjugamecore.game.strategy.impl.SinglePlayerGame;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
@@ -19,6 +20,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     private AbstractPlayerManager playerManager;
 
     private PartyManager partyManager;
+    private GameRoomManager gameRoomManager;
 
     @Override
     public void onEnable() {
@@ -27,6 +29,7 @@ public final class MCZJUGameCore extends JavaPlugin {
         gameManager = new DefaultGameManager();
         partyManager = new PartyManager();
         playerManager = new DefaultPlayerManager();
+        gameRoomManager = new GameRoomManager();
     }
 
     @Override
@@ -62,5 +65,9 @@ public final class MCZJUGameCore extends JavaPlugin {
 
     public static @NotNull PartyManager getPartymanager(){
         return getInstance().partyManager;
+    }
+
+    public static @NotNull GameRoomManager getGameRoomManager(){
+        return getInstance().gameRoomManager;
     }
 }
