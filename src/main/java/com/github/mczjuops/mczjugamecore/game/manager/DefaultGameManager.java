@@ -4,8 +4,10 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomManager;
+import com.github.mczjuops.mczjugamecore.game.room.GameRoomState;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,8 +46,21 @@ public class DefaultGameManager implements AbstractGameManager {
     }
 
     @Override
-    public void createGame(AbstractGame name) {
-
+    public @Nullable AbstractGame createGame(String name) {
+        // 先检查是否有空的游戏房间
+        AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getLeisureGameRoom(name);
+        if (gameRoom == null) return null;
+        try {
+            AbstractGame game = gameNameMap.get(name).getDeclaredConstructor().newInstance();
+            game.setGameRoom(gameRoom);
+            gameRoom.setState(GameRoomState.IN_GAME);   // 分配房间后，设置房间为占用状态
+            logger.info(STR."将房间\{gameRoom.getRoomName()}分配给游戏\{game.getName()}");
+            return game;
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            // 这一步应该不可能执行到，因为create前肯定register过，那个时候是能访问构造器的
+            logger.error(STR."无法注册游戏: \{name} Reason: 无法创建游戏实例，由于无法访问无参构造器");
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
