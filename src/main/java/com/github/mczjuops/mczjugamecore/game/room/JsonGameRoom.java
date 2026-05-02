@@ -1,8 +1,13 @@
 package com.github.mczjuops.mczjugamecore.game.room;
 
+import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+
 import java.lang.reflect.Field;
 
-public class JsonGameRoom implements AbstractGameRoom {
+import static java.lang.StringTemplate.STR;
+
+public class JsonGameRoom extends AbstractGameRoom {
+
 
     @Override
     public <T> T getField(String name, Class<T> clazz) {
@@ -12,7 +17,9 @@ public class JsonGameRoom implements AbstractGameRoom {
             Object value = field.get(this);
             return clazz.cast(value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("获取字段失败: " + name, e);
+            logger.error(STR."无法访问字段: \{name}, 所属游戏: \{getGameName()}, 游戏房间名: \{getRoomName()}");
+            logger.error(e.toString());
+            return null;
         }
     }
 
@@ -24,23 +31,24 @@ public class JsonGameRoom implements AbstractGameRoom {
 
             // 类型校验（可选）
             if (!field.getType().isAssignableFrom(clazz)) {
-                throw new IllegalArgumentException("类型不匹配: " + name);
+                logger.error(STR."类型不匹配: \{name}");
             }
 
             field.set(this, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("设置字段失败: " + name, e);
+            logger.error(STR."设置字段失败: \{name}");
+            logger.error(e.toString());
         }
     }
 
     @Override
-    public boolean save(String path) {
+    public boolean save() {
         // TODO 还没实现保存到json文件
         return false;
     }
 
     @Override
-    public boolean load(String path) {
+    public boolean load() {
         // TODO
         return false;
     }

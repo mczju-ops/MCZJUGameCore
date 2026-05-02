@@ -1,12 +1,26 @@
 package com.github.mczjuops.mczjugamecore.game.room;
 
+import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+
 /**
  * 游戏房间，仅用于存放一些坐标数据之类的。
  * 一个游戏可以有一个或多个游戏房间。这个不在代码中写，而是在mc中，用菜单创建。
  * 这个要做一个对应的设置坐标等数据的箱子菜单。
  * 每个游戏需要有一个配置类，继承JsonGameRoom，注册GameRoom类到GameManager中
+ * 没测过反射能不能获取到private字段，gpt说在9+不一定。可以先把所有字段设置为public
  */
-public interface AbstractGameRoom {
+public abstract class AbstractGameRoom {
+
+
+    private String gameName; // 由Loader注入
+    private String roomName;    // 由Loader注入
+
+    private GameRoomState state = GameRoomState.READY;
+
+    private boolean modified = false;   // 是否修改过。设置为true，则使用指令，或服务终止时，将自动保存。
+
+    public ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getName()}");
+
     /**
      * 获取游戏房间的配置参数
      * 用JsonGameRoom中的默认实现，写插件时别用这个。
@@ -15,10 +29,42 @@ public interface AbstractGameRoom {
      * @return  字段的值
      * @param <T>   字段的类型，如Location.class
      */
-    <T> T getField(String name, Class<T> clazz);
-    <T> void setField(String name, T value, Class<T> clazz);
+    abstract <T> T getField(String name, Class<T> clazz);
+    abstract <T> void setField(String name, T value, Class<T> clazz);
 
-    boolean save(String path);
+    abstract boolean save();
 
-    boolean load(String path);
+    abstract boolean load();
+
+    public String getGameName() {
+        return gameName;
+    }
+
+    public void setGameName(String gameName) {
+        this.gameName = gameName;
+    }
+
+    public String getRoomName() {
+        return roomName;
+    }
+
+    public void setRoomName(String roomName) {
+        this.roomName = roomName;
+    }
+
+    public GameRoomState getState() {
+        return state;
+    }
+
+    public void setState(GameRoomState state) {
+        this.state = state;
+    }
+
+    public boolean isModified() {
+        return modified;
+    }
+
+    public void setModified(boolean modified) {
+        this.modified = modified;
+    }
 }
