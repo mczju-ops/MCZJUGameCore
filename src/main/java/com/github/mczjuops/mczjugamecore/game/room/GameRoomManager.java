@@ -13,18 +13,9 @@ public class GameRoomManager {
 
     private final Map<String, List<AbstractGameRoom>> gameRoomMap = new HashMap<>();
 
-    private GameRoomManager() {
+    public GameRoomManager() {
         // 传入所有的Loader到责任链中
         loaders.add(new JsonGameRoomLoader());
-    }
-
-    // 懒加载的单例模式
-    private static class Holder {
-        private static final GameRoomManager INSTANCE = new GameRoomManager();
-    }
-
-    public static GameRoomManager getInstance() {
-        return Holder.INSTANCE;
     }
 
     /**
