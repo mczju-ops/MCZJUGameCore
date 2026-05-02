@@ -17,6 +17,12 @@ public record PlayerExt(@NotNull Player player) {
         return new PlayerSender(player);
     }
 
+    public Sender actionBarSender(){
+        PlayerSender sender = new PlayerSender(player);
+        sender.setShouldActionbar(true);
+        return sender;
+    }
+
     public @Nullable AbstractGame getGame(){
         //TODO
         return null;

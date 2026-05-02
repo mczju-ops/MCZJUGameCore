@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 /**
  * 玩家私信玩家
  * 文本不包含格式信息
+ * 玩家对玩家的消息，所以全都用默认格式
  */
 public class Player2PlayerSender implements Sender {
     private final Player from;
@@ -18,13 +19,17 @@ public class Player2PlayerSender implements Sender {
         this.to = to;
     }
 
-    @Override public void info(String msg) { primary(msg); }
-    @Override public void warn(String msg) { primary(msg); }
-    @Override public void error(String msg) { primary(msg); }
-    @Override public void success(String msg) { primary(msg); }
+    @Override public void info(String msg) { send(msg); }
+    @Override public void warn(String msg) { send(msg); }
+    @Override public void error(String msg) { send(msg); }
+    @Override public void success(String msg) { send(msg); }
 
     @Override
     public void primary(String msg) {
+        send(msg);
+    }
+
+    private void send(String msg){
         to.sendMessage(TextParser.parse(STR."<red>[<white>\{from.getName()}</white>] <gray>-></gray> [<white>\{to.getName()}</white>] <reset>\{msg}"));
     }
 }
