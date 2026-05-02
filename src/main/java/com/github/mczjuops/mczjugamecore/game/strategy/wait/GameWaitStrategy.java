@@ -7,7 +7,7 @@ import com.github.mczjuops.mczjugamecore.player.party.Party;
 
 public abstract class GameWaitStrategy {
 
-    private final AbstractGame game;
+    protected final AbstractGame game;
     GameWaitStrategy(AbstractGame game){
         this.game = game;
     }
@@ -17,7 +17,7 @@ public abstract class GameWaitStrategy {
      * @param player 加入的玩家，不需要手动执行任何操作，game实例的playerList里就能有这个玩家
      * @return  true: 允许加入; false：人满了等，不允许加入
      */
-    abstract boolean onPlayerJoin(PlayerExt player);
+    public abstract boolean onPlayerJoin(PlayerExt player);
 
     /**
      * 一个party进入游戏。
@@ -25,27 +25,27 @@ public abstract class GameWaitStrategy {
      * @param party 加入的队伍，不需要手动执行任何操作，game实例的playerList里就能包含队伍中的所有玩家。分组靠PartyManager里的智能分组方法
      * @return  true: 允许加入; false：人满了等，不允许加入
      */
-    abstract boolean onPartyJoin(Party party);
+    public abstract boolean onPartyJoin(Party party);
 
     /**
      * 在游戏等待状态下，玩家离开时，由GameManager调用。
      * 和hyp一样，队长离开不会带队伍全员离开，除非p warp带走所有人，这个时候会一个个退出
      * 只有在等待开始时才会执行
      */
-    abstract void onPlayerLeave();
+    public abstract void onPlayerLeave();
 
 
     /**
      * 确认可以开始了，就调用这个函数来开始游戏。由GameManager调用
      */
-    void startGame(){
+    public void startGame(){
         MCZJUGameCore.getGameManager().startGame(game);
     }
 
     /**
      * 取消游戏，调用这个函数。由GameManager调用
      */
-    void cancelGame(){
+    public void cancelGame(){
         MCZJUGameCore.getGameManager().cancelGame(game);
     }
 }

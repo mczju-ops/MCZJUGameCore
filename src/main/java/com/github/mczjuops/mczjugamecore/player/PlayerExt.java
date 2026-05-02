@@ -35,6 +35,10 @@ public record PlayerExt(@NotNull Player player) {
         return null;
     }
 
+    public boolean isPartyLeader(){
+        return getParty() != null && getParty().getLeader().equals(this);
+    }
+
     public boolean isInParty(){
         return getParty() == null;
     }

@@ -15,7 +15,12 @@ public interface AbstractGameManager {
      */
     void registerGame(Class<? extends AbstractGame> gameClass, Class<? extends AbstractGameRoom> gameRoomClass);
 
-    void createGame(AbstractGame name);
+    /**
+     * 创建游戏
+     * @param name 游戏名
+     * @return null：没这个游戏，或没空闲房间；非空：创建成功
+     */
+    AbstractGame createGame(String name);
 
     void startGame(AbstractGame game);
 
