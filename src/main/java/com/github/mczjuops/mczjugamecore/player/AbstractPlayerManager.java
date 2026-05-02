@@ -28,4 +28,6 @@ public interface AbstractPlayerManager {
      */
     public void joinGame(PlayerExt player, AbstractGame game);
 
+    public void leaveGame(PlayerExt player);
+
 }
