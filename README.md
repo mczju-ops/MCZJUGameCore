@@ -22,4 +22,8 @@
 
 目前Yikuni正在加紧开发中，这个插件还不能运行。
 
-整体逻辑有点复杂，并且Yikuni基本没写文档，只写了注释。如果你能看得懂，可以直接在qq群中at Yikuni，认领一个部分的开发。
+整体逻辑有点复杂，并且Yikuni基本没写文档，只写了注释。如果你能看得懂，可以在issue中找一个任务，assign自己，再去实现。
+
+或者对于没在issue里的功能，可以直接在qq群中at Yikuni，或提issue，进行这个部分的开发。
+
+关于多人合作开发规范，详情请见[链接](https://github.com/mczju-ops/mczju-infra-docs/blob/main/dev/contributing.md)
