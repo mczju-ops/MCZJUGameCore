@@ -1,10 +1,13 @@
 package com.github.mczjuops.mczjugamecore.utils.sender.impl;
 
+import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
-/*
-玩家私信玩家
+
+/**
+ * 玩家私信玩家
+ * 文本不包含格式信息
  */
 public class Player2PlayerSender implements Sender {
     private final Player from;
@@ -20,11 +23,8 @@ public class Player2PlayerSender implements Sender {
     @Override public void error(String msg) { primary(msg); }
     @Override public void success(String msg) { primary(msg); }
 
-
     @Override
     public void primary(String msg) {
-        // TODO 替换过时的ChatColor
-        to.sendMessage(ChatColor.RED + "[ " + ChatColor.WHITE + from + " " + ChatColor.RED + "-> " +
-                ChatColor.WHITE + to.getName() + " " + ChatColor.RED + "] " + ChatColor.WHITE + msg);
+        to.sendMessage(TextParser.parse(STR."<red>[<white>\{from.getName()}</white>] <gray>-></gray> [<white>\{to.getName()}</white>] <reset>\{msg}"));
     }
 }
