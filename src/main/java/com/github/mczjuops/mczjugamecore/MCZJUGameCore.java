@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomManager;
 import com.github.mczjuops.mczjugamecore.game.strategy.impl.SinglePlayerGame;
+import com.github.mczjuops.mczjugamecore.initialize.CommandInitializer;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.party.PartyManager;
@@ -30,6 +31,8 @@ public final class MCZJUGameCore extends JavaPlugin {
         partyManager = new PartyManager();
         playerManager = new DefaultPlayerManager();
         gameRoomManager = new GameRoomManager();
+
+        CommandInitializer.initialize();
     }
 
     @Override

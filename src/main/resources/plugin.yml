@@ -2,3 +2,21 @@ name: MCZJUGameCore
 version: '${project.version}'
 main: com.github.mczjuops.mczjugamecore.MCZJUGameCore
 api-version: '1.21.7'
+
+commands:
+  mgc:
+    description: "加入游戏等指令"
+    usage: "/mgc <arg>"
+    permission: mgc.mgc
+  party:
+    description: "组队指令"
+    usage: "和hyp相同"
+    permission: mgc.party
+
+
+permissions:
+  mgc.mgc:
+    default: true
+  mgc.party:
+    default: true
+
