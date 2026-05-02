@@ -39,4 +39,19 @@ public record PlayerExt(@NotNull Player player) {
         return getParty() == null;
     }
 
+
+    /**
+     * 重写equal函数，不确定这样写在mc中对不对
+     * @param obj   the reference object with which to compare.
+     * @return  他们的player为同一个，则返回true
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof PlayerExt){
+            return ((PlayerExt) obj).player == player;
+        } else if (obj instanceof Player) {
+            return obj == player;
+        }
+        return false;
+    }
 }
