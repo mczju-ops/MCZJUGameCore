@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.player.party;
 
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
+import com.github.mczjuops.mczjugamecore.utils.sender.impl.PartySender;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -43,7 +44,6 @@ public class Party {
     }
 
     public Sender sender(){
-        // TODO 队伍广播，通知全队加入游戏等
-        return null;
+        return new PartySender(this);
     }
 }

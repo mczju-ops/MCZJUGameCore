@@ -14,63 +14,35 @@ import java.util.logging.Logger;
  */
 public class PlayerSender implements Sender {
     private final Player player;
-    private final Logger logger = MCZJUGameCore.getInstance().getLogger();
-
+    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getName()}");
     private boolean shouldActionbar = false;
 
     public PlayerSender(Player player) {
         this.player = player;
     }
 
-    @Override
-    public void info(String msg) {
+    private void send(String msg, NamedTextColor color) {
+        var component = TextParser.parse(msg).colorIfAbsent(color);
+
         if (shouldActionbar) {
-            player.sendActionBar(TextParser.parse(msg).colorIfAbsent(NamedTextColor.GRAY));
+            player.sendActionBar(component);
         } else {
-            player.sendMessage(TextParser.parse(msg).colorIfAbsent(NamedTextColor.GRAY));
+            player.sendMessage(component);
         }
-        logger.info(STR."Player \{player.getName()} received msg: \{msg}");
+
+        String logMsg = STR."Player \{player.getName()} received msg: \{msg}";
+        if (color.equals(NamedTextColor.RED)){
+            logger.error(logMsg);
+        }else{
+            logger.debug(logMsg);
+        }
     }
 
-    @Override
-    public void warn(String msg) {
-        if (shouldActionbar) {
-            player.sendActionBar(TextParser.parse(msg).colorIfAbsent(NamedTextColor.YELLOW));
-        } else {
-            player.sendMessage(TextParser.parse(msg).colorIfAbsent(NamedTextColor.YELLOW));
-        }
-        logger.info(STR."Player \{player.getName()} received msg: \{msg}");
-    }
-
-    @Override
-    public void error(String msg) {
-        if (shouldActionbar) {
-            player.sendActionBar(TextParser.parse(msg).colorIfAbsent(NamedTextColor.RED));
-        } else {
-            player.sendMessage(TextParser.parse(msg).colorIfAbsent(NamedTextColor.RED));
-        }
-        logger.info(STR."Player \{player.getName()} received msg: \{msg}");
-    }
-
-    @Override
-    public void success(String msg) {
-        if (shouldActionbar) {
-            player.sendActionBar(TextParser.parse(msg).colorIfAbsent(NamedTextColor.GREEN));
-        } else {
-            player.sendMessage(TextParser.parse(msg).colorIfAbsent(NamedTextColor.GREEN));
-        }
-        logger.info(STR."Player \{player.getName()} received msg: \{msg}");
-    }
-
-    @Override
-    public void primary(String msg) {
-        if (shouldActionbar) {
-            player.sendActionBar(TextParser.parse(msg).colorIfAbsent(NamedTextColor.BLUE));
-        } else {
-            player.sendMessage(TextParser.parse(msg).colorIfAbsent(NamedTextColor.BLUE));
-        }
-        logger.info(STR."Player \{player.getName()} received msg: \{msg}");
-    }
+    @Override public void info(String msg)    { send(msg, NamedTextColor.GRAY); }
+    @Override public void warn(String msg)    { send(msg, NamedTextColor.YELLOW); }
+    @Override public void error(String msg)   { send(msg, NamedTextColor.RED); }
+    @Override public void success(String msg) { send(msg, NamedTextColor.GREEN); }
+    @Override public void primary(String msg) { send(msg, NamedTextColor.BLUE); }
 
     public void setShouldActionbar(boolean shouldActionbar) {
         this.shouldActionbar = shouldActionbar;
