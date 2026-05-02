@@ -23,6 +23,12 @@ public class Party {
         return members;
     }
 
+    public List<PlayerExt> getAllPlayer(){
+        LinkedList<PlayerExt> players = new LinkedList<>(members);
+        players.add(leader);
+        return players;
+    }
+
     public void addMember(PlayerExt player){
         if (members.contains(player) || leader == player){
             player.sender().warn("您已在这个队伍中！");
