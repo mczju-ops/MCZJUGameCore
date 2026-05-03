@@ -1,10 +1,11 @@
 package com.github.mczjuops.mczjugamecore.game.strategy.impl;
 
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.strategy.wait.DefaultGameWaitStrategy;
 import com.github.mczjuops.mczjugamecore.game.strategy.wait.GameWaitStrategy;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 
-public class SinglePlayerGame extends AbstractGame {
+public abstract class SinglePlayerGame extends AbstractGame {
 
     @Override
     public String getName() {
@@ -13,36 +14,11 @@ public class SinglePlayerGame extends AbstractGame {
 
     @Override
     public GameWaitStrategy getGameWaitStrategy() {
-        return null;
+        return new DefaultGameWaitStrategy(this, 1);
     }
 
     @Override
     protected void onPlayerJoin(PlayerExt player) {
-
-    }
-
-    @Override
-    protected boolean onGameInit() {
-        return false;
-    }
-
-    @Override
-    protected void onGameStart() {
-
-    }
-
-    @Override
-    protected void onGameCancel() {
-
-    }
-
-    @Override
-    protected void onGameAbort() {
-
-    }
-
-    @Override
-    protected void onGameEnd() {
-
+        // 啥都不做
     }
 }

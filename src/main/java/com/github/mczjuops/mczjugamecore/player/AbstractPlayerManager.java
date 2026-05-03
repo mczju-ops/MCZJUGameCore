@@ -22,12 +22,14 @@ public interface AbstractPlayerManager {
     public boolean addPlayer(AbstractGame game);
 
     /**
-     * 加入游戏。如果玩家是队长，则会带着全队加入。
+     * 加入游戏。如果玩家是队长，则会带着全队加入。如果玩家在游戏中，则强制退出
      * @param player 玩家
      * @param game 游戏
      */
     public void joinGame(PlayerExt player, AbstractGame game);
 
     public void leaveGame(PlayerExt player);
+
+    public AbstractGame getPlayerGame(PlayerExt player);
 
 }

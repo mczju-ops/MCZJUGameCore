@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class DefaultGameWaitStrategy extends GameWaitStrategy {
     private final int playerLimit;
-    DefaultGameWaitStrategy(AbstractGame game, int playerLimit) {
+    public DefaultGameWaitStrategy(AbstractGame game, int playerLimit) {
         super(game);
         this.playerLimit = playerLimit;
     }

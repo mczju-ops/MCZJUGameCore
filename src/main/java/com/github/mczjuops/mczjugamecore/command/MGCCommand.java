@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -22,12 +23,14 @@ public class MGCCommand implements CommandExecutor, TabCompleter {
         if (!(sender instanceof Player)) return false;
         PlayerExt player = new PlayerExt((Player) sender);
         if (args.length == 0) return false;
-        return switch (args[0]){
-            case "join" ->{
-                yield false;
+        switch (args[0]) {
+            case "join" -> {
+                join(player, args);
             }
-            default -> true;
-        };
+            default -> {
+            }
+        }
+        return true;
     }
 
     private boolean join(PlayerExt player, @NotNull String []args){

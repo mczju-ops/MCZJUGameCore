@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.player;
 
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -34,11 +35,24 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
 
     @Override
     public void joinGame(PlayerExt player, AbstractGame game) {
-        if (playerGameMap.containsKey(player)) playerGameMap.replace(player, game);
+        if (playerGameMap.containsKey(player)) {
+            leaveGame(player);
+        }
+        playerGameMap.put(player, game);
+
     }
 
     @Override
     public void leaveGame(PlayerExt player) {
+        if (playerGameMap.containsKey(player)){
+            // 如果原本在游戏中，则调用game中的退出游戏
+            // TODO
+        }
         playerGameMap.remove(player);
+    }
+
+    @Override
+    public @Nullable AbstractGame getPlayerGame(PlayerExt player) {
+        return playerGameMap.get(player);
     }
 }

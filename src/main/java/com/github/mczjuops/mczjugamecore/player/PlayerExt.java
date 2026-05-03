@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.player;
 
+import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
@@ -24,8 +25,7 @@ public record PlayerExt(@NotNull Player player) {
     }
 
     public @Nullable AbstractGame getGame(){
-        //TODO
-        return null;
+        return MCZJUGameCore.getPlayerManager().getPlayerGame(this);
     }
 
     /**
@@ -46,7 +46,7 @@ public record PlayerExt(@NotNull Player player) {
     }
 
     public boolean isInParty(){
-        return getParty() == null;
+        return getParty() != null;
     }
 
 

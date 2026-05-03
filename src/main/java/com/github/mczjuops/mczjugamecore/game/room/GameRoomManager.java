@@ -68,11 +68,15 @@ public class GameRoomManager {
 
 
     public AbstractGameRoom createGameRoom(String gameName, String gameRoomName){
-        return MCZJUGameCore.getGameManager().createGameRoom(gameName, gameRoomName);
+        AbstractGameRoom gameRoom = MCZJUGameCore.getGameManager().createGameRoom(gameName, gameRoomName);
+        registerGameRoom(gameName, gameRoom);
+        return gameRoom;
     }
 
     public @Nullable AbstractGameRoom getGameRoom(String gameName, String gameRoomName){
-        for (AbstractGameRoom gameRoom : gameRoomMap.get(gameName)) {
+        List<AbstractGameRoom> gameRooms = gameRoomMap.get(gameName);
+        if (gameRooms == null) return null;
+        for (AbstractGameRoom gameRoom : gameRooms) {
             if (Objects.equals(gameRoom.getRoomName(), gameRoomName)){
                 return gameRoom;
             }

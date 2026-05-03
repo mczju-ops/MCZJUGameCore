@@ -37,7 +37,7 @@ public abstract  class AbstractGame {
      * 获取加入了游戏的玩家，在onGameInit
      * @return  玩家列表
      */
-    List<PlayerExt> getPlayers(){
+    public List<PlayerExt> getPlayers(){
         return MCZJUGameCore.getPlayerManager().getPlayers(this);
     }
 

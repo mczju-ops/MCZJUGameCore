@@ -30,15 +30,6 @@ public class JsonGameRoom extends AbstractGameRoom {
         try {
             Field field = this.getClass().getDeclaredField(name);
             field.setAccessible(true);
-
-            Class<?> fieldType = field.getType();
-
-            if (!fieldType.isInstance(value)) {
-                throw new IllegalArgumentException(
-                        STR."类型不匹配: \{name}, 期望: \{fieldType}, 实际: \{value.getClass()}"
-                );
-            }
-
             field.set(this, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             logger.error(STR."设置字段失败: \{name}");

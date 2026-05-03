@@ -6,6 +6,7 @@ import com.github.mczjuops.mczjugamecore.menu.Menu;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.conversations.ConversationContext;
@@ -38,7 +39,8 @@ public class GameRoomSettingMenu extends Menu {
         assert gameRoom != null; // 既然能打开这个menu，那显然正在编辑的房间不可能为空
         ItemStack currentItem = event.getCurrentItem();
         if (currentItem == null) return;
-        String fieldName = Objects.requireNonNull(currentItem.getItemMeta().displayName()).toString();
+        Component nameComp = Objects.requireNonNull(currentItem.getItemMeta().displayName());
+        String fieldName = PlainTextComponentSerializer.plainText().serialize(nameComp);
         if (currentItem.getType() == Material.COMPASS) {
             // 如果是坐标类型的数据
             // TODO 使用调试棒选取坐标
@@ -116,23 +118,24 @@ public class GameRoomSettingMenu extends Menu {
             itemMeta.displayName(TextParser.parse(name));
             ArrayList<Component> lore = new ArrayList<>();
             lore.add(TextParser.parse(STR."类型：\{type.getName()}"));
-            itemStack.lore(lore);
+            itemMeta.lore(lore);
             itemStack.setItemMeta(itemMeta);
+            inventory.addItem(itemStack);
         });
     }
 
     private Object convert(String input, Class<?> type) {
         try {
             if (type == int.class || type == Integer.class) {
-                return Integer.parseInt(input);
+                return Integer.valueOf(input);
             } else if (type == float.class || type == Float.class) {
-                return Float.parseFloat(input);
+                return Float.valueOf(input);
             } else if (type == double.class || type == Double.class) {
-                return Double.parseDouble(input);
+                return Double.valueOf(input);
             } else if (type == long.class || type == Long.class) {
-                return Long.parseLong(input);
+                return Long.valueOf(input);
             } else if (type == boolean.class || type == Boolean.class) {
-                return Boolean.parseBoolean(input);
+                return Boolean.valueOf(input);
             } else if (type == String.class) {
                 return input;
             } else {
