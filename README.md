@@ -57,6 +57,8 @@
 
 ### 具体插件代码示例
 
+等框架完善一些，能正常使用后，考虑上传到jitpack仓库，就不需要每次用都自己clone本仓库编译一遍了。
+
 见[链接](https://github.com/mczju-ops/MGC-example-plugin)
 
 ## 如何贡献
