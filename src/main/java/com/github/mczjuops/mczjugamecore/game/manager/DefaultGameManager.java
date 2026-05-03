@@ -127,6 +127,24 @@ public class DefaultGameManager implements AbstractGameManager {
         }
     }
 
+    @Override
+    public @Nullable AbstractGameRoom createGameRoom(String gameName, String gameRoomName) {
+        Class<? extends AbstractGame> gameClass = gameNameMap.get(gameName);
+        if (gameClass == null) return null; // 可能是名称输错，就先不报错了
+        Class<? extends AbstractGameRoom> gameRoomClass = registerGameMap.get(gameClass);
+        assert gameRoomClass != null;   // 不可能为空，因为这两个得一起注册
+        try {
+            AbstractGameRoom gameRoom = gameRoomClass.getDeclaredConstructor().newInstance();
+            gameRoom.setGameName(gameName);
+            gameRoom.setRoomName(gameRoomName);
+            return gameRoom;
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            logger.error(STR."无法创建新的游戏房间：\{gameName}对应的游戏房间缺失无参构造器");
+            throw new RuntimeException(e);
+        }
+
+    }
+
     /**
      * 提取出的通用加入逻辑：封装了单人和组队的入场/退场逻辑
      * @return 是否加入成功

@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.game.room;
 
+import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,6 +62,20 @@ public class GameRoomManager {
         if (!gameRoomMap.containsKey(gameName)) return null;
         for (AbstractGameRoom gameRoom : gameRoomMap.get(gameName)) {
             if (gameRoom.getState() == GameRoomState.READY) return gameRoom;
+        }
+        return null;
+    }
+
+
+    public AbstractGameRoom createGameRoom(String gameName, String gameRoomName){
+        return MCZJUGameCore.getGameManager().createGameRoom(gameName, gameRoomName);
+    }
+
+    public @Nullable AbstractGameRoom getGameRoom(String gameName, String gameRoomName){
+        for (AbstractGameRoom gameRoom : gameRoomMap.get(gameName)) {
+            if (Objects.equals(gameRoom.getRoomName(), gameRoomName)){
+                return gameRoom;
+            }
         }
         return null;
     }

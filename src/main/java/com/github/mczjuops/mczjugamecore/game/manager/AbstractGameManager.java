@@ -39,4 +39,13 @@ public interface AbstractGameManager {
      * @param gameName 游戏名
      */
     void joinGame(PlayerExt player, String gameName);
+
+    /**
+     * 创建新的游戏房间
+     * @param gameName  游戏名
+     * @param gameRoomName  游戏房间名
+     * @return  游戏房间；如果为空，可能是名字输错了
+     */
+    AbstractGameRoom createGameRoom(String gameName, String gameRoomName);
+
 }

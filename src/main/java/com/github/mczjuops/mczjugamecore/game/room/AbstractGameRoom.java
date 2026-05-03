@@ -2,6 +2,9 @@ package com.github.mczjuops.mczjugamecore.game.room;
 
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 
+import java.lang.reflect.Field;
+import java.util.Map;
+
 /**
  * 游戏房间，仅用于存放一些坐标数据之类的。
  * 一个游戏可以有一个或多个游戏房间。这个不在代码中写，而是在mc中，用菜单创建。
@@ -29,8 +32,22 @@ public abstract class AbstractGameRoom {
      * @return  字段的值
      * @param <T>   字段的类型，如Location.class
      */
-    abstract <T> T getField(String name, Class<T> clazz);
-    abstract <T> void setField(String name, T value, Class<T> clazz);
+    public abstract <T> T getField(String name, Class<T> clazz);
+
+    /**
+     * 设置字段值。仅在本插件开发中有用，其它插件一般用不到
+     * @param name  字段名
+     * @param value 值
+     */
+    public abstract void setField(String name, Object value);
+
+    /**
+     * 获取所有的字段
+     * @return 字段集合，name -> type
+     */
+    public abstract Map<String, Class<?>> getAllFields();
+
+    public abstract Class<?> getFieldType(String name);
 
     abstract boolean save();
 

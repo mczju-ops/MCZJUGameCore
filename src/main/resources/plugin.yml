@@ -25,3 +25,5 @@ permissions:
     default: true
   menu.default:
     default: true
+  menu.op:
+    default: op
