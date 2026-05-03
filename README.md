@@ -55,6 +55,9 @@
 
 所有注册方法详见initialize包和对应manager的代码注释，后面再补文档。
 
+### 具体插件代码示例
+
+见[链接](https://github.com/mczju-ops/MGC-example-plugin)
 
 ## 如何贡献
 
