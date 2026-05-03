@@ -70,3 +70,5 @@
 文档将会尽快补充！
 
 关于多人合作开发规范，详情请见[链接](https://github.com/mczju-ops/mczju-infra-docs/blob/main/dev/contributing.md)
+
+开发时，可以克隆本项目和插件代码示例，来进行测试。另外，不知道为什么启动服务器时得加上一个JVM参数：`--enable-preview`
