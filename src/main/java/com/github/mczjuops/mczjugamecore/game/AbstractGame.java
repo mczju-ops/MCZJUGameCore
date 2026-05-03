@@ -4,6 +4,8 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.game.strategy.wait.GameWaitStrategy;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
+import com.github.mczjuops.mczjugamecore.utils.sender.impl.GameSender;
 
 import java.util.List;
 
@@ -20,6 +22,8 @@ public abstract  class AbstractGame {
      * 必须有一个无参的构造器，但不建议在构造器里写任何逻辑，因为此时game room还没创建
      */
     public AbstractGame(){}
+
+    protected Sender sender = new GameSender(this);
 
     /**
      * 获取游戏名称，请勿和其它游戏重名。为方便，这个也当作display name。
