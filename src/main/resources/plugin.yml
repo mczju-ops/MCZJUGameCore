@@ -23,6 +23,8 @@ permissions:
     default: true
   mgc.party:
     default: true
+  mgc.dev:
+    default: op
   menu.default:
     default: true
   menu.op:

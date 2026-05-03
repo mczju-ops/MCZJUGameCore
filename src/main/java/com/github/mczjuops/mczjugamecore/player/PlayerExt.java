@@ -3,11 +3,17 @@ package com.github.mczjuops.mczjugamecore.player;
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
+import com.github.mczjuops.mczjugamecore.utils.LocationSelector;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.PlayerSender;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.HashMap;
+import java.util.function.Consumer;
 
 /*
 玩家类扩展，传Player参数进去可以获得拥有扩展函数的PlayerExt
@@ -49,6 +55,39 @@ public record PlayerExt(@NotNull Player player) {
         return getParty() != null;
     }
 
+    public void selectLocation(Consumer<Location> callback){
+        LocationSelector.getInstance().selectLocation(this, callback);
+    }
+
+    public void giveItemIfDontHave(String id) {
+        for (ItemStack it : player.getInventory()) {
+            if (MCZJUGameCore.getItemManager().is(it, id)) {
+                return;
+            }
+        }
+        giveItem(id);
+    }
+
+    public void giveItem(String id){
+        ItemStack item = MCZJUGameCore.getItemManager().getItem(id);
+        if (item == null){
+            sender().error(STR."无法获取物品\{id}，因为物品不存在");
+            return;
+        }
+        giveItem(item);
+    }
+
+    public void giveItem(ItemStack itemStack){
+        HashMap<Integer, ItemStack> itemMap = player.getInventory().addItem(itemStack);
+        if (!itemMap.isEmpty()){
+            sender().warn("背包已满，请检查周围掉落物");
+            itemMap.forEach((_, item) ->{
+                player.getWorld().dropItem(player.getLocation(), item);
+            });
+        }else {
+            sender().success("已获取物品，请检查背包");
+        }
+    }
 
     /**
      * 重写equal函数，不确定这样写在mc中对不对

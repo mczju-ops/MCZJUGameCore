@@ -5,8 +5,10 @@ import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomManager;
 import com.github.mczjuops.mczjugamecore.game.strategy.impl.SinglePlayerGame;
 import com.github.mczjuops.mczjugamecore.initialize.CommandInitializer;
+import com.github.mczjuops.mczjugamecore.initialize.ItemInitializer;
 import com.github.mczjuops.mczjugamecore.initialize.ListenerInitializer;
 import com.github.mczjuops.mczjugamecore.initialize.MenuInitializer;
+import com.github.mczjuops.mczjugamecore.item.ItemManager;
 import com.github.mczjuops.mczjugamecore.menu.MenuFacade;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
@@ -26,6 +28,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     private PartyManager partyManager;
     private GameRoomManager gameRoomManager;
 
+    private ItemManager itemManager;
     private MenuFacade menuFacade;
 
     @Override
@@ -37,10 +40,12 @@ public final class MCZJUGameCore extends JavaPlugin {
         playerManager = new DefaultPlayerManager();
         gameRoomManager = new GameRoomManager();
         menuFacade = new MenuFacade();
+        itemManager = new ItemManager();
 
         CommandInitializer.initialize();
         MenuInitializer.initialize();
         ListenerInitializer.initialize();
+        ItemInitializer.initialize();
     }
 
     @Override
@@ -85,6 +90,9 @@ public final class MCZJUGameCore extends JavaPlugin {
 
     public static @NotNull MenuFacade getMenuFacade(){
         return getInstance().menuFacade;
+    }
+    public static @NotNull ItemManager getItemManager(){
+        return getInstance().itemManager;
     }
 
 }

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public class GameRoomSettingMenu extends Menu {
 
@@ -43,8 +44,15 @@ public class GameRoomSettingMenu extends Menu {
         String fieldName = PlainTextComponentSerializer.plainText().serialize(nameComp);
         if (currentItem.getType() == Material.COMPASS) {
             // 如果是坐标类型的数据
-            // TODO 使用调试棒选取坐标
             player.player().closeInventory();
+            player.selectLocation(new Consumer<Location>() {
+                @Override
+                public void accept(Location location) {
+                    gameRoom.setField(fieldName, location);
+                    player.sender().success(STR."设置坐标成功: \{location.x()}, \{location.y()}, \{location.z()}");
+                    gameRoom.setModified(true);
+                }
+            });
         }else {
             player.player().closeInventory();
             // 如果是字符串或int、float等
@@ -62,6 +70,7 @@ public class GameRoomSettingMenu extends Menu {
                             gameRoom.setField(fieldName, value);
                             // 没成功会直接报错，后面或许要改
                             player.sender().success(STR."设置字段值成功: \{fieldName} -> \{input}");
+                            gameRoom.setModified(true);
                             return Prompt.END_OF_CONVERSATION;
                         }
                     })
@@ -94,6 +103,7 @@ public class GameRoomSettingMenu extends Menu {
             if (!Objects.equals(gameRoom.getRoomName(), mapName)){
                 // 如果和上一张在编辑的地图不同，则不允许直接编辑（后面要修改这个逻辑，先暂时这样写）
                 player.sender().error("未退出上一张地图的编辑，请先退出编辑状态，再创建新的地图");
+                player.player().closeInventory();
                 return;
             }
         }

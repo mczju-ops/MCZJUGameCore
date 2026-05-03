@@ -1,9 +1,20 @@
 package com.github.mczjuops.mczjugamecore.game.room;
 
+import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.serialize.LocationAdapter;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,13 +72,31 @@ public class JsonGameRoom extends AbstractGameRoom {
 
     @Override
     public boolean save() {
-        // TODO 还没实现保存到json文件
+        String path = getFilePath();
+        File file = new File(path);
+        try {
+            // 确保父目录存在
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                boolean _ = parent.mkdirs();
+            }
+
+            Gson gson = LocationAdapter.getGsonBuilder();
+
+            // 写入 JSON
+            try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
+                gson.toJson(this, writer);
+            }
+
+        } catch (IOException e) {
+            logger.error(STR."无法加载地图 \{getGameName()} : \{getRoomName()}");
+            throw new RuntimeException(e);
+        }
         return false;
     }
 
-    @Override
-    public boolean load() {
-        // TODO
-        return false;
+    private String getFilePath(){
+        String dataPath = MCZJUGameCore.getInstance().getDataFolder().getAbsolutePath();
+        return STR."\{dataPath}/\{getGameName()}/\{getRoomName()}.json";
     }
 }

@@ -20,10 +20,10 @@
 
 ## 如何贡献
 
-目前Yikuni正在加紧开发中，这个插件还不能运行。
+整体框架已经搭好了！
 
-整体逻辑有点复杂，并且Yikuni基本没写文档，只写了注释。如果你能看得懂，可以在issue中找一个任务，assign自己，再去实现。
+还有些地方需要改善、或者还没写，详见issue。另外目前有很多细节上的问题，有很多提示没写，比如玩家加入游戏后没提示游戏现在是几缺几，也可以提issue，然后进行小的修改。
 
-或者对于没在issue里的功能，可以直接在qq群中at Yikuni，或提issue，进行这个部分的开发。
+文档将会尽快补充！
 
 关于多人合作开发规范，详情请见[链接](https://github.com/mczju-ops/mczju-infra-docs/blob/main/dev/contributing.md)
