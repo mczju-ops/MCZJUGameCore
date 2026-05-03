@@ -46,6 +46,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        gameRoomManager.saveAllGameRoom();  // 保存所有游戏房间
     }
 
     public static @NotNull MCZJUGameCore getInstance(){
