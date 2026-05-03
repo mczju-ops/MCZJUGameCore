@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.menu;
 
+import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -16,6 +17,7 @@ public class AlertMenu extends Menu {
     public AlertMenu() {
         setSize(9);
         setName("确认菜单");
+        setPermission("menu.default");
     }
 
     protected static final Map<Player, Runnable> callbackMap = new HashMap<>();
@@ -32,7 +34,7 @@ public class AlertMenu extends Menu {
     }
 
     @Override
-    public void open(@NotNull Player player, @NotNull Inventory inventory, Object... args) {
+    public void open(@NotNull PlayerExt player, @NotNull Inventory inventory, Object... args) {
         ItemStack green = new ItemStack(Material.GREEN_WOOL);
         ItemMeta itemMeta = green.getItemMeta();
         assert itemMeta != null;

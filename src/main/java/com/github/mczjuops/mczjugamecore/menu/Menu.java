@@ -1,7 +1,9 @@
 package com.github.mczjuops.mczjugamecore.menu;
 
+import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import com.github.mczjuops.mczjugamecore.utils.TextParser;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -18,6 +20,8 @@ public abstract class Menu {
     private final List<Inventory> inventoryList = new LinkedList<>();
     private Menu next;
     private int size;
+
+    private String permission;
 
     public Menu() {
     }
@@ -52,17 +56,19 @@ public abstract class Menu {
 
 
     public abstract void click(@NotNull InventoryClickEvent event);
-    public abstract void open(@NotNull Player player, @NotNull Inventory inventory, Object... args);
+    public abstract void open(@NotNull PlayerExt player, @NotNull Inventory inventory, Object... args);
 
     public void solveOpen(String name, Player player, Object... args){
-        if (this.name.equalsIgnoreCase(name)){
-            Inventory inventory = Bukkit.createInventory(player, size, displayName);
+        if (this.name.equalsIgnoreCase(name) && player.hasPermission(permission)){
+            Component title = TextParser.parse(displayName);
+            Inventory inventory = Bukkit.createInventory(player, size, title);
             inventoryList.add(inventory);
-            open(player, inventory, args);
+            PlayerExt playerExt = new PlayerExt(player);
+            open(playerExt, inventory, args);
             player.openInventory(inventory);
         }
         else if (next != null) next.solveOpen(name, player, args);
-        else noMenuTip(name, player);
+        else noMenuTip(name, new PlayerExt(player));
     }
 
     public void close(InventoryCloseEvent event){
@@ -81,8 +87,8 @@ public abstract class Menu {
         }
         else if (next != null) next.solveClick(event);
     }
-    private void noMenuTip(String name, Player player){
-        player.sendMessage(ChatColor.RED + "没有这个菜单: " + name);
+    private void noMenuTip(String name, PlayerExt player){
+        player.sender().error(STR."没有这个菜单: \{name}");
     }
 
     public Menu getNext() {
@@ -103,5 +109,13 @@ public abstract class Menu {
 
     public void setSize(int size) {
         this.size = size;
+    }
+
+    public String getPermission() {
+        return permission;
+    }
+
+    public void setPermission(String permission) {
+        this.permission = permission;
     }
 }

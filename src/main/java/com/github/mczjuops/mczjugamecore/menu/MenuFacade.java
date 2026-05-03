@@ -14,7 +14,7 @@ public class MenuFacade implements Listener {
         if (head != null) head.solveOpen(name, player, args);
     }
 
-    public static void add(Menu menu){
+    protected static void add(Menu menu){
         if (head == null) {
             head = new AlertMenu();
         }
@@ -23,6 +23,13 @@ public class MenuFacade implements Listener {
             ptr = ptr.getNext();
         }
         ptr.setNext(menu);
+    }
+
+    public static void registerMenu(Menu menu, String name, int size, String permission){
+        menu.setName(name);
+        menu.setSize(size);
+        menu.setPermission(permission);
+        add(menu);
     }
 
     @EventHandler

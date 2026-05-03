@@ -12,6 +12,10 @@ commands:
     description: "组队指令"
     usage: "和hyp相同"
     permission: mgc.party
+  menu:
+    description: "菜单指令"
+    usage: "/menu menu_name args"
+    permission: menu.default
 
 
 permissions:
@@ -19,4 +23,5 @@ permissions:
     default: true
   mgc.party:
     default: true
-
+  menu.default:
+    default: true
