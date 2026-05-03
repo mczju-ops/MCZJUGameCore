@@ -103,6 +103,14 @@ public abstract class Menu {
         this.name = name;
     }
 
+    public void setDisplayName(String displayName){
+        this.displayName = displayName;
+    }
+
+    public String getDisplayName(){
+        return displayName;
+    }
+
     public int getSize() {
         return size;
     }

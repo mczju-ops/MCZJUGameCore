@@ -25,10 +25,11 @@ public class MenuFacade implements Listener {
         ptr.setNext(menu);
     }
 
-    public static void registerMenu(Menu menu, String name, int size, String permission){
+    public static void registerMenu(Menu menu, String name, String displayName, int size, String permission){
         menu.setName(name);
         menu.setSize(size);
         menu.setPermission(permission);
+        menu.setDisplayName(displayName);
         add(menu);
     }
 
