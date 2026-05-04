@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  */
 public class PlayerSender implements Sender {
     private final Player player;
-    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getName()}");
+    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
     private boolean shouldActionbar = false;
 
     public PlayerSender(Player player) {

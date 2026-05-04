@@ -8,7 +8,7 @@ import java.util.*;
 
 public class GameRoomManager {
 
-    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getName()}");
+    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
 
     private final List<GameRoomLoader> loaders = new LinkedList<>();
 

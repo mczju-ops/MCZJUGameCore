@@ -19,7 +19,7 @@ import java.nio.file.Paths;
 
 public class JsonGameRoomLoader implements GameRoomLoader{
 
-    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getName()}");
+    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
     @Override
     public boolean loadAllGameRoom(String gameName, Class<? extends AbstractGameRoom> gameRoomClass) {
         if(!JsonGameRoom.class.isAssignableFrom(gameRoomClass)) return false;

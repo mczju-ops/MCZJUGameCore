@@ -11,7 +11,7 @@ public class MultiPlayerSender implements Sender {
 
     private final List<PlayerExt> players;
 
-    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getName()}");
+    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
 
 
     private boolean shouldActionbar = false;
