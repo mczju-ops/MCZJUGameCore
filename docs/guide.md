@@ -242,3 +242,14 @@ public @NotNull AbstractPlayerDeathStrategy getPlayerDeathStrategy(){
 > 如果你觉得自己的策略别人也可能用到，可以提PR到这个仓库，把代码直接放在这个框架里。
 > 其它人使用时，只需要在步骤3中，改成`new YourPlayerDeathStrategy(this)`
 
+### PlayerExt扩展函数
+
+为了方便小游戏的开发，player对象必须拥有`getParty`，`isInGame`等方法，但java中没有扩展函数的写法。
+
+所以，新增了一个`PlayerExt`类，只需要`new PlayerExt(player)`就可以把mc的`player`包装成功能更丰富的`player`
+
+`PlayerExt`本身不包含任何成员变量，只是负责调用各种`Manager`或各种`Util`，所以只要new时传入的player相同，他们就没任何区别。
+
+本框架大部分地方的`Player`都包装成了`PlayerExt`，一般直接用就可以。
+
+> 如果你觉得可以加一个好用的扩展函数，也可以写在这个框架里
