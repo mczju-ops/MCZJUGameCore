@@ -253,3 +253,11 @@ public @NotNull AbstractPlayerDeathStrategy getPlayerDeathStrategy(){
 本框架大部分地方的`Player`都包装成了`PlayerExt`，一般直接用就可以。
 
 > 如果你觉得可以加一个好用的扩展函数，也可以写在这个框架里
+
+### 一些工具类说明
+
+详细说明见对应工具类的文档，这里仅列简介
+
+- `LocationSelector`: 可以调用它来选取坐标。用`PlayerExt`中的`selectLocation`方法调用。
+- `TextParser`: 用于搞彩色字符串
+- `Sender`: 它和它的实现类用于给各种对象发消息：包含队伍、游戏内所有玩家、日志等。Game类中已经集成了一个sender
