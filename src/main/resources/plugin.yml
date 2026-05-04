@@ -16,6 +16,10 @@ commands:
     description: "菜单指令"
     usage: "/menu menu_name args"
     permission: menu.default
+  mgcop:
+    description: "mgc的op操作，使用方法见文档"
+    usage: "/mgc <arg>"
+    permission: mgc.dev
 
 
 permissions:

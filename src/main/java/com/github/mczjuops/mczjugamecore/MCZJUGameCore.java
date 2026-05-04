@@ -13,6 +13,7 @@ import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.party.PartyManager;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,6 +33,8 @@ public final class MCZJUGameCore extends JavaPlugin {
     @Override
     public void onEnable() {
         // Plugin startup logic
+
+        saveDefaultConfig();
         INSTANCE = this;
         gameManager = new DefaultGameManager();
         partyManager = new PartyManager();
@@ -91,6 +94,15 @@ public final class MCZJUGameCore extends JavaPlugin {
     }
     public static @NotNull ItemManager getItemManager(){
         return getInstance().itemManager;
+    }
+
+    public static @NotNull FileConfiguration getMGCConfig(){
+        return getInstance().getConfig();
+    }
+
+    public static boolean isDebug(){
+        if (INSTANCE == null) return false;
+        return getMGCConfig().getBoolean("debug");
     }
 
 }

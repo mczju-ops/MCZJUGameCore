@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.initialize;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.command.MGCCommand;
+import com.github.mczjuops.mczjugamecore.command.MGCOPCommand;
 import com.github.mczjuops.mczjugamecore.command.MenuCommand;
 import com.github.mczjuops.mczjugamecore.command.PartyCommand;
 import org.bukkit.Bukkit;
@@ -14,6 +15,7 @@ public class CommandInitializer {
         registerCommand("mgc", new MGCCommand());
         registerCommand("party", new PartyCommand());
         registerCommand("menu", new MenuCommand());
+        registerCommand("mgcop", new MGCOPCommand());
     }
 
     private static void registerCommand(String commandStr, CommandExecutor executor){
