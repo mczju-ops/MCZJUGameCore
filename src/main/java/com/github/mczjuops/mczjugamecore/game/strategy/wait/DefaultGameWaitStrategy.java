@@ -5,8 +5,11 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
+import com.github.mczjuops.mczjugamecore.utils.sender.impl.MultiPlayerSender;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -21,31 +24,35 @@ public class DefaultGameWaitStrategy extends GameWaitStrategy {
 
     @Override
     public boolean onPlayerJoin(PlayerExt player) {
-        Sender sender = player.sender();
-        return onJoin(sender);
+        return onJoin(Collections.singletonList(player));
     }
 
     @Override
     public boolean onPartyJoin(Party party) {
-        Sender sender = party.sender();
-        return onJoin(sender);
+        // 这里不发消息，因为即使这个房间无法进人，也可以加其它房间
+        return onJoin(party.getAllPlayer());
     }
 
-    private boolean onJoin(Sender sender){
+    private boolean onJoin(List<PlayerExt> newPlayers){
         int size = MCZJUGameCore.getPlayerManager().getPlayers(game).size();
-        if (size < playerLimit) return true;
-        else if (size > playerLimit) {
-            sender.success(STR."已加入游戏\{game.getName()}");
-            return false;
-        }else{
+        if (size > playerLimit) return false;
+
+        // 加入成功，先发消息
+        MultiPlayerSender sender = new MultiPlayerSender(game.getPlayers());
+        int count = size - newPlayers.size();
+        for (PlayerExt newPlayer : newPlayers) {
+            count += 1;
+            sender.info(STR."玩家\{newPlayer.player().getName()}加入游戏 ( \{count} / \{playerLimit})");
+        }
+        if (size == playerLimit) {
             // 正好等于最大人数
             startGame();
-            return true;
         }
+        return true;
     }
 
     @Override
-    public void onPlayerLeave() {
-        // do nothing
+    public void onPlayerLeave(PlayerExt player) {
+        game.sender().warn(STR."玩家\{player.player().getName()}退出游戏(\{game.getPlayers().size()} / \{playerLimit}");
     }
 }

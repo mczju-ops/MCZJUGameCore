@@ -1,7 +1,9 @@
 package com.github.mczjuops.mczjugamecore.player;
 
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
+import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -36,23 +38,35 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
     @Override
     public void joinGame(PlayerExt player, AbstractGame game) {
         if (playerGameMap.containsKey(player)) {
-            leaveGame(player);
+            leaveGame(player, PlayerQuitReason.COMMAND_QUIT);
         }
         playerGameMap.put(player, game);
 
     }
 
     @Override
-    public void leaveGame(PlayerExt player) {
-        if (playerGameMap.containsKey(player)){
-            // 如果原本在游戏中，则调用game中的退出游戏
-            // TODO
-        }
+    public void leaveGame(PlayerExt player, PlayerQuitReason reason) {
+        if (!playerGameMap.containsKey(player)) return;
+        // 如果原本在游戏中，则调用game中的退出游戏
+        AbstractGame game = playerGameMap.get(player);
         playerGameMap.remove(player);
+        if (reason == PlayerQuitReason.JOIN_FAIL) return;   // 如果是加入游戏失败，不处理
+        if (game.getState() == GameState.WAITING){
+            // 如果是在等待阶段
+            game.getGameWaitStrategy().onPlayerLeave(player);
+        }else{
+            // 不在等待阶段。不做游戏结束阶段的判断，游戏结束调用removeAllPlayer方法
+            game.getPlayerQuitStrategy().onPlayerQuit(player, reason);
+        }
     }
 
     @Override
     public @Nullable AbstractGame getPlayerGame(PlayerExt player) {
         return playerGameMap.get(player);
+    }
+
+    @Override
+    public void removeAllPlayer(AbstractGame game) {
+        playerGameMap.entrySet().removeIf(entry -> entry.getValue() == game);
     }
 }
