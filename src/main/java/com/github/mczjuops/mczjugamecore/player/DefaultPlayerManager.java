@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -68,5 +69,12 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
     @Override
     public void removeAllPlayer(AbstractGame game) {
         playerGameMap.entrySet().removeIf(entry -> entry.getValue() == game);
+    }
+
+    @Override
+    public boolean isPlayerInGame(@NotNull PlayerExt player, @NotNull Class<? extends AbstractGame> gameClass) {
+        AbstractGame game = getPlayerGame(player);
+        if (game == null)return false;
+        return game.getClass() == gameClass;
     }
 }

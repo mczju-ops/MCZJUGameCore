@@ -39,4 +39,6 @@ public interface AbstractPlayerManager {
      */
     void removeAllPlayer(AbstractGame game);
 
+    public boolean isPlayerInGame(PlayerExt player, Class<? extends AbstractGame> gameClass);
+
 }

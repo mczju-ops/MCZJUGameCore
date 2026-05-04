@@ -43,6 +43,10 @@ public record PlayerExt(@NotNull Player player) {
         return getGame() != null;
     }
 
+    public boolean isInGame(Class<? extends AbstractGame> gameClass){
+        return MCZJUGameCore.getPlayerManager().isPlayerInGame(this, gameClass);
+    }
+
     public @Nullable Party getParty(){
         // TODO
         return null;
