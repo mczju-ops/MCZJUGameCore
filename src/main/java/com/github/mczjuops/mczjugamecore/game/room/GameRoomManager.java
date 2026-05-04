@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.game.room;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+import org.bukkit.Bukkit;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -46,11 +47,13 @@ public class GameRoomManager {
      * 保存所有修改过的游戏地图
      */
     public void saveAllGameRoom(){
-        for (List<AbstractGameRoom> gameRoomList : gameRoomMap.values()) {
-            for (AbstractGameRoom gameRoom : gameRoomList) {
-                if (gameRoom.isModified()) gameRoom.save();
+        Bukkit.getScheduler().runTaskAsynchronously(MCZJUGameCore.getInstance(), () -> {
+            for (List<AbstractGameRoom> gameRoomList : gameRoomMap.values()) {
+                for (AbstractGameRoom gameRoom : gameRoomList) {
+                    if (gameRoom.isModified()) gameRoom.save();
+                }
             }
-        }
+        });
     }
 
     /**
