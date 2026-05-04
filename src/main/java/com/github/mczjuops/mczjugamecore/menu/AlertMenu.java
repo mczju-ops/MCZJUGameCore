@@ -17,6 +17,7 @@ public class AlertMenu extends Menu {
     public AlertMenu() {
         setSize(9);
         setName("确认菜单");
+        setDisplayName("确认菜单");
         setPermission("menu.default");
     }
 

@@ -70,7 +70,7 @@ protected void onGameStart() {
 @EventHandler
 public void onPlayerInteract(PlayerInteractEvent event) {
     // 原生的事件处理方法，当然，你需要检查玩家是否在你的游戏中
-    PlayerExt player = new PlayerExt(event.player); // 创建PlayerExt类对玩家进行包装
+    PlayerExt player = new PlayerExt(event.getPlayer()); // 创建PlayerExt类对玩家进行包装
     if (player.isInGame(ExampleGame.class)) {
         // 如果玩家正在你的游戏中
         ExampleGame game = (ExampleGame) player.getGame();
@@ -161,6 +161,105 @@ public void onEnable() {
 
 > 别忘了前面提到的创建游戏房间步骤，否则会提示无空闲房间
 
-## 更多文档
+## 进阶文档
 
-还有菜单相关的，正在加紧补充
+### 箱子菜单
+
+先继承Menu
+
+```java
+// ExampleMenu
+public class ExampleMenu extends Menu { }
+```
+
+再重写玩家点开菜单时执行的操作。一般玩家打开菜单时，你需要把代表选项的物品放到这个`inventory`里
+
+```java
+// ExampleMenu
+@Override
+public void open(@NotNull PlayerExt player, @NotNull Inventory inventory, Object... objects) {
+    ItemManager itemManager = MCZJUGameCore.getItemManager();
+    ItemStack item = itemManager.getItem(MGCMaterial.DEBUG_STICK.toString());
+    inventory.addItem(item);
+    player.sender().success("打开了Example菜单！");
+}
+```
+
+当玩家点击了某个物品，你就可以执行对应的操作了。
+
+```java
+// ExampleMenu
+@Override
+public void click(@NotNull InventoryClickEvent event) {
+    ItemManager itemManager = MCZJUGameCore.getItemManager();
+    ItemStack clickedItem = event.getCurrentItem();
+    String itemId = MGCMaterial.DEBUG_STICK.toString();
+    PlayerExt player = new PlayerExt((Player) event.getWhoClicked());
+    if (itemManager.is(clickedItem, itemId)){
+        player.giveItemIfDontHave(itemId);
+    }else {
+        player.sender().warn("你点到了空气ヾ(•ω•`)o");
+    }
+    player.player().closeInventory();
+}
+```
+
+最后，把你写好的菜单注册一下，就ok了。后面4个参数分别代表箱子唯一标识、箱子显示名、箱子容量、打开菜单所需权限
+
+> 没测试过容量能设置为多少，27和54肯定是行的，其它待测试。
+
+```java
+MenuFacade.registerMenu(new ExampleMenu(), "example_menu_id", "Example菜单", 27, "mgc.mgc");
+```
+
+打开这个菜单，可以用指令`menu example_menu_id`，或者用代码:
+
+```java
+MenuFacade.open(player, "example_menu_id");
+
+// 或者，还可以带一些参数，这些参数能在open时获取到
+MenuFacade.open(player.player(), "example_menu_id", 17, game);
+```
+
+> 另外，可以试一下`MenuFacade.alert`的功能，它能帮你加一个确认操作
+
+### 玩家死亡、退出事件处理和游戏等待等策略
+
+这几个处理方式类似，以玩家死亡策略说明：
+
+默认的处理策略是直接取消死亡事件。如果你的游戏中默认的死亡处理方法不好用，可以自己实现一个死亡处理策略：
+
+1. 新建一个类`ExamplePlayerDeathStrategy`，继承`AbstractPlayerDeathStrategy`。
+2. 重写`onPlayerDeath(PlayerExt player, PlayerDeathEvent event)`方法
+3. 在你的游戏类中重写下面的方法，声明用这个策略：
+```java
+// ExampleGame
+public @NotNull AbstractPlayerDeathStrategy getPlayerDeathStrategy(){
+    return new ExamplePlayerDeathStrategy(this);
+}
+```
+
+玩家退出策略、游戏等待策略也是类似，都是继承对应的抽象类，然后去游戏类中声明用哪个策略。
+
+> 如果你觉得自己的策略别人也可能用到，可以提PR到这个仓库，把代码直接放在这个框架里。
+> 其它人使用时，只需要在步骤3中，改成`new YourPlayerDeathStrategy(this)`
+
+### PlayerExt扩展函数
+
+为了方便小游戏的开发，player对象必须拥有`getParty`，`isInGame`等方法，但java中没有扩展函数的写法。
+
+所以，新增了一个`PlayerExt`类，只需要`new PlayerExt(player)`就可以把mc的`player`包装成功能更丰富的`player`
+
+`PlayerExt`本身不包含任何成员变量，只是负责调用各种`Manager`或各种`Util`，所以只要new时传入的player相同，他们就没任何区别。
+
+本框架大部分地方的`Player`都包装成了`PlayerExt`，一般直接用就可以。
+
+> 如果你觉得可以加一个好用的扩展函数，也可以写在这个框架里
+
+### 一些工具类说明
+
+详细说明见对应工具类的文档，这里仅列简介
+
+- `LocationSelector`: 可以调用它来选取坐标。用`PlayerExt`中的`selectLocation`方法调用。
+- `TextParser`: 用于搞彩色字符串
+- `Sender`: 它和它的实现类用于给各种对象发消息：包含队伍、游戏内所有玩家、日志等。Game类中已经集成了一个sender
