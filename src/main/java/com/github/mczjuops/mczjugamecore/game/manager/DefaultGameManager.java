@@ -56,6 +56,7 @@ public class DefaultGameManager implements AbstractGameManager {
             logger.info(STR."将房间\{gameRoom.getRoomName()}分配给游戏\{game.getName()}");
             game.setState(GameState.WAITING);
             gameList.add(game);
+            game.gameInit();
             return game;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             // 这一步应该不可能执行到，因为create前肯定register过，那个时候是能访问构造器的
