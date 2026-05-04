@@ -87,6 +87,7 @@ public class JsonGameRoom extends AbstractGameRoom {
             try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
                 gson.toJson(this, writer);
             }
+            logger.success(STR."成功保存地图 \{getGameName()} : \{getRoomName()}");
 
         } catch (IOException e) {
             logger.error(STR."无法加载地图 \{getGameName()} : \{getRoomName()}");

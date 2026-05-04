@@ -22,7 +22,7 @@ public abstract class AbstractGameRoom {
 
     private boolean modified = false;   // 是否修改过。设置为true，则使用指令，或服务终止时，将自动保存。
 
-    protected ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getName()}");
+    protected ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
 
     /**
      * 获取游戏房间的配置参数
