@@ -70,7 +70,7 @@ protected void onGameStart() {
 @EventHandler
 public void onPlayerInteract(PlayerInteractEvent event) {
     // 原生的事件处理方法，当然，你需要检查玩家是否在你的游戏中
-    PlayerExt player = new PlayerExt(event.player); // 创建PlayerExt类对玩家进行包装
+    PlayerExt player = new PlayerExt(event.getPlayer()); // 创建PlayerExt类对玩家进行包装
     if (player.isInGame(ExampleGame.class)) {
         // 如果玩家正在你的游戏中
         ExampleGame game = (ExampleGame) player.getGame();
@@ -161,6 +161,62 @@ public void onEnable() {
 
 > 别忘了前面提到的创建游戏房间步骤，否则会提示无空闲房间
 
-## 更多文档
+## 进阶文档
 
-还有菜单相关的，正在加紧补充
+### 箱子菜单
+
+先继承Menu
+
+```java
+// ExampleMenu
+public class ExampleMenu extends Menu { }
+```
+
+再重写玩家点开菜单时执行的操作。一般玩家打开菜单时，你需要把代表选项的物品放到这个`inventory`里
+
+```java
+// ExampleMenu
+@Override
+public void open(@NotNull PlayerExt player, @NotNull Inventory inventory, Object... objects) {
+    ItemManager itemManager = MCZJUGameCore.getItemManager();
+    ItemStack item = itemManager.getItem(MGCMaterial.DEBUG_STICK.toString());
+    inventory.addItem(item);
+    player.sender().success("打开了Example菜单！");
+}
+```
+
+当玩家点击了某个物品，你就可以执行对应的操作了。
+
+```java
+// ExampleMenu
+@Override
+public void click(@NotNull InventoryClickEvent event) {
+    ItemManager itemManager = MCZJUGameCore.getItemManager();
+    ItemStack clickedItem = event.getCurrentItem();
+    String itemId = MGCMaterial.DEBUG_STICK.toString();
+    PlayerExt player = new PlayerExt((Player) event.getWhoClicked());
+    if (itemManager.is(clickedItem, itemId)){
+        player.giveItemIfDontHave(itemId);
+    }else {
+        player.sender().warn("你点到了空气ヾ(•ω•`)o");
+    }
+    player.player().closeInventory();
+}
+```
+
+最后，把你写好的菜单注册一下，就ok了。后面4个参数分别代表箱子唯一标识、箱子显示名、箱子容量、打开菜单所需权限
+
+> 没测试过容量能设置为多少，27和54肯定是行的，其它待测试。
+
+```java
+MenuFacade.registerMenu(new ExampleMenu(), "example_menu_id", "Example菜单", 27, "mgc.mgc");
+```
+
+打开这个菜单，可以用指令`menu example_menu_id`，或者用代码:
+
+```java
+MenuFacade.open(player, "example_menu_id");
+
+// 或者，还可以带一些参数，这些参数能在open时获取到
+MenuFacade.open(player.player(), "example_menu_id", 17, game);
+```
