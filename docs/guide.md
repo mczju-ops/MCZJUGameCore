@@ -220,3 +220,25 @@ MenuFacade.open(player, "example_menu_id");
 // 或者，还可以带一些参数，这些参数能在open时获取到
 MenuFacade.open(player.player(), "example_menu_id", 17, game);
 ```
+
+### 玩家死亡、退出事件处理和游戏等待等策略
+
+这几个处理方式类似，以玩家死亡策略说明：
+
+默认的处理策略是直接取消死亡事件。如果你的游戏中默认的死亡处理方法不好用，可以自己实现一个死亡处理策略：
+
+1. 新建一个类`ExamplePlayerDeathStrategy`，继承`AbstractPlayerDeathStrategy`。
+2. 重写`onPlayerDeath(PlayerExt player, PlayerDeathEvent event)`方法
+3. 在你的游戏类中重写下面的方法，声明用这个策略：
+```java
+// ExampleGame
+public @NotNull AbstractPlayerDeathStrategy getPlayerDeathStrategy(){
+    return new ExamplePlayerDeathStrategy(this);
+}
+```
+
+玩家退出策略、游戏等待策略也是类似，都是继承对应的抽象类，然后去游戏类中声明用哪个策略。
+
+> 如果你觉得自己的策略别人也可能用到，可以提PR到这个仓库，把代码直接放在这个框架里。
+> 其它人使用时，只需要在步骤3中，改成`new YourPlayerDeathStrategy(this)`
+
