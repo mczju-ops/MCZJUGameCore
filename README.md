@@ -4,6 +4,10 @@
 
 下面称基于本插件开发的小游戏插件为`具体插件`，一些说明以起床战争为例。
 
+## 使用教程
+
+[quickstart](./docs/guide.md)
+
 ## 设计思路
 
 - 模仿paper api，所有组件都需要注册到组件管理器(manager)中。具体插件只用和这些manager打交道(类似Bukkit中有很多manager)
