@@ -221,6 +221,8 @@ MenuFacade.open(player, "example_menu_id");
 MenuFacade.open(player.player(), "example_menu_id", 17, game);
 ```
 
+> 另外，可以试一下`MenuFacade.alert`的功能，它能帮你加一个确认操作
+
 ### 玩家死亡、退出事件处理和游戏等待等策略
 
 这几个处理方式类似，以玩家死亡策略说明：
