@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.command;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -26,6 +27,9 @@ public class MGCCommand implements CommandExecutor, TabCompleter {
         switch (args[0]) {
             case "join" -> {
                 join(player, args);
+            }
+            case "leave" ->{
+                MCZJUGameCore.getPlayerManager().leaveGame(player, PlayerQuitReason.COMMAND_QUIT);
             }
             default -> {
             }

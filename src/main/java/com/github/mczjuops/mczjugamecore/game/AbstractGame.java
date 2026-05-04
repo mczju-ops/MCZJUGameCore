@@ -4,8 +4,14 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.game.strategy.wait.GameWaitStrategy;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import com.github.mczjuops.mczjugamecore.player.strategy.AbstractPlayerDeathStrategy;
+import com.github.mczjuops.mczjugamecore.player.strategy.AbstractPlayerQuitStrategy;
+import com.github.mczjuops.mczjugamecore.player.strategy.impl.DefaultPlayerDeathStrategy;
+import com.github.mczjuops.mczjugamecore.player.strategy.impl.DefaultPlayerQuitStrategy;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
+import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.GameSender;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -23,7 +29,9 @@ public abstract  class AbstractGame {
      */
     public AbstractGame(){}
 
-    protected Sender sender = new GameSender(this);
+    protected final Sender sender = new GameSender(this);
+
+    protected final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
 
     /**
      * 获取游戏名称，请勿和其它游戏重名。为方便，这个也当作display name。
@@ -36,6 +44,22 @@ public abstract  class AbstractGame {
      * @return  游戏等待逻辑
      */
     public abstract GameWaitStrategy getGameWaitStrategy();
+
+    /**
+     * 获取玩家退出处理策略
+     * @return  玩家退出处理策略
+     */
+    public @NotNull AbstractPlayerQuitStrategy getPlayerQuitStrategy(){
+        return new DefaultPlayerQuitStrategy(this);
+    }
+
+    /**
+     * 玩家死亡的处理策略
+     * @return 玩家死亡的处理策略
+     */
+    public @NotNull AbstractPlayerDeathStrategy getPlayerDeathStrategy(){
+        return new DefaultPlayerDeathStrategy(this);
+    }
 
     /**
      * 获取加入了游戏的玩家，在onGameInit
@@ -140,5 +164,9 @@ public abstract  class AbstractGame {
 
     public void setGameRoom(AbstractGameRoom gameRoom) {
         this.gameRoom = gameRoom;
+    }
+
+    public Sender sender(){
+        return sender;
     }
 }

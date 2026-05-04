@@ -1,6 +1,7 @@
 package com.github.mczjuops.mczjugamecore.player;
 
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -28,8 +29,14 @@ public interface AbstractPlayerManager {
      */
     public void joinGame(PlayerExt player, AbstractGame game);
 
-    public void leaveGame(PlayerExt player);
+    public void leaveGame(PlayerExt player, PlayerQuitReason reason);
 
     public AbstractGame getPlayerGame(PlayerExt player);
+
+    /**
+     * 游戏结束，或者房间意外销毁，调用本代码，移除所有玩家。仅由GameManager调用
+     * @param game 游戏
+     */
+    void removeAllPlayer(AbstractGame game);
 
 }

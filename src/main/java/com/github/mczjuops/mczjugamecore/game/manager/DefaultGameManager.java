@@ -7,6 +7,7 @@ import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomState;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
+import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,7 +16,7 @@ import java.util.*;
 
 public class DefaultGameManager implements AbstractGameManager {
 
-    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getName()}");
+    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
 
     private final Map<Class<? extends AbstractGame>, Class<? extends AbstractGameRoom>> registerGameMap = new HashMap<>();
     private final Map<String, Class<? extends AbstractGame>> gameNameMap = new HashMap<>();
@@ -89,20 +90,22 @@ public class DefaultGameManager implements AbstractGameManager {
 
     private void solveGameEnd(AbstractGame game){
         game.setState(GameState.END);
-        for (PlayerExt player : MCZJUGameCore.getPlayerManager().getPlayers(game)) {
-            MCZJUGameCore.getPlayerManager().leaveGame(player);
-        }
+        MCZJUGameCore.getPlayerManager().removeAllPlayer(game);
+        game.getGameRoom().setState(GameRoomState.READY);
+        gameList.remove(game);
     }
 
     @Override
     public void joinGame(PlayerExt player, String gameName) {
-        // 1. 基础状态校验
-        if (player.isInGame()) {
-            player.sender().warn("请退出当前游戏，再进行下一个游戏！");
-            return;
-        }
         if (player.isInParty() && !player.isPartyLeader()) {
             player.sender().warn("只有队长能开启游戏");
+            return;
+        }
+
+        if (player.isInGame()) {
+            // 直接进行下一个游戏
+
+            player.sender().warn("请退出当前游戏，再进行下一个游戏！");
             return;
         }
 
@@ -158,21 +161,19 @@ public class DefaultGameManager implements AbstractGameManager {
             party.getAllPlayer().forEach(p -> MCZJUGameCore.getPlayerManager().joinGame(p, game));
 
             if (game.getGameWaitStrategy().onPartyJoin(party)) {
-                party.sender().info(STR."加入游戏\{game.getName()}");
                 return true;
             } else {
                 // 回滚：全员退出
-                party.getAllPlayer().forEach(p -> MCZJUGameCore.getPlayerManager().leaveGame(p));
+                party.getAllPlayer().forEach(p -> MCZJUGameCore.getPlayerManager().leaveGame(p, PlayerQuitReason.JOIN_FAIL));
                 return false;
             }
         } else {
             // 单人加入
             MCZJUGameCore.getPlayerManager().joinGame(player, game);
             if (game.getGameWaitStrategy().onPlayerJoin(player)) {
-                player.sender().info(STR."加入游戏\{game.getName()}");
                 return true;
             } else {
-                MCZJUGameCore.getPlayerManager().leaveGame(player);
+                MCZJUGameCore.getPlayerManager().leaveGame(player, PlayerQuitReason.JOIN_FAIL);
                 return false;
             }
         }
