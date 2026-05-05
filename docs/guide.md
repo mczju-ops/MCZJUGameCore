@@ -206,7 +206,7 @@ public void click(@NotNull InventoryClickEvent event) {
 
 最后，把你写好的菜单注册一下，就ok了。后面4个参数分别代表箱子唯一标识、箱子显示名、箱子容量、打开菜单所需权限
 
-> 没测试过容量能设置为多少，27和54肯定是行的，其它待测试。
+> 容量填9的倍数，最大54
 
 ```java
 MenuFacade.registerMenu(new ExampleMenu(), "example_menu_id", "Example菜单", 27, "mgc.mgc");
