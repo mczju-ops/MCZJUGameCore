@@ -114,8 +114,14 @@ public class GameRoomSettingMenu extends Menu {
         playerEditingMap.put(player, gameRoom); // 标记玩家在编辑这个房间
         Map<String, Class<?>> allFields = gameRoom.getAllFields();
         // TODO 字段太多时，需要做翻页功能
+        AbstractGameRoom finalGameRoom = gameRoom;
         allFields.forEach((name, type) ->{
             Material m;
+            Object value = finalGameRoom.getField(name, type);
+            String valueStr = "空";
+            if (value != null){
+                valueStr = value.toString();
+            }
             if (Location.class.isAssignableFrom(type)){
                 m = Material.COMPASS;
             }else {
@@ -128,6 +134,7 @@ public class GameRoomSettingMenu extends Menu {
             itemMeta.displayName(TextParser.parse(name));
             ArrayList<Component> lore = new ArrayList<>();
             lore.add(TextParser.parse(STR."类型：\{type.getName()}"));
+            lore.add(TextParser.parse(STR."值：\{valueStr}"));
             itemMeta.lore(lore);
             itemStack.setItemMeta(itemMeta);
             inventory.addItem(itemStack);
