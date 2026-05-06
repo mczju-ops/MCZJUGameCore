@@ -124,11 +124,14 @@ protected void onGameEnd() {
 ```java
 public class ExampleGameRoom extends JsonGameRoom {
     public String valueStr;
-    public int valueInt;
+    public Integer valueInt;
 
     public Location location;
 }
 ```
+> 注意，数据类属性应全部采用包装类(如Integer、Boolean，而非int、boolean)
+> 目前只支持基本类型和Location
+
 然后，你就可以进mc，用交互式的方法，创建房间实例和编辑房间了(当然在你完成代码后才能编辑):
 
 进入游戏后，输入指令`/menu room example room1`
