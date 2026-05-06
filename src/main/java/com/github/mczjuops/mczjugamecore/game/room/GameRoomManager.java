@@ -47,13 +47,15 @@ public class GameRoomManager {
      * 保存所有修改过的游戏地图
      */
     public void saveAllGameRoom(){
-        Bukkit.getScheduler().runTaskAsynchronously(MCZJUGameCore.getInstance(), () -> {
-            for (List<AbstractGameRoom> gameRoomList : gameRoomMap.values()) {
-                for (AbstractGameRoom gameRoom : gameRoomList) {
-                    if (gameRoom.isModified()) gameRoom.save();
-                }
+        Bukkit.getScheduler().runTaskAsynchronously(MCZJUGameCore.getInstance(), this::saveAllGameRoomDirectly);
+    }
+
+    public void saveAllGameRoomDirectly(){
+        for (List<AbstractGameRoom> gameRoomList : gameRoomMap.values()) {
+            for (AbstractGameRoom gameRoom : gameRoomList) {
+                if (gameRoom.isModified()) gameRoom.save();
             }
-        });
+        }
     }
 
     /**
