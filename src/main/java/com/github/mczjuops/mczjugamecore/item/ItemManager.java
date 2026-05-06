@@ -3,10 +3,8 @@ package com.github.mczjuops.mczjugamecore.item;
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -80,11 +78,8 @@ public class ItemManager {
      * @param item 物品实例
      * @return 物品 ID，如果没有则返回 null
      */
-    public String getItemId(ItemStack item) {
-        if (item == null || item.getItemMeta() == null) return null;
-
-        PersistentDataContainer container = item.getItemMeta().getPersistentDataContainer();
-        return container.get(key, PersistentDataType.STRING);
+    public @Nullable String getItemId(ItemStack item) {
+        return item.getPersistentDataContainer().get(key, PersistentDataType.STRING);
     }
 
     /**
