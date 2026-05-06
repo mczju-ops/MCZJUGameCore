@@ -38,7 +38,7 @@ public class MGCCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean join(PlayerExt player, @NotNull String []args){
-        if (args.length < 1) return false;
+        if (args.length < 2) return false;
         MCZJUGameCore.getGameManager().joinGame(player, args[1]);
         return true;
     }
