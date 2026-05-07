@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore;
 
+import com.github.mczjuops.mczjugamecore.command.BrigadierCommand;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomManager;
@@ -13,9 +14,16 @@ import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.party.PartyManager;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+import com.mojang.brigadier.tree.CommandNode;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 public final class MCZJUGameCore extends JavaPlugin {
 
@@ -105,4 +113,51 @@ public final class MCZJUGameCore extends JavaPlugin {
         return getMGCConfig().getBoolean("debug");
     }
 
+    private void registerCommands(BrigadierCommand... commands) {
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            Commands registrar = event.registrar();
+            for (BrigadierCommand cmd : commands) {
+                try {
+                    LiteralCommandNode<CommandSourceStack> root = cmd.getNode();
+
+                    // 主命令 + 顶层 aliases
+                    registrar.register(root, cmd.getDescription(), cmd.getAliases());
+                    String aliases = cmd.getAliases().isEmpty()
+                            ? "none"
+                            : String.join(", ", cmd.getAliases());
+                    getLogger().info("Brigadier command registered: /%s | aliases: %s".formatted(getName(), aliases));
+
+                    // 子命令重定向别名（/p list -> /pl）
+                    for (BrigadierCommand.RedirectAlias ra : cmd.getRedirectAliases()) {
+                        CommandNode<CommandSourceStack> target = resolvePath(root, ra.path());
+                        LiteralCommandNode<CommandSourceStack> aliasNode =
+                                Commands.literal(ra.name())
+                                        .requires(target.getRequirement()) // 继承权限检查
+                                        .redirect(target)
+                                        .build();
+                        registrar.register(aliasNode, ra.description());
+                        getLogger().info("Brigadier redirect alias registered: /%s -> /%s ".formatted(ra.name(), cmd.getName())
+                                + String.join(" ", ra.path()));
+                    }
+                } catch (Exception e) {
+                    getLogger().warning("Failed to register: /%s - %s".formatted(cmd.getName(), e.getMessage()));
+                }
+            }
+        });
+    }
+
+    private static CommandNode<CommandSourceStack> resolvePath(
+            CommandNode<CommandSourceStack> root, List<String> path
+    ) {
+        CommandNode<CommandSourceStack> current = root;
+        for (String segment : path) {
+            CommandNode<CommandSourceStack> next = current.getChild(segment);
+            if (next == null) {
+                throw new IllegalArgumentException(
+                        "Redirect path segment not found: '%s' under '%s'".formatted(segment, current.getName()));
+            }
+            current = next;
+        }
+        return current;
+    }
 }
