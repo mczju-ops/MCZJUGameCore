@@ -164,67 +164,118 @@ public void onEnable() {
 
 > 别忘了前面提到的创建游戏房间步骤，否则会提示无空闲房间
 
+---
+
 ## 进阶文档
 
-### 箱子菜单
+### 基于虚拟箱子的菜单
 
-先继承Menu
+当你要添加一种新菜单时，通常需要做这三件事情：
+- 创建一个 `Menu` 的子类
+- 在插件启动时注册
+- 每当需要为玩家开启时，新建这个子类的实例并调用 `open()`
 
-```java
-// ExampleMenu
-public class ExampleMenu extends Menu { }
-```
+> 如果菜单不复杂，还可以直接用 MGC 注册的 `/menu` 来打开，见下方说明
 
-再重写玩家点开菜单时执行的操作。一般玩家打开菜单时，你需要把代表选项的物品放到这个`inventory`里
+下面是一个简单的例子。你也可以阅读示例插件 `MGC-example-plugin` 的源码，看看其中的例子、在本地改一改。
 
-```java
-// ExampleMenu
-@Override
-public void open(@NotNull PlayerExt player, @NotNull Inventory inventory, Object... objects) {
-    ItemManager itemManager = MCZJUGameCore.getItemManager();
-    ItemStack item = itemManager.getItem(MGCMaterial.DEBUG_STICK.toString());
-    inventory.addItem(item);
-    player.sender().success("打开了Example菜单！");
-}
-```
-
-当玩家点击了某个物品，你就可以执行对应的操作了。
+首先创建 `Menu` 的子类，并添加构造方法。下面展示的是固定写法，构造方法除了固定的 `Player`，
+有需要时还可以传入更多（字段注入）。
 
 ```java
 // ExampleMenu
-@Override
-public void click(@NotNull InventoryClickEvent event) {
-    ItemManager itemManager = MCZJUGameCore.getItemManager();
-    ItemStack clickedItem = event.getCurrentItem();
-    String itemId = MGCMaterial.DEBUG_STICK.toString();
-    PlayerExt player = new PlayerExt((Player) event.getWhoClicked());
-    if (itemManager.is(clickedItem, itemId)){
-        player.giveItemIfDontHave(itemId);
-    }else {
-        player.sender().warn("你点到了空气ヾ(•ω•`)o");
+public class ExampleMenu extends Menu {
+    
+    public ExampleMenu(Player player) {
+        super(ExampleMenu.class, player);
     }
-    player.player().closeInventory();
 }
 ```
 
-最后，把你写好的菜单注册一下，就ok了。后面4个参数分别代表箱子唯一标识、箱子显示名、箱子容量、打开菜单所需权限
+然后，通过重写 `setup()` 来决定，
+当系统为玩家打开此菜单时，插件需要在菜单里填充哪些“物品”，以及这个物品在被点击时是否需要触发回调逻辑。
 
-> 容量填9的倍数，最大54
+当你想在某个槽位（从 0 开始，到 size - 1，不允许在这个范围外）放一个物品，可以使用 `Menu` 中定义的 `setSlot`，它有两个版本：
+
+- 版本一：`setSlot(int slot, ItemStack display)` 用于在这个槽位填充一个物品，无回调，也就是纯展示信息用的
+- 版本二：`setSlot(int slot, ItemStack display, SlotAction action)` 在版本一的基础上，还能设置，当玩家点击后会触发什么逻辑
+
+下面是一个简单的示例，会在菜单中的第 1 格放一个纯展示物品，在第 9 格放一个点了会播放声音的按钮
 
 ```java
-MenuFacade.registerMenu(new ExampleMenu(), "example_menu_id", "Example菜单", 27, "mgc.mgc");
+// ExampleMenu
+@Override
+public void setup() {
+    inventory.clear(); // 如果这个菜单支持打开期间刷新，需要先清空。这个操作不影响玩家自己的物品栏
+
+    setSlot(
+            0,
+            ItemBuilder.of(Material.CLOCK)
+                    .customName("<green>这是菜单的第 1 格！")
+                    .lore(List.of(
+                            "<gray>这个格子没有设置回调，因此点击不会发生任何事情！"
+                    ))
+                    .build()
+    );
+
+    setSlot(
+            8,
+            ItemBuilder.of(Material.CLOCK)
+                    .customName("<green>这是菜单的第 9 格！")
+                    .lore(List.of(
+                            "<yellow><b>点击左键</b> 播放升级音效",
+                            "<yellow><b>点击右键</b> 播放僵尸叫声",
+                            "<yellow><b>按下丢弃键</b> 播放玻璃破碎声"
+                    ))
+                    .glint(true)
+                    .build(),
+            (player, event) -> {
+                Player p = player.player();
+                switch (event.getClick()) {
+                    case LEFT -> p.playSound(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
+                    case RIGHT -> p.playSound(p, Sound.ENTITY_ZOMBIE_HURT, 1.0f, 1.0f);
+                    case DROP -> p.playSound(p, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.0f);
+                }
+            }
+    );
+}
 ```
 
-打开这个菜单，可以用指令`menu example_menu_id`，或者用代码:
+菜单一定要先向 MGC 注册，否则是无法打开的。注册的时候会告诉 MGC，这个菜单的标题是什么，有几行，打开它需要什么权限节点。
+
+注册方式如下，由主类的 `onEnable()` 调用 `registerMenu()`。这四个参数分别是这个菜单的类、显示在左上角的标题（支持 `MiniMessage`，不过给它设置颜色似乎不好看）、行数（在 1 ~ 6 之间）、权限节点。
 
 ```java
-MenuFacade.open(player, "example_menu_id");
-
-// 或者，还可以带一些参数，这些参数能在open时获取到
-MenuFacade.open(player.player(), "example_menu_id", 17, game);
+@Override
+public void onEnable() {
+    MenuFacade.registerMenu(ExampleMenu.class, "示例菜单", 4, "mgc.mgc");
+    // 其他启用时逻辑
+}
 ```
 
-> 另外，可以试一下`MenuFacade.alert`的功能，它能帮你加一个确认操作
+为一个玩家打开这个菜单的例子（最简例子，有需要时可以传入除 `player` 外的其他参数）：
+
+```java
+private void openMenuFor(Player player) {
+    new ExampleMenu(player).open();
+}
+```
+MGC 还提供了 `/menu` 这个命令，可以直接打开菜单。 （相关信息待补充，先等 `/menu` 写好）
+
+另外，MGC 还内置了一个好用的 confirm 菜单，可以加一个确认操作，需要玩家额外点击一次“确认”，
+使用示例（比如执行某个删除操作时，需要玩家确认一下）：
+
+```java
+private void confirmDelete(Player player) {
+    var gui = new AlertMenu(player.player(), () -> {
+        player.sender().info("<gold>你点击了确认，这下真的删除了！");
+        // 执行删除逻辑
+    });
+    gui.open();
+}
+```
+
+---
 
 ### 玩家死亡、退出事件处理和游戏等待等策略
 
@@ -264,5 +315,8 @@ public @NotNull AbstractPlayerDeathStrategy getPlayerDeathStrategy(){
 详细说明见对应工具类的文档，这里仅列简介
 
 - `LocationSelector`: 可以调用它来选取坐标。用`PlayerExt`中的`selectLocation`方法调用。
-- `TextParser`: 用于搞彩色字符串
-- `Sender`: 它和它的实现类用于给各种对象发消息：包含队伍、游戏内所有玩家、日志等。Game类中已经集成了一个sender
+- `TextParser`: 用于将 `MiniMessage` 格式的字符串解析成 `Component`，其能力详见[官方文档](https://docs.papermc.io/adventure/minimessage/format/)。
+- `Sender`: 它和它的实现类用于给各种对象发消息：包含队伍、游戏内所有玩家、日志等。Game类中已经集成了一个sender。
+- `ItemBuilder`: 便捷构造一个 `ItemStack`，用于生成给玩家的道具或是菜单中的图标都很方便，详见对应文档。
+- `DialogBuilder`: 交互非常友好，可以作为虚拟箱子菜单的辅助，其能力详见 [wiki](https://zh.minecraft.wiki/w/%E5%AF%B9%E8%AF%9D%E6%A1%86%E5%AE%9A%E4%B9%89%E6%A0%BC%E5%BC%8F)。
+Paper 原生 API 非常复杂，这个工具封装了部分功能，详见对应文档。
