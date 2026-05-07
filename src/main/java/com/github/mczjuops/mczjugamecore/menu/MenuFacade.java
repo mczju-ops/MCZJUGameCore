@@ -6,6 +6,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.Range;
 
 import java.util.HashMap;
@@ -52,9 +53,13 @@ public class MenuFacade implements Listener {
 
     @EventHandler
     public void onClick(InventoryClickEvent event){
-        if (!(event.getView().getTopInventory().getHolder() instanceof Menu menu)) return;
+        Inventory top = event.getView().getTopInventory();
+        if (!(top.getHolder() instanceof Menu menu)) return;
+
         event.setCancelled(true);
-        menu.handleClick(event);
+
+        int slot = event.getRawSlot();
+        if (slot >= 0 && slot < top.getSize()) menu.handleClick(event);
     }
 
     @EventHandler
