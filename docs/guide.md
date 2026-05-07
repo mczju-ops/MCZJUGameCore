@@ -315,5 +315,8 @@ public @NotNull AbstractPlayerDeathStrategy getPlayerDeathStrategy(){
 详细说明见对应工具类的文档，这里仅列简介
 
 - `LocationSelector`: 可以调用它来选取坐标。用`PlayerExt`中的`selectLocation`方法调用。
-- `TextParser`: 用于搞彩色字符串
-- `Sender`: 它和它的实现类用于给各种对象发消息：包含队伍、游戏内所有玩家、日志等。Game类中已经集成了一个sender
+- `TextParser`: 用于将 `MiniMessage` 格式的字符串解析成 `Component`，其能力详见[官方文档](https://docs.papermc.io/adventure/minimessage/format/)。
+- `Sender`: 它和它的实现类用于给各种对象发消息：包含队伍、游戏内所有玩家、日志等。Game类中已经集成了一个sender。
+- `ItemBuilder`: 便捷构造一个 `ItemStack`，用于生成给玩家的道具或是菜单中的图标都很方便，详见对应文档。
+- `DialogBuilder`: 交互非常友好，可以作为虚拟箱子菜单的辅助，其能力详见 [wiki](https://zh.minecraft.wiki/w/%E5%AF%B9%E8%AF%9D%E6%A1%86%E5%AE%9A%E4%B9%89%E6%A0%BC%E5%BC%8F)。
+Paper 原生 API 非常复杂，这个工具封装了部分功能，详见对应文档。
