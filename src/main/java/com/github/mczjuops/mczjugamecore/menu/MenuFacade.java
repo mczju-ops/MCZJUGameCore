@@ -1,63 +1,73 @@
 package com.github.mczjuops.mczjugamecore.menu;
 
-import org.bukkit.entity.Player;
+import com.github.mczjuops.mczjugamecore.utils.TextParser;
+import net.kyori.adventure.text.Component;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryType;
-import org.jetbrains.annotations.NotNull;
+import org.bukkit.inventory.Inventory;
+import org.jetbrains.annotations.Range;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MenuFacade implements Listener {
-    private static Menu head;
-    public static void open(Player player, String name, Object... args){
-        if (head != null) head.solveOpen(name, player, args);
+
+    private static final Map<Class<? extends Menu>, MenuMeta> registry = new HashMap<>();
+
+    /**
+     * 注册一个菜单
+     * 注册的唯一目的，是后续创建时不需要注入这些信息
+     * 如果需要修改信息（比如某个菜单，不同情况下标题不同），可以注入额外字段并在类内做具体处理
+     */
+    public static void registerMenu(Class<? extends Menu> menuClass, String title, @Range(from = 1, to = 6) int rows, String permission) {
+        if (permission == null) permission = ""; // 还是 default ?
+        MenuMeta meta = new MenuMeta(
+                TextParser.parse(title),
+                rows,
+                permission
+        );
+        registry.put(menuClass, meta);
     }
 
-    protected static void add(Menu menu){
-        if (head == null) {
-            head = new AlertMenu();
-        }
-        Menu ptr = head;
-        while (ptr.getNext() != null){
-            ptr = ptr.getNext();
-        }
-        ptr.setNext(menu);
+    // 下面三个方法，用于每次创建 Menu 子类实例时获取
+    public static Component getTitle(Class<? extends Menu> menuClass) {
+        MenuMeta meta = registry.get(menuClass);
+        return meta != null ? meta.title() : null;
     }
 
-    public static void registerMenu(Menu menu, String name, String displayName, int size, String permission){
-        menu.setName(name);
-        menu.setSize(size);
-        menu.setPermission(permission);
-        menu.setDisplayName(displayName);
-        add(menu);
+    public static int getRows(Class<? extends Menu> menuClass) {
+        MenuMeta meta = registry.get(menuClass);
+        return meta != null ? meta.rows() : 0;
+    }
+
+    public static String getPermission(Class<? extends Menu> menuClass) {
+        MenuMeta meta = registry.get(menuClass);
+        return meta != null ? meta.permission() : null;
+    }
+
+    public static boolean registered(Class<? extends Menu> menuClass) {
+        return registry.containsKey(menuClass);
     }
 
     @EventHandler
-    public void click(InventoryClickEvent event){
-        if (event.getInventory().getType() != InventoryType.CHEST) return;
-        if (head != null) head.solveClick(event);
+    public void onClick(InventoryClickEvent event){
+        Inventory top = event.getView().getTopInventory();
+        if (!(top.getHolder() instanceof Menu menu)) return;
+
+        event.setCancelled(true);
+
+        int slot = event.getRawSlot();
+        if (slot >= 0 && slot < top.getSize()) menu.handleClick(event);
     }
 
     @EventHandler
-    public void click2(InventoryClickEvent event){
-        if (head == null) return;
-        if (event.getInventory().getType() != InventoryType.CHEST) return;
-        if (head.isPlayerInteractWithMenu(event.getWhoClicked())){
-            event.setCancelled(true);
-        }
+    public void onClose(InventoryCloseEvent event){
+        if (!(event.getView().getTopInventory().getHolder() instanceof Menu menu)) return;
+        menu.handleClose();
     }
 
-    @EventHandler
-    public void close(InventoryCloseEvent event){
-        if (event.getInventory().getType() != InventoryType.CHEST) return;
-        if (head != null) head.close(event);
-    }
-
-    public static void alert(@NotNull Player player, @NotNull Runnable callback){
-        AlertMenu.callbackMap.put(player, callback);
-        MenuFacade.open(player, "确认菜单");
-    }
-
-
+    // 内部数据类，便于把注册信息存储到 Map
+    private record MenuMeta(Component title, int rows, String permission) {}
 }
