@@ -64,7 +64,6 @@ public class GameRoomSettingMenu extends Menu {
                 gameRoom.setModified(true);
             });
         } else {
-            player.player().closeInventory();
             DialogBuilder.of("输入值")
                     .emptyLine()
                     .emptyLine()
