@@ -1,6 +1,7 @@
 package com.github.mczjuops.mczjugamecore;
 
 import com.github.mczjuops.mczjugamecore.command.BrigadierCommand;
+import com.github.mczjuops.mczjugamecore.command.partycommand.PartyCommand;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomManager;
@@ -55,6 +56,10 @@ public final class MCZJUGameCore extends JavaPlugin {
         MenuInitializer.initialize();
         ListenerInitializer.initialize();
         ItemInitializer.initialize();
+
+        registerCommands(
+                new PartyCommand()
+        );
     }
 
     @Override
@@ -125,16 +130,16 @@ public final class MCZJUGameCore extends JavaPlugin {
                     String aliases = cmd.getAliases().isEmpty()
                             ? "none"
                             : String.join(", ", cmd.getAliases());
-                    getLogger().info("Brigadier command registered: /%s | aliases: %s".formatted(getName(), aliases));
+                    getLogger().info("Brigadier command registered: /%s | aliases: %s".formatted(cmd.getName(), aliases));
 
                     // 子命令重定向别名（/p list -> /pl）
                     for (BrigadierCommand.RedirectAlias ra : cmd.getRedirectAliases()) {
                         CommandNode<CommandSourceStack> target = resolvePath(root, ra.path());
-                        LiteralCommandNode<CommandSourceStack> aliasNode =
-                                Commands.literal(ra.name())
-                                        .requires(target.getRequirement()) // 继承权限检查
-                                        .redirect(target)
-                                        .build();
+                        var builder = Commands.literal(ra.name()).requires(target.getRequirement());
+                        if (target.getCommand() != null) {
+                            builder.executes(target.getCommand()); // 为了处理 /p list 这种后面没有更多参数的情况
+                        }
+                        LiteralCommandNode<CommandSourceStack> aliasNode = builder.redirect(target).build();
                         registrar.register(aliasNode, ra.description());
                         getLogger().info("Brigadier redirect alias registered: /%s -> /%s ".formatted(ra.name(), cmd.getName())
                                 + String.join(" ", ra.path()));
