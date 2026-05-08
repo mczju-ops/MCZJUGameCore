@@ -1,7 +1,9 @@
 package com.github.mczjuops.mczjugamecore.command.partycommand.subcommands;
 
+import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.command.partycommand.PartySubCommands;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import com.github.mczjuops.mczjugamecore.player.party.DisbandResult;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -12,34 +14,34 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.stream.Collectors;
+import java.util.List;
 
-public class ListCommand extends PartySubCommands {
+public class DisbandCommand extends PartySubCommands {
 
     @Override
     public String getName() {
-        return "list";
+        return "disband";
     }
 
     @Override
     public String getUsage() {
-        return "/party list";
+        return "/party disband";
     }
 
     @Override
     public String getDescription() {
-        return "查看当前队伍成员信息";
+        return "解散当前队伍";
     }
 
     @Override
     public void register(LiteralArgumentBuilder<CommandSourceStack> parent) {
         parent.then(
                 Commands.literal(getName())
-                        .executes(this::executeList)
+                        .executes(this::executeDisband)
         );
     }
 
-    private int executeList(CommandContext<CommandSourceStack> ctx) {
+    private int executeDisband(CommandContext<CommandSourceStack> ctx) {
         CommandSender sender = ctx.getSource().getSender();
         if (!(sender instanceof Player p)) {
             sender.sendMessage(Component.text("该命令只能由玩家执行"));
@@ -48,22 +50,27 @@ public class ListCommand extends PartySubCommands {
 
         PlayerExt player = new PlayerExt(p);
         Party party = player.getParty();
-        if (party == null) {
-            player.sender().warn("未处于队伍中！");
-            return 0;
+        List<PlayerExt> members = List.of();
+        if (party != null) {
+            members = party.getMembers();
         }
 
-        var members = party.getMembers();
-        var leader = party.getLeader();
-        String memberList = members.stream()
-                .filter(m -> !m.equals(leader))
-                .map(PlayerExt::getDisplayName)
-                .collect(Collectors.joining(" "));
-
-        player.sender().info("<blue><b>队伍信息</b>（%d）".formatted(members.size() + 1));
-        player.sender().info("<blue>队长：%s".formatted(leader.getDisplayName()));
-        player.sender().info("<blue>成员：%s".formatted(memberList));
-
-        return Command.SINGLE_SUCCESS;
+        DisbandResult result = MCZJUGameCore.getPartymanager().disband(player);
+        return switch (result) {
+            case NOT_IN_PARTY -> {
+                player.sender().warn("未处于队伍中！");
+                yield 0;
+            }
+            case NOT_LEADER -> {
+                player.sender().warn("只有队长才能解散队伍！");
+                yield 0;
+            }
+            case SUCCESS -> {
+                player.sender().warn("<blue>成功解散队伍");
+                members.forEach(member
+                        -> member.sender().info("<blue>%s解散了队伍".formatted(player.getDisplayName())));
+                yield Command.SINGLE_SUCCESS;
+            }
+        };
     }
 }

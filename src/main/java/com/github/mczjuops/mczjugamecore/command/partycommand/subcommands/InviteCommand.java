@@ -30,12 +30,12 @@ public class InviteCommand extends PartySubCommands {
 
     @Override
     public String getUsage() {
-        return "invite <玩家>";
+        return "/party invite <玩家>";
     }
 
     @Override
     public String getDescription() {
-        return "邀请一位玩家组队或加入当前队伍";
+        return "邀请玩家组队或邀请玩家加入当前队伍";
     }
 
     @Override
@@ -82,17 +82,18 @@ public class InviteCommand extends PartySubCommands {
         return switch (result) {
             case SUCCESS_AS_LEADER -> {
                 Party party = inviter.getParty();
-                if (party != null) {
-                    party.sender().info("<blue>%s已邀请%s加入队伍，对方可以在60秒内接受".formatted(
-                            inviter.getDisplayName(), invitee.getDisplayName()
-                    ));
-                }
+                assert party != null;
+                inviter.sender().info("<blue>已邀请%s加入队伍，对方可以在60秒内接受".formatted(invitee.getDisplayName()));
+                party.getMembers().forEach(member
+                        -> member.sender().info("<blue>%s已邀请%s加入队伍，对方可以在60秒内接受".formatted(
+                                inviter.getDisplayName(), invitee.getDisplayName()
+                        )));
 
                 invitee.sender().info("""
                                 <blue>%s邀请你加入队伍，\
                                 <hover:show_text:"<yellow>点击发送/party accept %s</yellow>">\
                                 <click:run_command:party accept %s>\
-                                <u>点击接受
+                                <u>点击接受\
                                 """
                                 .formatted(inviter.getDisplayName(), inviter.getName(), inviter.getName())
                 );
@@ -101,21 +102,25 @@ public class InviteCommand extends PartySubCommands {
             }
             case SUCCESS_AS_MEMBER -> {
                 Party party = inviter.getParty();
-                if (party != null) {
-                    party.sender().info("<blue>%s已邀请%s加入队伍，对方可以在60秒内接受".formatted(
-                            inviter.getDisplayName(), invitee.getDisplayName()
-                    ));
+                assert party != null;
+                inviter.sender().info("<blue>已邀请%s加入队伍，对方可以在60秒内接受".formatted(invitee.getDisplayName()));
+                party.getAllPlayer().forEach(playerExt -> {
+                    if (!playerExt.equals(inviter)) {
+                        playerExt.sender().info("<blue>%s已邀请%s加入队伍，对方可以在60秒内接受".formatted(
+                                inviter.getDisplayName(), invitee.getDisplayName()
+                        ));
+                    }
+                });
 
-                    PlayerExt leader = party.getLeader();
-                    invitee.sender().info("""
-                                <blue>%s邀请你加入%s的队伍，\
-                                <hover:show_text:"<yellow>点击发送/party accept %s</yellow>">\
-                                <click:run_command:party accept %s>\
-                                <u>点击接受
-                                """
-                            .formatted(inviter.getDisplayName(), leader.getDisplayName(), inviter.getName(), inviter.getName())
-                    );
-                }
+                PlayerExt leader = party.getLeader();
+                invitee.sender().info("""
+                            <blue>%s邀请你加入%s的队伍，\
+                            <hover:show_text:"<yellow>点击发送/party accept %s</yellow>">\
+                            <click:run_command:party accept %s>\
+                            <u>点击接受\
+                            """
+                        .formatted(inviter.getDisplayName(), leader.getDisplayName(), inviter.getName(), inviter.getName())
+                );
 
                 yield Command.SINGLE_SUCCESS;
             }
@@ -125,7 +130,7 @@ public class InviteCommand extends PartySubCommands {
                         <blue>%s邀请你组队，\
                         <hover:show_text:"<yellow>点击发送/party accept %s</yellow>">\
                         <click:run_command:party accept %s>\
-                        <u>点击接受
+                        <u>点击接受\
                         """
                         .formatted(inviter.getDisplayName(), inviter.getName(), inviter.getName())
                 );

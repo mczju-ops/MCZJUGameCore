@@ -116,9 +116,7 @@ public record PlayerExt(@NotNull Player player) {
         return false;
     }
 
-    /**
-     * 退出当前所在的游戏，不论游戏是否开始
-     */
+    /** 退出当前所在的游戏，不论游戏是否开始 */
     public void quitGame(PlayerQuitReason reason){
         MCZJUGameCore.getPlayerManager().leaveGame(this, reason);
     }

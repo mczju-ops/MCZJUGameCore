@@ -143,7 +143,7 @@ public class PartyManager {
         PlayerExt inviter = new PlayerExt(inviterPlayer);
 
         if (invite.targetPartyId() == null) {
-            return acceptPendingCreateInvite(inviter, invitee, invite);
+            return acceptPendingCreateInvite(inviter, invitee);
         } else {
             return acceptJoinPartyInvite(inviter, invitee, invite);
         }
@@ -152,8 +152,7 @@ public class PartyManager {
     /** 无队伍邀请：自动创建队伍 */
     private AcceptResult acceptPendingCreateInvite(
             PlayerExt inviter,
-            PlayerExt invitee,
-            PartyInvite invite
+            PlayerExt invitee
     ) {
         Party inviterCurrentParty = getPlayerParty(inviter);
 
@@ -248,5 +247,116 @@ public class PartyManager {
         invites.removeIf(invite ->
                 invite.inviteeId().equals(inviteeId)
         );
+    }
+
+    public DisbandResult disband(PlayerExt leader) {
+        Party party = getPlayerParty(leader);
+        if (party == null) return DisbandResult.NOT_IN_PARTY;
+        if (!party.isLeader(leader)) return DisbandResult.NOT_LEADER;
+
+        disbandPartyInternal(party);
+        return DisbandResult.SUCCESS;
+    }
+
+    public RemoveResult remove(PlayerExt leader, PlayerExt target) {
+        if (leader.equals(target)) return RemoveResult.CANNOT_REMOVE_SELF;
+
+        Party party = getPlayerParty(leader);
+        if (party == null) return RemoveResult.NOT_IN_PARTY;
+        if (!party.isLeader(leader)) return RemoveResult.NOT_LEADER;
+        if (!party.hasPlayer(target)) return RemoveResult.TARGET_NOT_IN_PARTY;
+
+        party.removeMemberInternal(target);
+        removeInvitesSentBy(target);
+
+        // 移除后只剩队长一人，直接解散
+        if (party.size() == 1) {
+            disbandPartyInternal(party);
+            return RemoveResult.SUCCESS_PARTY_DISBANDED;
+        }
+
+        return RemoveResult.SUCCESS;
+    }
+
+    public LeaveResult leave(PlayerExt player) {
+        Party party = getPlayerParty(player);
+        if (party == null) return LeaveResult.NOT_IN_PARTY;
+
+        if (party.isLeader(player)) {
+            return leaveAsLeader(player, party);
+        } else {
+            return leaveAsMember(player, party);
+        }
+    }
+
+    private LeaveResult leaveAsLeader(PlayerExt leader, Party party) {
+        removeInvitesSentBy(leader);
+
+        // 除了队长外只剩一名成员，解散
+        if (party.size() == 2) {
+            disbandPartyInternal(party);
+            return LeaveResult.SUCCESS_PARTY_DISBANDED_NO_LEADER;
+        }
+
+        // 还有其他成员，升级第一个成员为新队长
+        party.promoteFirstMemberToLeader();
+        return LeaveResult.SUCCESS_PROMOTED;
+    }
+
+    private LeaveResult leaveAsMember(PlayerExt member, Party party) {
+        party.removeMemberInternal(member);
+        removeInvitesSentBy(member);
+
+        // 移除后只剩队长一人，自动解散
+        if (party.size() == 1) {
+            disbandPartyInternal(party);
+            return LeaveResult.SUCCESS_PARTY_DISBANDED_NO_MEMBERS;
+        }
+
+        return LeaveResult.SUCCESS;
+    }
+
+    /**
+     * 监听器调用此方法处理玩家下线
+     * 在 leave() 的基础上额外清理该玩家收到的邀请
+     * （下线后无法接受任何邀请，保留无意义）
+     */
+    public LeaveResult handlePlayerQuit(PlayerExt player) {
+        removeInvitesForInvitee(player);
+        return leave(player);
+        // leave() 内部已清理发出的邀请；
+        // 此处额外清理收到的邀请（下线则失效）
+    }
+
+    /**
+     * 解散队伍的统一出口：
+     * 1. 从列表移除队伍
+     * 2. 清理以该队伍为目标的所有邀请
+     */
+    private void disbandPartyInternal(Party party) {
+        partyList.remove(party);
+        UUID partyId = party.getId();
+        invites.removeIf(invite -> partyId.equals(invite.targetPartyId()));
+    }
+
+    /**
+     * 清理某个玩家发出的所有邀请
+     * 用于该玩家离队/被移除时，其以队伍名义发出的邀请全部作废
+     */
+    private void removeInvitesSentBy(PlayerExt player) {
+        UUID playerId = player.getUniqueId();
+        invites.removeIf(invite -> invite.inviterId().equals(playerId));
+    }
+
+    public TransferResult transfer(PlayerExt leader, PlayerExt target) {
+        if (leader.equals(target)) return TransferResult.CANNOT_TRANSFER_TO_SELF;
+
+        Party party = getPlayerParty(leader);
+        if (party == null) return TransferResult.NOT_IN_PARTY;
+        if (!party.isLeader(leader)) return TransferResult.NOT_LEADER;
+        if (!party.hasPlayer(target)) return TransferResult.TARGET_NOT_IN_PARTY;
+
+        party.transferLeader(target);
+        return TransferResult.SUCCESS;
     }
 }

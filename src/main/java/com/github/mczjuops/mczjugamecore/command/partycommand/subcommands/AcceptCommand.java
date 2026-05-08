@@ -31,12 +31,12 @@ public class AcceptCommand extends PartySubCommands {
 
     @Override
     public String getUsage() {
-        return "accept <玩家>";
+        return "/party accept <玩家>";
     }
 
     @Override
     public String getDescription() {
-        return "接受一位玩家的组队邀请或加入对方队伍";
+        return "接受玩家的组队邀请或加入对方队伍";
     }
 
     @Override
@@ -82,7 +82,7 @@ public class AcceptCommand extends PartySubCommands {
 
         return switch (result) {
             case NO_VALID_INVITE -> {
-                invitee.sender().warn("未找到有效邀请信息");
+                invitee.sender().warn("此邀请已失效");
                 yield 0;
             }
             case INVITE_EXPIRED -> {
@@ -113,7 +113,11 @@ public class AcceptCommand extends PartySubCommands {
                 if (party != null) {
                     PlayerExt leader = party.getLeader();
                     invitee.sender().info("<blue>成功加入%s的队伍".formatted(leader.getDisplayName()));
-                    party.sender().info("<blue>%s加入了队伍".formatted(invitee.getDisplayName()));
+                    party.getAllPlayer().forEach(member -> {
+                        if (!member.equals(invitee)) {
+                            member.sender().info("<blue>%s加入了队伍".formatted(invitee.getDisplayName()));
+                        }
+                    });
                 }
                 yield Command.SINGLE_SUCCESS;
             }
