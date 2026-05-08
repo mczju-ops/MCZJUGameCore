@@ -13,26 +13,26 @@ public class PartySender implements Sender {
 
     @Override
     public void info(String msg) {
-        party.getMembers().forEach(member -> member.sender().info(msg));
+        party.getAllPlayer().forEach(member -> member.sender().info(msg));
     }
 
     @Override
     public void warn(String msg) {
-        party.getMembers().forEach(member -> member.sender().warn(msg));
+        party.getAllPlayer().forEach(member -> member.sender().warn(msg));
     }
 
     @Override
     public void error(String msg) {
-        party.getMembers().forEach(member -> member.sender().error(msg));
+        party.getAllPlayer().forEach(member -> member.sender().error(msg));
     }
 
     @Override
     public void success(String msg) {
-        party.getMembers().forEach(member -> member.sender().success(msg));
+        party.getAllPlayer().forEach(member -> member.sender().success(msg));
     }
 
     @Override
     public void primary(String msg) {
-        party.getMembers().forEach(member -> member.sender().primary(msg));
+        party.getAllPlayer().forEach(member -> member.sender().primary(msg));
     }
 }

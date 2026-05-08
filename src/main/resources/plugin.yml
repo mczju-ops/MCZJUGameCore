@@ -10,7 +10,6 @@ commands:
     permission: mgc.mgc
   party:
     description: "组队指令"
-    usage: "和hyp相同"
     permission: mgc.party
   menu:
     description: "菜单指令"
