@@ -1,52 +1,58 @@
 package com.github.mczjuops.mczjugamecore.command;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
-import com.github.mczjuops.mczjugamecore.player.PlayerExt;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.github.mczjuops.mczjugamecore.utils.TextParser;
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-public class MGCOPCommand implements CommandExecutor, TabCompleter {
+public class MGCOPCommand implements BrigadierCommand {
+
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
-        if (!(sender instanceof Player)) return false;
-        PlayerExt player = new PlayerExt((Player) sender);
-        if (args.length == 0) return false; // TODO 做一个菜单来实现更方便的操作
-        switch (args[0]){
-            case "reload" -> {
-                player.sender().info("正在重载config");
-                MCZJUGameCore.getInstance().reloadConfig();    // 重载config
-            }
-            case "save" -> {
-                // 保存地图。不提供重新加载地图的功能，因为这个功能操作有点危险。
-                player.sender().info("正在保存地图");
-                MCZJUGameCore.getGameRoomManager().saveAllGameRoom();
-                player.sender().success("成功保存所有地图");
-            }
-            default -> {
-                return false;
-            }
-        }
-        return true;
+    public String getName() {
+        return "mgcop";
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
-        if (args.length == 1) {
-            List<String> commands = Arrays.asList("reload", "save");
-            return commands.stream()
-                    .filter(cmd -> cmd.startsWith(args[0].toLowerCase()))
-                    .toList();
-        }
-        return Collections.emptyList();
+    public String getDescription() {
+        return "MCZJUGameCore 插件管理员命令";
+    }
+
+    @Override
+    public List<String> getAliases() {
+        return List.of();
+    }
+
+    @Override
+    public LiteralCommandNode<CommandSourceStack> getNode() {
+        return Commands.literal(getName())
+                .requires(src -> src.getSender().hasPermission("mgc.dev"))
+                .executes(ctx -> {
+                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop reload|save"));
+                    return 0;
+                })
+                .then(Commands.literal("reload")
+                        .executes(this::executeReload)
+                )
+                .then(Commands.literal("save") // 保存地图。不提供重新加载地图的功能，因为这个功能操作有点危险
+                        .executes(this::executeSave)
+                )
+                .build();
+    }
+
+    private int executeReload(CommandContext<CommandSourceStack> ctx) {
+        ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>正在重新加载插件配置"));
+        MCZJUGameCore.getInstance().reloadConfig();
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeSave(CommandContext<CommandSourceStack> ctx) {
+        MCZJUGameCore.getGameRoomManager().saveAllGameRoom();
+        ctx.getSource().getSender().sendMessage(TextParser.parse("<green>成功保存所有地图"));
+        return Command.SINGLE_SUCCESS;
     }
 }

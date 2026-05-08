@@ -179,4 +179,9 @@ public class DefaultGameManager implements AbstractGameManager {
             }
         }
     }
+
+    @Override
+    public Set<String> getRegisteredGameNames() {
+        return Set.copyOf(gameNameMap.keySet());
+    }
 }
