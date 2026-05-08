@@ -87,6 +87,10 @@ public class MGCCommand implements BrigadierCommand {
         }
 
         PlayerExt player = new PlayerExt(p);
+        if (player.getGame() == null) {
+            player.sender().warn("你没有在游玩任何游戏，或者该游戏不需要退出");
+        }
+
         MCZJUGameCore.getPlayerManager().leaveGame(player, PlayerQuitReason.COMMAND_QUIT);
         return Command.SINGLE_SUCCESS;
     }
