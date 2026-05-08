@@ -4,8 +4,6 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.command.MGCCommand;
 import com.github.mczjuops.mczjugamecore.command.MGCOPCommand;
 import com.github.mczjuops.mczjugamecore.command.MenuCommand;
-import com.github.mczjuops.mczjugamecore.command.PartyCommand;
-import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
@@ -13,7 +11,7 @@ import org.bukkit.command.TabCompleter;
 public class CommandInitializer {
     public static void initialize(){
         registerCommand("mgc", new MGCCommand());
-        registerCommand("party", new PartyCommand());
+        // registerCommand("party", new PartyCommand());
         registerCommand("menu", new MenuCommand());
         registerCommand("mgcop", new MGCOPCommand());
     }

@@ -14,11 +14,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.function.Consumer;
 
-/*
-玩家类扩展，传Player参数进去可以获得拥有扩展函数的PlayerExt
- */
 public record PlayerExt(@NotNull Player player) {
 
     public Sender sender(){
@@ -35,10 +33,7 @@ public record PlayerExt(@NotNull Player player) {
         return MCZJUGameCore.getPlayerManager().getPlayerGame(this);
     }
 
-    /**
-     * 玩家是否在游戏中
-     * @return true: 在游戏中
-     */
+    /** 玩家是否在任意游戏中 */
     public boolean isInGame(){
         return getGame() != null;
     }
@@ -48,8 +43,7 @@ public record PlayerExt(@NotNull Player player) {
     }
 
     public @Nullable Party getParty(){
-        // TODO
-        return null;
+        return MCZJUGameCore.getPartymanager().getPlayerParty(this);
     }
 
     public boolean isPartyLeader(){
@@ -76,7 +70,7 @@ public record PlayerExt(@NotNull Player player) {
     public void giveItem(String id){
         ItemStack item = MCZJUGameCore.getItemManager().getItem(id);
         if (item == null){
-            sender().error(STR."无法获取物品\{id}，因为物品不存在");
+            sender().error("无法获取物品%s，因为物品不存在".formatted(id));
             return;
         }
         giveItem(item);
@@ -92,6 +86,19 @@ public record PlayerExt(@NotNull Player player) {
         }else {
             sender().success("已获取物品，请检查背包");
         }
+    }
+
+    public String getName() {
+        return player.getName();
+    }
+
+    public UUID getUniqueId() {
+        return player.getUniqueId();
+    }
+
+    public String getDisplayName() {
+        if (player.isOp()) return "<dark_red>%s</dark_red>".formatted(getName());
+        else return "<green>%s</green>".formatted(getName());
     }
 
     /**

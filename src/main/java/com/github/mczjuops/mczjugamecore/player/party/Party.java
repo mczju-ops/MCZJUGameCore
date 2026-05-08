@@ -6,12 +6,22 @@ import com.github.mczjuops.mczjugamecore.utils.sender.impl.PartySender;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 public class Party {
+
+    private final UUID id = UUID.randomUUID();
+
     private PlayerExt leader;
+    private final List<PlayerExt> members = new LinkedList<>(); // 当前模型中，leader 不在 members 中
 
-    private final List<PlayerExt> members = new LinkedList<>();
+    public Party(PlayerExt leader) {
+        this.leader = leader;
+    }
 
+    public UUID getId() {
+        return id;
+    }
 
     public PlayerExt getLeader() {
         return leader;
@@ -25,21 +35,18 @@ public class Party {
         return members;
     }
 
-    public List<PlayerExt> getAllPlayer(){
-        LinkedList<PlayerExt> players = new LinkedList<>(members);
+    public List<PlayerExt> getAllPlayer() {
+        LinkedList<PlayerExt> players = new LinkedList<>();
         players.add(leader);
+        players.addAll(members);
         return players;
     }
 
-    public void addMember(PlayerExt player){
-        if (members.contains(player) || leader == player){
-            player.sender().warn("您已在这个队伍中！");
-            return;
-        }
-        if (player.isInParty()){
-            player.sender().warn("请退出当前组队！");
-            return;
-        }
+    public boolean hasPlayer(PlayerExt player) {
+        return leader.equals(player) || members.contains(player);
+    }
+
+    void addMemberInternal(PlayerExt player) {
         members.add(player);
     }
 
