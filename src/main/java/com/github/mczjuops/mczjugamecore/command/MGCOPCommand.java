@@ -58,7 +58,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                     ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定一个游戏"));
                                     return 0;
                                 })
-                                .then(Commands.argument("game", StringArgumentType.word())
+                                .then(Commands.argument("game", StringArgumentType.string())
                                         .suggests((_, builder)
                                                 -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
                                         )
@@ -70,7 +70,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                     ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop room create <game> <room>"));
                                     return 0;
                                 })
-                                .then(Commands.argument("game", StringArgumentType.word())
+                                .then(Commands.argument("game", StringArgumentType.string())
                                         .suggests((_, builder)
                                                 -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
                                         )
@@ -78,7 +78,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                             ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请输入房间ID"));
                                             return 0;
                                         })
-                                        .then(Commands.argument("room", StringArgumentType.word())
+                                        .then(Commands.argument("room", StringArgumentType.string())
                                                 .executes(this::executeRoomCreate)
                                         )
                                 )
@@ -88,7 +88,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                     ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop room edit <game> <room>"));
                                     return 0;
                                 })
-                                .then(Commands.argument("game", StringArgumentType.word())
+                                .then(Commands.argument("game", StringArgumentType.string())
                                         .suggests((_, builder)
                                                 -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
                                         )
@@ -96,7 +96,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                             ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定房间ID"));
                                             return 0;
                                         })
-                                        .then(Commands.argument("room", StringArgumentType.word())
+                                        .then(Commands.argument("room", StringArgumentType.string())
                                                 .suggests((_, builder) -> {
                                                     String gameName = CommandUtils.getToken(builder, 3);
                                                     Set<String> names = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameName);
@@ -111,7 +111,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                     ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop room delete <game> <room>"));
                                     return 0;
                                 })
-                                .then(Commands.argument("game", StringArgumentType.word())
+                                .then(Commands.argument("game", StringArgumentType.string())
                                         .suggests((_, builder)
                                                 -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
                                         )
@@ -119,7 +119,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                             ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定要删除的房间"));
                                             return 0;
                                         })
-                                        .then(Commands.argument("room", StringArgumentType.word())
+                                        .then(Commands.argument("room", StringArgumentType.string())
                                                 .suggests((_, builder) -> {
                                                     String gameName = CommandUtils.getToken(builder, 3);
                                                     Set<String> names = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameName);

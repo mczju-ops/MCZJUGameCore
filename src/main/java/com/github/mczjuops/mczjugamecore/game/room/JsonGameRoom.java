@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class JsonGameRoom extends AbstractGameRoom {
@@ -46,7 +47,7 @@ public class JsonGameRoom extends AbstractGameRoom {
     @Override
     public Map<String, Class<?>> getAllFields() {
         Field[] fields = this.getClass().getDeclaredFields();
-        HashMap<String, Class<?>> fieldMap = new HashMap<>();
+        HashMap<String, Class<?>> fieldMap = new LinkedHashMap<>();
         for (Field field : fields) {
             fieldMap.put(field.getName(), field.getType());
         }
