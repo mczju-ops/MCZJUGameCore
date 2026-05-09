@@ -195,9 +195,18 @@ public class DialogBuilder {
      *
      * @param key 此控件的键
      * @param label 标签文本，支持 MiniMessage
+     * @param initial 初始值
+     * @param onTrue 复选框选中时输入的真实值（默认为 "true"）
+     * @param onFalse 复选框未选中时输入的真实值（默认为 "false"）
      */
-    public DialogBuilder toggle(String key, String label) {
-        inputs.add(DialogInput.bool(key, TextParser.parse(label)).build());
+    public DialogBuilder toggle(String key, String label, boolean initial, String onTrue, String onFalse) {
+        inputs.add(DialogInput.bool(key, TextParser.parse(label), initial, onTrue, onFalse));
+        return this;
+    }
+
+    /** 上一个方法的便捷重载 */
+    public DialogBuilder toggle(String key, String label, boolean initial) {
+        inputs.add(DialogInput.bool(key, TextParser.parse(label), initial, "true", "false"));
         return this;
     }
 

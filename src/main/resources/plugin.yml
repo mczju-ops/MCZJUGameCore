@@ -5,8 +5,7 @@ api-version: '1.21.7'
 
 commands:
   mgc:
-    description: "加入游戏等指令"
-    usage: "/mgc <arg>"
+    description: "小游戏基础命令"
     permission: mgc.mgc
   party:
     description: "组队指令"
@@ -16,8 +15,7 @@ commands:
     usage: "/menu menu_name args"
     permission: menu.default
   mgcop:
-    description: "mgc的op操作，使用方法见文档"
-    usage: "/mgc <arg>"
+    description: "MCZJUGameCore管理员命令，详见文档"
     permission: mgc.dev
 
 

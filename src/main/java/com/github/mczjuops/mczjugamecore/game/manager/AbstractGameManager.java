@@ -5,6 +5,8 @@ import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Set;
+
 /**
  * 简单窗口模式，凡是设计对游戏的生命周期操作，都调用GameManager，而不是在其它地方自己修改
  */
@@ -44,8 +46,13 @@ public interface AbstractGameManager {
      * 创建新的游戏房间
      * @param gameName  游戏名
      * @param gameRoomName  游戏房间名
-     * @return  游戏房间；如果为空，可能是名字输错了
+     * @return 游戏房间；如果为空，可能是名字输错了
      */
     AbstractGameRoom createGameRoom(String gameName, String gameRoomName);
 
+    /**
+     * 获取所有已注册的游戏名
+     * 用于命令补全、菜单展示等只读场景
+     */
+    Set<String> getRegisteredGameNames();
 }

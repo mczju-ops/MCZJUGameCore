@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -78,7 +79,7 @@ public class ItemManager {
      * @param item 物品实例
      * @return 物品 ID，如果没有则返回 null
      */
-    public @Nullable String getItemId(ItemStack item) {
+    public @Nullable String getItemId(@NotNull ItemStack item) {
         return item.getPersistentDataContainer().get(key, PersistentDataType.STRING);
     }
 
@@ -89,7 +90,8 @@ public class ItemManager {
      * @param id   目标物品 ID
      * @return 如果匹配返回 true，否则 false
      */
-    public boolean is(ItemStack item, String id) {
+    public boolean is(@Nullable ItemStack item, String id) {
+        if (item == null) return false;
         String itemId = getItemId(item);
         return id.equals(itemId);
     }

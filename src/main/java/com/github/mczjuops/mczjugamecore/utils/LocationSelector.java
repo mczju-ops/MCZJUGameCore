@@ -59,7 +59,7 @@ public class LocationSelector implements Listener {
 
     public void selectLocation(PlayerExt player, Consumer<Location> callback){
         player.giveItemIfDontHave(MGCMaterial.DEBUG_STICK.toString());
-        player.sender().primary("用调试棒点击方块以选择方块，点击空气以选择当前所处位置");
+        player.sender().primary("用调试棒点击方块选择方块坐标，点击空气选择自己的坐标");
         playerCallbackMap.put(player.player(), callback);
     }
 }

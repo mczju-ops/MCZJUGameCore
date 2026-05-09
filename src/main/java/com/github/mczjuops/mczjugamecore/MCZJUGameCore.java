@@ -1,6 +1,8 @@
 package com.github.mczjuops.mczjugamecore;
 
 import com.github.mczjuops.mczjugamecore.command.BrigadierCommand;
+import com.github.mczjuops.mczjugamecore.command.MGCCommand;
+import com.github.mczjuops.mczjugamecore.command.MGCOPCommand;
 import com.github.mczjuops.mczjugamecore.command.partycommand.PartyCommand;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
@@ -58,6 +60,8 @@ public final class MCZJUGameCore extends JavaPlugin {
         ItemInitializer.initialize();
 
         registerCommands(
+                new MGCCommand(),
+                new MGCOPCommand(),
                 new PartyCommand()
         );
     }
