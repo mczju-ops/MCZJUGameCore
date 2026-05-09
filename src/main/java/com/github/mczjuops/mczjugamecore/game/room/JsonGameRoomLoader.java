@@ -4,13 +4,10 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.serialize.LocationAdapter;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.bukkit.Location;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -19,7 +16,7 @@ import java.nio.file.Paths;
 
 public class JsonGameRoomLoader implements GameRoomLoader{
 
-    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
+    private final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
     @Override
     public boolean loadAllGameRoom(String gameName, Class<? extends AbstractGameRoom> gameRoomClass) {
         if(!JsonGameRoom.class.isAssignableFrom(gameRoomClass)) return false;
@@ -39,11 +36,11 @@ public class JsonGameRoomLoader implements GameRoomLoader{
                     // 加载成功了
                     MCZJUGameCore.getGameRoomManager().registerGameRoom(gameName, room);
                 }else {
-                    logger.error(STR."无法加载游戏\{gameName}的地图: \{roomName}");
+                    logger.error("无法加载游戏%s的地图：%s".formatted(gameName, roomName));
                 }
             }
         } catch (IOException e) {
-            logger.error(STR."无法加载游戏地图: \{gameName}");
+            logger.error("无法加载游戏地图：%s".formatted(gameName));
             logger.error(e.toString());
         }
 
@@ -58,7 +55,7 @@ public class JsonGameRoomLoader implements GameRoomLoader{
     ) {
         try {
             if (!Files.exists(file)) {
-                logger.warn(STR."文件不存在: \{file}");
+                logger.warn("文件不存在：%s".formatted(file));
                 return null;
             }
 
@@ -69,7 +66,7 @@ public class JsonGameRoomLoader implements GameRoomLoader{
                 T room = gson.fromJson(reader, roomClass);
 
                 if (room == null) {
-                    logger.error(STR."反序列化失败: \{file.getFileName()}");
+                    logger.error("反序列化失败：%s".formatted(file.getFileName()));
                     return null;
                 }
 
@@ -81,13 +78,13 @@ public class JsonGameRoomLoader implements GameRoomLoader{
                 MCZJUGameCore.getGameRoomManager()
                         .registerGameRoom(gameName, room);
 
-                logger.info(STR."已加载地图 \{gameName}-\{room.getRoomName()}");
+                logger.info("已加载地图 %s - %s".formatted(gameName, room.getRoomName()));
 
                 return room;
             }
 
         } catch (Exception e) {
-            logger.error(STR."加载地图失败: \{file}");
+            logger.error("加载地图失败：%s".formatted(file));
             logger.error(e.toString());
             return null;
         }

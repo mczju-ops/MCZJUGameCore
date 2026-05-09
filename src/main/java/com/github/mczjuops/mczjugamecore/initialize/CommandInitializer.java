@@ -17,7 +17,7 @@ public class CommandInitializer {
     private static void registerCommand(String commandStr, CommandExecutor executor){
         PluginCommand command = MCZJUGameCore.getInstance().getCommand(commandStr);
         if (command == null){
-            throw new RuntimeException(STR."无法加载指令：command为空(\{commandStr}");
+            throw new RuntimeException("无法加载指令：command为空（%s）".formatted(commandStr));
         }else {
             command.setExecutor(executor);
             if (executor instanceof TabCompleter){

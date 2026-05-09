@@ -1,12 +1,9 @@
 package com.github.mczjuops.mczjugamecore.utils.sender.impl;
 
-import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
-
-import java.util.logging.Logger;
 
 /**
  * 插件单独发消息给某个玩家
@@ -14,7 +11,7 @@ import java.util.logging.Logger;
  */
 public class PlayerSender implements Sender {
     private final Player player;
-    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
+    private final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
     private boolean shouldActionbar = false;
 
     public PlayerSender(Player player) {
@@ -30,7 +27,7 @@ public class PlayerSender implements Sender {
             player.sendMessage(component);
         }
 
-        String logMsg = STR."Player \{player.getName()} received msg: \{msg}";
+        String logMsg = "Player %s received msg: %s".formatted(player.getName(), msg);
         if (color.equals(NamedTextColor.RED)){
             logger.error(logMsg);
         }else{

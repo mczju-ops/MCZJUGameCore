@@ -4,12 +4,9 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
-import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.MultiPlayerSender;
 
-import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -42,7 +39,7 @@ public class DefaultGameWaitStrategy extends GameWaitStrategy {
         int count = size - newPlayers.size();
         for (PlayerExt newPlayer : newPlayers) {
             count += 1;
-            sender.info(STR."玩家\{newPlayer.player().getName()}加入游戏 ( \{count} / \{playerLimit})");
+            sender.info("玩家%s加入了该游戏（%d/%d）".formatted(newPlayer.getDisplayName(), count, playerLimit));
         }
         if (size == playerLimit) {
             // 正好等于最大人数
@@ -53,6 +50,7 @@ public class DefaultGameWaitStrategy extends GameWaitStrategy {
 
     @Override
     public void onPlayerLeave(PlayerExt player) {
-        game.sender().warn(STR."玩家\{player.player().getName()}退出游戏(\{game.getPlayers().size()} / \{playerLimit}");
+        game.sender().warn("玩家%s退出了该游戏（%d/%d）".formatted(player.getDisplayName(), game.getPlayers().size(), playerLimit));
+
     }
 }
