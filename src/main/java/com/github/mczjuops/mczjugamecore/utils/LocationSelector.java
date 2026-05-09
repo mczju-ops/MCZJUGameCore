@@ -1,13 +1,13 @@
 package com.github.mczjuops.mczjugamecore.utils;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
-import com.github.mczjuops.mczjugamecore.item.MGCItem;
 import com.github.mczjuops.mczjugamecore.item.MGCMaterial;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 import java.util.HashMap;
@@ -33,6 +33,9 @@ public class LocationSelector implements Listener {
     public void onClick(PlayerInteractEvent event){
         Player player = event.getPlayer();
 
+        var action = event.getAction();
+        if (action == Action.PHYSICAL) return;
+
         // 不是调试棒直接返回
         if (!MCZJUGameCore.getItemManager().is(
                 player.getInventory().getItemInMainHand(), MGCMaterial.DEBUG_STICK.toString())) return;
@@ -43,6 +46,12 @@ public class LocationSelector implements Listener {
         event.setCancelled(true); // 防止误触发方块交互
 
         Consumer<Location> callback = playerCallbackMap.remove(player);
+
+        // 右键：取消操作
+        if (action.isRightClick()) {
+            player.sendMessage(TextParser.parse("<yellow>已取消本次位置选择"));
+            return;
+        }
 
         Location loc;
 
@@ -59,7 +68,10 @@ public class LocationSelector implements Listener {
 
     public void selectLocation(PlayerExt player, Consumer<Location> callback){
         player.giveItemIfDontHave(MGCMaterial.DEBUG_STICK.toString());
-        player.sender().primary("用调试棒点击方块选择方块坐标，点击空气选择自己的坐标");
+        player.sender().info("<blue>使用<gold>调试棒</gold>选择位置：");
+        player.sender().info("<yellow>左键方块 <gray>- <aqua>选择该方块的中心位置");
+        player.sender().info("<yellow>左键空气 <gray>- <aqua>选择自己的位置（包含视角）");
+        player.sender().info("<yellow>右键 <gray>- <red>取消本次位置选择");
         playerCallbackMap.put(player.player(), callback);
     }
 }
