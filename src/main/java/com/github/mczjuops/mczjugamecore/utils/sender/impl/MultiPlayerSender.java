@@ -11,7 +11,7 @@ public class MultiPlayerSender implements Sender {
 
     private final List<PlayerExt> players;
 
-    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
+    private final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
 
 
     private boolean shouldActionbar = false;
@@ -30,7 +30,7 @@ public class MultiPlayerSender implements Sender {
                 player.player().sendMessage(component);
             }
 
-            String logMsg = STR."Player \{player.player().getName()} received msg: \{msg}";
+            String logMsg = "Player %s received msg: %s".formatted(player.getName(), msg);
             if (color.equals(NamedTextColor.RED)){
                 logger.error(logMsg);
             }else{

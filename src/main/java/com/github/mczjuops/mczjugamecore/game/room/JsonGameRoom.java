@@ -73,7 +73,8 @@ public class JsonGameRoom extends AbstractGameRoom {
             // 确保父目录存在
             File parent = file.getParentFile();
             if (parent != null && !parent.exists()) {
-                boolean _ = parent.mkdirs();
+                // noinspection ResultOfMethodCallIgnored
+                parent.mkdirs();
             }
 
             Gson gson = LocationAdapter.getGsonBuilder();

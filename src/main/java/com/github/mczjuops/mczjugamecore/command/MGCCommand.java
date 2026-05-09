@@ -48,7 +48,7 @@ public class MGCCommand implements BrigadierCommand {
                             return 0;
                         })
                         .then(Commands.argument("game", StringArgumentType.word())
-                                .suggests((_, builder) ->
+                                .suggests((ctx, builder) ->
                                         CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
                                 )
                                 .executes(this::executeJoin)

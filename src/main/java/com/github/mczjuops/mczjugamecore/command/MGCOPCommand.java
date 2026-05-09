@@ -59,7 +59,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                     return 0;
                                 })
                                 .then(Commands.argument("game", StringArgumentType.string())
-                                        .suggests((_, builder)
+                                        .suggests((ctx, builder)
                                                 -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
                                         )
                                         .executes(this::executeRoomList)
@@ -71,7 +71,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                     return 0;
                                 })
                                 .then(Commands.argument("game", StringArgumentType.string())
-                                        .suggests((_, builder)
+                                        .suggests((ctx, builder)
                                                 -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
                                         )
                                         .executes(ctx -> {
@@ -89,7 +89,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                     return 0;
                                 })
                                 .then(Commands.argument("game", StringArgumentType.string())
-                                        .suggests((_, builder)
+                                        .suggests((ctx, builder)
                                                 -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
                                         )
                                         .executes(ctx -> {
@@ -97,7 +97,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                             return 0;
                                         })
                                         .then(Commands.argument("room", StringArgumentType.string())
-                                                .suggests((_, builder) -> {
+                                                .suggests((ctx, builder) -> {
                                                     String gameName = CommandUtils.getToken(builder, 3);
                                                     Set<String> names = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameName);
                                                     return CommandUtils.suggestMatching(names, builder);
@@ -112,7 +112,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                     return 0;
                                 })
                                 .then(Commands.argument("game", StringArgumentType.string())
-                                        .suggests((_, builder)
+                                        .suggests((ctx, builder)
                                                 -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
                                         )
                                         .executes(ctx -> {
@@ -120,7 +120,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                             return 0;
                                         })
                                         .then(Commands.argument("room", StringArgumentType.string())
-                                                .suggests((_, builder) -> {
+                                                .suggests((ctx, builder) -> {
                                                     String gameName = CommandUtils.getToken(builder, 3);
                                                     Set<String> names = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameName);
                                                     return CommandUtils.suggestMatching(names, builder);

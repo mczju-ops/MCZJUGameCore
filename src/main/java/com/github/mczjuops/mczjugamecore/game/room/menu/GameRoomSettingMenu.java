@@ -42,14 +42,14 @@ public class GameRoomSettingMenu extends Menu {
                         .toggle("value", "<yellow>启用", currentValue)
                         .showConfirm(
                                 player.player(), 150,
-                                "确认", (_, r) -> {
+                                "确认", (p, r) -> {
                                     boolean newValue = r.bool("value");
                                     room.setField(fieldName, newValue);
                                     room.setModified(true);
                                     player.sender().success("<green>设置成功：<dark_aqua>%s</dark_aqua> -> <dark_green>%s".formatted(fieldName, newValue));
                                     reopenLater(player, room.getGameName(), room.getRoomName());
                                 },
-                                "取消", (_, _) -> reopenLater(player, room.getGameName(), room.getRoomName())
+                                "取消", (p, r) -> reopenLater(player, room.getGameName(), room.getRoomName())
                         );
             }
         });
@@ -96,14 +96,14 @@ public class GameRoomSettingMenu extends Menu {
                         .textInput("value", "<yellow>请输入字符串")
                         .showConfirm(
                                 player.player(), 150,
-                                "确认", (_, r) -> {
+                                "确认", (p, r) -> {
                                     String input = r.text("value");
                                     room.setField(fieldName, input);
                                     room.setModified(true);
                                     player.sender().success("<green>设置成功：<dark_aqua>%s</dark_aqua> -> <dark_green>%s".formatted(fieldName, input));
                                     reopenLater(player, room.getGameName(), room.getRoomName());
                                 },
-                                "取消", (_, _) -> reopenLater(player, room.getGameName(), room.getRoomName())
+                                "取消", (p, r) -> reopenLater(player, room.getGameName(), room.getRoomName())
                         );
             }
         });
@@ -136,7 +136,7 @@ public class GameRoomSettingMenu extends Menu {
                 .textInput("value", hint)
                 .showConfirm(
                         player.player(), 150,
-                        "确认", (_, r) -> {
+                        "确认", (p, r) -> {
                             String input = r.text("value").trim();
                             try {
                                 T parsed = parser.apply(input);
@@ -150,7 +150,7 @@ public class GameRoomSettingMenu extends Menu {
                                 reopenLater(player, room.getGameName(), room.getRoomName());
                             }
                         },
-                        "取消", (_, _) -> reopenLater(player, room.getGameName(), room.getRoomName())
+                        "取消", (p, r) -> reopenLater(player, room.getGameName(), room.getRoomName())
                 );
     }
 
@@ -220,7 +220,7 @@ public class GameRoomSettingMenu extends Menu {
                                 "<gray>服务器关闭时会自动保存，但崩溃等异常可能导致数据丢失"
                         ))
                         .build(),
-                (_, _) -> {
+                (p, r) -> {
                     MCZJUGameCore.getGameRoomManager().saveGameRoom(gameRoom.getGameName(), gameRoom.getRoomName());
                     player.player().playSound(player.player().getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
                     player.sender().success("<green>成功保存该房间的数据");
@@ -265,7 +265,7 @@ public class GameRoomSettingMenu extends Menu {
                                 ))
                                 .glint(value != null)
                                 .build(),
-                        (_, _) -> handler.handle(player, gameRoom, fieldName)
+                        (p, r) -> handler.handle(player, gameRoom, fieldName)
                 );
             }
 

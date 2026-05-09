@@ -2,7 +2,6 @@ package com.github.mczjuops.mczjugamecore.utils.sender.impl;
 
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
-import com.github.mczjuops.mczjugamecore.player.party.Party;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
 
@@ -41,7 +40,7 @@ public class GameSender implements Sender {
 
     private void send(String msg, String color){
         for (PlayerExt player : game.getPlayers()) {
-            player.player().sendMessage(TextParser.parse(STR."<red>[<white>\{game.getName()}</white>]: <\{color}>\{msg}"));
+            player.player().sendMessage(TextParser.parse("<red>[<white>%s</white>]: <%s>%s".formatted(game.getName(), color, msg)));
         }
     }
 }

@@ -31,7 +31,7 @@ public abstract  class AbstractGame {
 
     protected final Sender sender = new GameSender(this);
 
-    protected final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
+    protected final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
 
     /**
      * 获取游戏名称，请勿和其它游戏重名。为方便，这个也当作display name。
