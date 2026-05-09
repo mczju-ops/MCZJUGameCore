@@ -1,97 +1,87 @@
 package com.github.mczjuops.mczjugamecore.command;
 
-import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
-import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
-import com.github.mczjuops.mczjugamecore.game.room.menu.GameRoomSettingMenu;
-import com.github.mczjuops.mczjugamecore.menu.AlertMenu;
-import com.github.mczjuops.mczjugamecore.player.PlayerExt;
-import net.kyori.adventure.text.Component;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
+import com.github.mczjuops.mczjugamecore.menu.MenuFacade;
+import com.github.mczjuops.mczjugamecore.utils.CommandUtils;
+import com.github.mczjuops.mczjugamecore.utils.TextParser;
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
+import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class MenuCommand implements CommandExecutor, TabCompleter {
+public class MenuCommand implements BrigadierCommand {
+
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
-        if (!(sender instanceof Player p)) {
-            sender.sendMessage(Component.text("该命令只能由玩家执行"));
-            return false;
-        }
-        PlayerExt player = new PlayerExt(p);
-        if (args.length < 1){
-            // TODO 直接打开一个菜单，选择打开哪个菜单
-            player.sender().warn("用法: /room <edit|list|delete> [参数]");
-            return false;
-        }
-
-        return switch (args[0].toLowerCase()) {
-            case "edit" -> handleEdit(player, args);
-            case "list" -> handleList(player, args);
-            case "delete" -> handleDelete(player, args);
-            default -> {
-                player.sender().warn("未知子命令：%s".formatted(args[0]));
-                yield false;
-            }
-        };
+    public String getName() {
+        return "menu";
     }
 
-    private boolean handleEdit(PlayerExt player, String[] args) {
-        if (args.length < 3) {
-            player.sender().warn("用法: /room edit <gameName> <mapName>");
-            return false;
-        }
-        String gameName = args[1];
-        String mapName = args[2];
-
-        AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getGameRoom(gameName, mapName);
-        if (gameRoom == null) {
-            gameRoom = MCZJUGameCore.getGameRoomManager().createGameRoom(gameName, mapName);
-        }
-        if (gameRoom == null) {
-            player.sender().warn("无法找到或创建游戏房间，请检查游戏名是否正确");
-            return false;
-        }
-
-        var gui = new GameRoomSettingMenu(player.player(), gameRoom);
-        gui.open();
-        return true;
-    }
-
-    private boolean handleList(PlayerExt player, String[] args) {
-        if (args.length < 2) {
-            player.sender().warn("用法: /room list <gameName>");
-            return false;
-        }
-        String gameName = args[1];
-        // todo 以某种形式获取并呈现，可以做成 gui
-        player.sender().success("此功能待添加");
-        return true;
-    }
-
-    private boolean handleDelete(PlayerExt player, String[] args) {
-        var gui = new AlertMenu(player.player(), () -> player.sender().info("<gold>只是测试一下Alert菜单，还没有加删除功能！"));
-        gui.open();
-        return true;
-    }
-
-    // todo 优化补全
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
-        if (args.length == 1) {
-            return List.of("edit", "list", "delete");
-        }
-        if (args.length == 2) {
-            // return MCZJUGameCore.getGameRoomManager().getAllGameRooms();
-        }
-        if (args.length == 3 && args[0].equalsIgnoreCase("edit")) {
-            // return MCZJUGameCore.getGameRoomManager().getAllMaps(args[0]);
-        }
+    public String getDescription() {
+        return "为玩家打开部分 MCZJUGameCore 或小游戏插件的菜单";
+    }
+
+    @Override
+    public List<String> getAliases() {
         return List.of();
+    }
+
+    @Override
+    public LiteralCommandNode<CommandSourceStack> getNode() {
+        return Commands.literal(getName())
+                .requires(src -> src.getSender().hasPermission("menu.op"))
+                .executes(ctx -> {
+                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/menu <menu> <player>"));
+                    return 0;
+                })
+                .then(Commands.argument("menu", StringArgumentType.string())
+                        .suggests((ctx, builder)
+                                -> CommandUtils.suggestMatching(MenuFacade.getMenuIds(), builder)
+                        )
+                        .executes(ctx -> {
+                            ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定一个玩家"));
+                            return 0;
+                        })
+                        .then(Commands.argument("player", ArgumentTypes.player())
+                                .executes(this::executeMenu)
+                        )
+                )
+                .build();
+    }
+
+    private int executeMenu(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+        String menuId = StringArgumentType.getString(ctx, "menu");
+        if (!MenuFacade.getMenuIds().contains(menuId)) {
+            sender.sendMessage(TextParser.parse("<yellow>未注册ID为%s的菜单".formatted(menuId)));
+            return 0;
+        }
+
+        Player player;
+        PlayerSelectorArgumentResolver targetResolver =
+                ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+        try {
+            player = targetResolver.resolve(ctx.getSource()).getFirst();
+        } catch (CommandSyntaxException ignored) {
+            sender.sendMessage("<yellow>无效的玩家或选择器");
+            return 0;
+        }
+
+        boolean result = MenuFacade.open(menuId, player);
+        if (result) {
+            sender.sendMessage(TextParser.parse("<green>为玩家%s打开菜单%s".formatted(player.getName(), menuId)));
+            return Command.SINGLE_SUCCESS;
+        } else {
+            sender.sendMessage(TextParser.parse("<red>无法为玩家打开菜单%s，请检查是否正确注册".formatted(menuId)));
+            return 0;
+        }
     }
 }

@@ -9,8 +9,23 @@ public class AlertMenu extends Menu {
     private final Runnable onConfirm;
 
     public AlertMenu(Player player, Runnable onConfirm) {
-        super(AlertMenu.class, player);
+        super(player);
         this.onConfirm = onConfirm;
+    }
+
+    @Override
+    public String getTitle() {
+        return "确认操作";
+    }
+
+    @Override
+    public int getRows() {
+        return 3;
+    }
+
+    @Override
+    public String getPermission() {
+        return "menu.default";
     }
 
     @Override

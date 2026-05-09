@@ -3,11 +3,11 @@ package com.github.mczjuops.mczjugamecore;
 import com.github.mczjuops.mczjugamecore.command.BrigadierCommand;
 import com.github.mczjuops.mczjugamecore.command.MGCCommand;
 import com.github.mczjuops.mczjugamecore.command.MGCOPCommand;
+import com.github.mczjuops.mczjugamecore.command.MenuCommand;
 import com.github.mczjuops.mczjugamecore.command.partycommand.PartyCommand;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomManager;
-import com.github.mczjuops.mczjugamecore.initialize.CommandInitializer;
 import com.github.mczjuops.mczjugamecore.initialize.ItemInitializer;
 import com.github.mczjuops.mczjugamecore.initialize.ListenerInitializer;
 import com.github.mczjuops.mczjugamecore.initialize.MenuInitializer;
@@ -54,7 +54,6 @@ public final class MCZJUGameCore extends JavaPlugin {
         menuFacade = new MenuFacade();
         itemManager = new ItemManager();
 
-        CommandInitializer.initialize();
         MenuInitializer.initialize();
         ListenerInitializer.initialize();
         ItemInitializer.initialize();
@@ -62,7 +61,8 @@ public final class MCZJUGameCore extends JavaPlugin {
         registerCommands(
                 new MGCCommand(),
                 new MGCOPCommand(),
-                new PartyCommand()
+                new PartyCommand(),
+                new MenuCommand()
         );
     }
 

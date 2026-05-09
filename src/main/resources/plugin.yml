@@ -8,14 +8,13 @@ commands:
     description: "小游戏基础命令"
     permission: mgc.mgc
   party:
-    description: "组队指令"
+    description: "组队系统命令"
     permission: mgc.party
   menu:
-    description: "菜单指令"
-    usage: "/menu menu_name args"
-    permission: menu.default
+    description: "打开部分MCZJUGameCore或子插件的菜单"
+    permission: menu.op
   mgcop:
-    description: "MCZJUGameCore管理员命令，详见文档"
+    description: "MCZJUGameCore管理员命令"
     permission: mgc.dev
 
 

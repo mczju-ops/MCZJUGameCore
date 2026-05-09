@@ -167,8 +167,23 @@ public class GameRoomSettingMenu extends Menu {
     }
 
     public GameRoomSettingMenu(Player player, AbstractGameRoom gameRoom) {
-        super(GameRoomSettingMenu.class, player);
+        super(player);
         this.gameRoom = gameRoom;
+    }
+
+    @Override
+    public String getTitle() {
+        return "编辑房间参数";
+    }
+
+    @Override
+    public int getRows() {
+        return 6;
+    }
+
+    @Override
+    public String getPermission() {
+        return "mgc.dev";
     }
 
     @Override

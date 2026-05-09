@@ -1,54 +1,42 @@
 package com.github.mczjuops.mczjugamecore.menu;
 
-import com.github.mczjuops.mczjugamecore.utils.TextParser;
-import net.kyori.adventure.text.Component;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
-import org.jetbrains.annotations.Range;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 public class MenuFacade implements Listener {
 
-    private static final Map<Class<? extends Menu>, MenuMeta> registry = new HashMap<>();
+    private static final Map<String, Function<Player, ? extends Menu>> registry = new HashMap<>();
 
-    /**
-     * 注册一个菜单
-     * 注册的唯一目的，是后续创建时不需要注入这些信息
-     * 如果需要修改信息（比如某个菜单，不同情况下标题不同），可以注入额外字段并在类内做具体处理
-     */
-    public static void registerMenu(Class<? extends Menu> menuClass, String title, @Range(from = 1, to = 6) int rows, String permission) {
-        if (permission == null) permission = ""; // 还是 default ?
-        MenuMeta meta = new MenuMeta(
-                TextParser.parse(title),
-                rows,
-                permission
-        );
-        registry.put(menuClass, meta);
+    /** 注册一个菜单的构造方法，用于通过 /menu 为玩家打开此菜单 */
+    public static void registerMenu(String menuId, @Nullable Function<Player, ? extends Menu> factory) {
+        // 检查是否已有相同 menuId
+        if (registry.containsKey(menuId)) {
+            throw new IllegalArgumentException("Menu class already registered: %s".formatted(menuId));
+        }
+        registry.put(menuId.toLowerCase(), factory);
     }
 
-    // 下面三个方法，用于每次创建 Menu 子类实例时获取
-    public static Component getTitle(Class<? extends Menu> menuClass) {
-        MenuMeta meta = registry.get(menuClass);
-        return meta != null ? meta.title() : null;
+    public static Set<String> getMenuIds() {
+        return Collections.unmodifiableSet(registry.keySet());
     }
 
-    public static int getRows(Class<? extends Menu> menuClass) {
-        MenuMeta meta = registry.get(menuClass);
-        return meta != null ? meta.rows() : 0;
-    }
-
-    public static String getPermission(Class<? extends Menu> menuClass) {
-        MenuMeta meta = registry.get(menuClass);
-        return meta != null ? meta.permission() : null;
-    }
-
-    public static boolean registered(Class<? extends Menu> menuClass) {
-        return registry.containsKey(menuClass);
+    public static boolean open(String menuId, Player player) {
+        if (!registry.containsKey(menuId.toLowerCase())) return false;
+        var factory = registry.get(menuId.toLowerCase());
+        if (factory == null) return false;
+        factory.apply(player).open();
+        return true;
     }
 
     @EventHandler
@@ -67,7 +55,4 @@ public class MenuFacade implements Listener {
         if (!(event.getView().getTopInventory().getHolder() instanceof Menu menu)) return;
         menu.handleClose();
     }
-
-    // 内部数据类，便于把注册信息存储到 Map
-    private record MenuMeta(Component title, int rows, String permission) {}
 }
