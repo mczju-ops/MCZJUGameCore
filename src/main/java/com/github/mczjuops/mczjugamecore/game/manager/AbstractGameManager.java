@@ -46,7 +46,7 @@ public interface AbstractGameManager {
      * 创建新的游戏房间
      * @param gameName  游戏名
      * @param gameRoomName  游戏房间名
-     * @return  游戏房间；如果为空，可能是名字输错了
+     * @return 游戏房间；如果为空，可能是名字输错了
      */
     AbstractGameRoom createGameRoom(String gameName, String gameRoomName);
 

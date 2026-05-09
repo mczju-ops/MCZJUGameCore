@@ -9,7 +9,7 @@ import java.util.*;
 
 public class GameRoomManager {
 
-    private final ConsoleSender logger = new ConsoleSender(STR."MGC:\{getClass().getSimpleName()}");
+    private final ConsoleSender logger = new ConsoleSender(getClass().getSimpleName());
 
     private final List<GameRoomLoader> loaders = new LinkedList<>();
 
@@ -43,19 +43,70 @@ public class GameRoomManager {
         gameRoomMap.get(gameName).add(gameRoom);
     }
 
-    /**
-     * 保存所有修改过的游戏地图
-     */
+    /** 异步保存所有修改过的游戏地图 */
     public void saveAllGameRoom(){
         Bukkit.getScheduler().runTaskAsynchronously(MCZJUGameCore.getInstance(), this::saveAllGameRoomDirectly);
     }
 
-    public void saveAllGameRoomDirectly(){
+    /** 异步保存某个游戏下所有修改过的房间 */
+    public void saveGameRoom(String gameName) {
+        Bukkit.getScheduler().runTaskAsynchronously(
+                MCZJUGameCore.getInstance(),
+                () -> saveGameRoomDirectly(gameName)
+        );
+    }
+
+    /** 异步保存某个指定房间 */
+    public void saveGameRoom(String gameName, String roomName) {
+        Bukkit.getScheduler().runTaskAsynchronously(
+                MCZJUGameCore.getInstance(),
+                () -> saveGameRoomDirectly(gameName, roomName)
+        );
+    }
+
+    /** 直接保存所有修改过的游戏地图 */
+    public int saveAllGameRoomDirectly() {
+        int count = 0;
+
         for (List<AbstractGameRoom> gameRoomList : gameRoomMap.values()) {
-            for (AbstractGameRoom gameRoom : gameRoomList) {
-                if (gameRoom.isModified()) gameRoom.save();
-            }
+            count += saveGameRoomListDirectly(gameRoomList);
         }
+
+        return count;
+    }
+
+    /** 直接保存某个游戏下所有修改过的房间 */
+    public int saveGameRoomDirectly(String gameName) {
+        List<AbstractGameRoom> gameRoomList = gameRoomMap.get(gameName);
+
+        if (gameRoomList == null || gameRoomList.isEmpty()) return 0;
+
+        return saveGameRoomListDirectly(gameRoomList);
+    }
+
+    /** 直接保存某个指定房间 */
+    public boolean saveGameRoomDirectly(String gameName, String roomName) {
+        AbstractGameRoom gameRoom = getGameRoom(gameName, roomName);
+
+        if (gameRoom == null) return false;
+
+        if (!gameRoom.isModified()) return false;
+
+        return gameRoom.save();
+    }
+
+    /** 保存列表中所有修改过的房间 */
+    private int saveGameRoomListDirectly(List<AbstractGameRoom> gameRoomList) {
+        int count = 0;
+
+        for (AbstractGameRoom gameRoom : gameRoomList) {
+            if (!gameRoom.isModified()) continue;
+
+            boolean success = gameRoom.save();
+            if (success) count++;
+        }
+
+        return count;
     }
 
     /**
@@ -75,7 +126,18 @@ public class GameRoomManager {
     public AbstractGameRoom createGameRoom(String gameName, String gameRoomName){
         AbstractGameRoom gameRoom = MCZJUGameCore.getGameManager().createGameRoom(gameName, gameRoomName);
         registerGameRoom(gameName, gameRoom);
+        gameRoom.save();
         return gameRoom;
+    }
+
+    public boolean deleteGameRoom(String gameName, String roomName) {
+        return gameRoomMap.get(gameName).removeIf(gameRoom -> {
+            if (gameRoom.getRoomName().equals(roomName)) {
+                gameRoom.deleteRoom();
+                return true;
+            }
+            return false;
+        });
     }
 
     public @Nullable AbstractGameRoom getGameRoom(String gameName, String gameRoomName){
@@ -87,5 +149,16 @@ public class GameRoomManager {
             }
         }
         return null;
+    }
+
+    public Set<String> getGameRoomNames(String gameName) {
+        Set<String> names = new HashSet<>();
+        List<AbstractGameRoom> gameRooms = gameRoomMap.get(gameName);
+        if (gameRooms != null) {
+            for (AbstractGameRoom gameRoom : gameRooms) {
+                names.add(gameRoom.getRoomName());
+            }
+        }
+        return Collections.unmodifiableSet(names);
     }
 }

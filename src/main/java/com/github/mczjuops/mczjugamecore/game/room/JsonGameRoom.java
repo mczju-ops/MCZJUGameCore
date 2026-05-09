@@ -2,23 +2,18 @@ package com.github.mczjuops.mczjugamecore.game.room;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.serialize.LocationAdapter;
-import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-
-import static java.lang.StringTemplate.STR;
 
 public class JsonGameRoom extends AbstractGameRoom {
 
@@ -31,7 +26,7 @@ public class JsonGameRoom extends AbstractGameRoom {
             Object value = field.get(this);
             return clazz.cast(value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            logger.error(STR."无法访问字段: \{name}, 所属游戏: \{getGameName()}, 游戏房间名: \{getRoomName()}");
+            logger.error("无法访问字段：%s，所属游戏：%s，游戏房间名：%s".formatted(name, getGameName(), getRoomName()));
             throw new RuntimeException(e);
         }
     }
@@ -43,7 +38,7 @@ public class JsonGameRoom extends AbstractGameRoom {
             field.setAccessible(true);
             field.set(this, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            logger.error(STR."设置字段失败: \{name}");
+            logger.error("设置字段失败：%s".formatted(name));
             throw new RuntimeException(e);
         }
     }
@@ -64,11 +59,10 @@ public class JsonGameRoom extends AbstractGameRoom {
             Field field = this.getClass().getDeclaredField(name);
             return field.getType();
         } catch (NoSuchFieldException e) {
-            logger.error(STR."无法访问字段: \{name}, 所属游戏: \{getGameName()}, 游戏房间名: \{getRoomName()}");
+            logger.error("无法访问字段：%s，所属游戏：%s，游戏房间名：%s".formatted(name, getGameName(), getRoomName()));
             throw new RuntimeException(e);
         }
     }
-
 
     @Override
     public boolean save() {
@@ -87,17 +81,40 @@ public class JsonGameRoom extends AbstractGameRoom {
             try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
                 gson.toJson(this, writer);
             }
-            logger.success(STR."成功保存地图 \{getGameName()} : \{getRoomName()}");
+            logger.success("成功保存地图 %s: %s".formatted(getGameName(), getRoomName()));
 
         } catch (IOException e) {
-            logger.error(STR."无法加载地图 \{getGameName()} : \{getRoomName()}");
+            logger.error("无法保存地图 %s: %s".formatted(getGameName(), getRoomName()));
             throw new RuntimeException(e);
         }
-        return false;
+        return true;
     }
 
     private String getFilePath(){
         String dataPath = MCZJUGameCore.getInstance().getDataFolder().getAbsolutePath();
-        return STR."\{dataPath}/\{getGameName()}/\{getRoomName()}.json";
+        return "%s/%s/%s.json".formatted(dataPath, getGameName(), getRoomName());
+    }
+
+    @Override
+    public boolean deleteRoom() {
+        String path = getFilePath();
+        Path filePath = Path.of(path);
+        String roomName = getRoomName();
+
+        try {
+            boolean deleted = Files.deleteIfExists(filePath);
+
+            if (deleted) {
+                logger.success("成功删除地图 %s: %s".formatted(getGameName(), roomName));
+            } else {
+                logger.warn("地图文件不存在 %s: %s".formatted(getGameName(), roomName));
+            }
+
+            return deleted;
+
+        } catch (IOException e) {
+            logger.error("无法删除地图 %s: %s".formatted(getGameName(), roomName));
+            throw new RuntimeException(e);
+        }
     }
 }

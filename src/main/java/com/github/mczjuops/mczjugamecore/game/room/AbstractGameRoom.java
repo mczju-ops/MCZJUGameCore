@@ -82,4 +82,6 @@ public abstract class AbstractGameRoom {
     public void setModified(boolean modified) {
         this.modified = modified;
     }
+
+    public abstract boolean deleteRoom();
 }
