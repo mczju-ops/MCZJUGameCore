@@ -1,6 +1,7 @@
 package com.github.mczjuops.mczjugamecore.menu;
 
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -13,37 +14,25 @@ import org.jetbrains.annotations.Range;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public abstract class Menu implements InventoryHolder {
 
     protected final @NotNull PlayerExt player;
-    protected final String permission;
-
     protected @NotNull Inventory inventory;
 
     private final Map<Integer, SlotAction> slotActions = new HashMap<>(); // 槽位 -> 回调
 
-    public Menu(Class<? extends Menu> menuClass, Player player) {
-        if (!MenuFacade.registered(menuClass)) {
-            throw new IllegalStateException("Menu %s is not registered".formatted(menuClass.getName()));
-        }
+    public Menu(Player player) {
 
-        this.permission = MenuFacade.getPermission(menuClass);
         this.player = new PlayerExt(player);
         inventory = Bukkit.createInventory(
                 this,
-                MenuFacade.getRows(menuClass) * 9,
-                Objects.requireNonNull(MenuFacade.getTitle(menuClass))); // 注册了就不会是 null
+                getRows() * 9,
+                TextParser.parse(getTitle()));
     }
 
     /** 带标题和行数的重载（如果需要使用和注册时不一样的标题和行数） */
     public Menu(Class<? extends Menu> menuClass, Player player, Component title, @Range(from = 1, to = 6) int rows) {
-        if (!MenuFacade.registered(menuClass)) {
-            throw new IllegalStateException("Menu %s is not registered".formatted(menuClass.getName()));
-        }
-
-        this.permission = MenuFacade.getPermission(menuClass);
         this.player = new PlayerExt(player);
         inventory = Bukkit.createInventory(
                 this,
@@ -55,7 +44,7 @@ public abstract class Menu implements InventoryHolder {
     protected abstract void setup();
 
     public void open() {
-        if (!player.player().hasPermission(permission)) return;
+        if (!player.player().hasPermission(getPermission())) return;
 
         setup();
         player.player().openInventory(inventory);
@@ -84,6 +73,12 @@ public abstract class Menu implements InventoryHolder {
         setup();
         player.player().updateInventory();
     }
+
+    protected abstract String getTitle();
+
+    protected abstract @Range(from = 1, to = 6) int getRows();
+
+    protected abstract String getPermission();
 
     @Override
     public @NotNull Inventory getInventory() { return inventory; }
