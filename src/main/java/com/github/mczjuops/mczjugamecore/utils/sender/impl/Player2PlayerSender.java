@@ -30,6 +30,6 @@ public class Player2PlayerSender implements Sender {
     }
 
     private void send(String msg){
-        to.sendMessage(TextParser.parse(STR."<red>[<white>\{from.getName()}</white>] <gray>-></gray> [<white>\{to.getName()}</white>] <reset>\{msg}"));
+        to.sendMessage(TextParser.parse("<red>[<white>%s</white>] <gray>-></gray> [<white>%s</white>] <reset><white>%s".formatted(from.getName(), to.getName(), msg)));
     }
 }

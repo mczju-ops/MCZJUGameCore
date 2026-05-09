@@ -53,8 +53,8 @@ protected void onGameStart() {
         public void run() {
             // 过5秒结束游戏
             ExampleGameRoom gameRoom = (ExampleGameRoom) getGameRoom();
-            getPlayers().forEach(it -> it.sender().info(STR."str value: \{gameRoom.valueStr}"));
-            getPlayers().forEach(it -> it.sender().info(STR."int value: \{gameRoom.valueInt}"));
+            getPlayers().forEach(it -> it.sender().info("str value: %s".formatted(gameRoom.valueStr)));
+            getPlayers().forEach(it -> it.sender().info("str value: %s".formatted(gameRoom.intStr)));
             MCZJUGameCore.getGameManager().endGame(game);
         }
     }, 100);

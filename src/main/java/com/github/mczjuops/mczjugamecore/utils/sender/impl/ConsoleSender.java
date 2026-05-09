@@ -1,7 +1,6 @@
 package com.github.mczjuops.mczjugamecore.utils.sender.impl;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
-import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
 
 import java.util.logging.Logger;
@@ -21,9 +20,9 @@ public class ConsoleSender implements Sender {
         return MCZJUGameCore.getInstance().getLogger();
     }
 
-    @Override public void info(String msg) { getLogger().info(STR."[\{name}] \{msg}"); }
-    @Override public void warn(String msg) { getLogger().warning(STR."[\{name}] \{msg}"); }
-    @Override public void error(String msg) { getLogger().severe(STR."[\{name}] \{msg}"); }
+    @Override public void info(String msg) { getLogger().info("[%s] %s".formatted(name, msg)); }
+    @Override public void warn(String msg) { getLogger().warning("[%s] %s".formatted(name, msg)); }
+    @Override public void error(String msg) { getLogger().severe("[%s] %s".formatted(name, msg)); }
 
     @Override public void success(String msg) { info(msg); }
     @Override public void primary(String msg) { info(msg); }

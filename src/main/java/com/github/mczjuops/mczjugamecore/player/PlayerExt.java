@@ -80,9 +80,7 @@ public record PlayerExt(@NotNull Player player) {
         HashMap<Integer, ItemStack> itemMap = player.getInventory().addItem(itemStack);
         if (!itemMap.isEmpty()){
             sender().warn("背包已满，请检查周围掉落物");
-            itemMap.forEach((_, item) ->{
-                player.getWorld().dropItem(player.getLocation(), item);
-            });
+            itemMap.forEach((integer, item) -> player.getWorld().dropItem(player.getLocation(), item));
         }else {
             sender().success("已获取物品，请检查背包");
         }

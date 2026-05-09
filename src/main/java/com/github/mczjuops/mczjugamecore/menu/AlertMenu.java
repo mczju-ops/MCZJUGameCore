@@ -20,7 +20,7 @@ public class AlertMenu extends Menu {
                 ItemBuilder.of(Material.GREEN_WOOL)
                         .customName("<green>确认")
                         .build(),
-                (player, _) -> {
+                (player, event) -> {
                     onConfirm.run();
                     player.player().closeInventory();
                 }
@@ -31,7 +31,7 @@ public class AlertMenu extends Menu {
                 ItemBuilder.of(Material.RED_WOOL)
                         .customName("<red>取消")
                         .build(),
-                (player, _) -> player.player().closeInventory()
+                (player, event) -> player.player().closeInventory()
         );
     }
 }
