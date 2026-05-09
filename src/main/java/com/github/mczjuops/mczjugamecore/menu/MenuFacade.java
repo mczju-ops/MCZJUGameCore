@@ -35,7 +35,7 @@ public class MenuFacade implements Listener {
         if (!registry.containsKey(menuId.toLowerCase())) return false;
         var factory = registry.get(menuId.toLowerCase());
         if (factory == null) return false;
-        factory.apply(player);
+        factory.apply(player).open();
         return true;
     }
 
