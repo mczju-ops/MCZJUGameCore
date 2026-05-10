@@ -65,7 +65,7 @@ public abstract class Menu implements InventoryHolder {
 
     public void handleClick(InventoryClickEvent event) {
         SlotAction action = slotActions.get(event.getSlot());
-        if (action != null) action.execute(player, event, this.args);
+        if (action != null) action.execute(player, event);
     }
 
     public void handleClose() {}

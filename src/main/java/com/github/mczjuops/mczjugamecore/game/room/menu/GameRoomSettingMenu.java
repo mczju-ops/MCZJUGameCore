@@ -220,7 +220,7 @@ public class GameRoomSettingMenu extends Menu {
                                 "<gray>服务器关闭时会自动保存，但崩溃等异常可能导致数据丢失"
                         ))
                         .build(),
-                (p, r, args) -> {
+                (p, r) -> {
                     MCZJUGameCore.getGameRoomManager().saveGameRoom(gameRoom.getGameName(), gameRoom.getRoomName());
                     player.player().playSound(player.player().getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
                     player.sender().success("<green>成功保存该房间的数据");
@@ -265,7 +265,7 @@ public class GameRoomSettingMenu extends Menu {
                                 ))
                                 .glint(value != null)
                                 .build(),
-                        (p, r, args) -> handler.handle(player, gameRoom, fieldName)
+                        (p, r) -> handler.handle(player, gameRoom, fieldName)
                 );
             }
 
