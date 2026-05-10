@@ -1,6 +1,8 @@
 package com.github.mczjuops.mczjugamecore.command;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import com.github.mczjuops.mczjugamecore.utils.CommandUtils;
@@ -56,6 +58,8 @@ public class MGCCommand implements BrigadierCommand {
                 )
                 .then(Commands.literal("leave")
                         .executes(this::executeLeave))
+                .then(Commands.literal("start") // 尝试开始当前玩家所在的游戏
+                        .executes(this::executeStart))
                 .build();
     }
 
@@ -92,6 +96,28 @@ public class MGCCommand implements BrigadierCommand {
         }
 
         MCZJUGameCore.getPlayerManager().leaveGame(player, PlayerQuitReason.COMMAND_QUIT);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeStart(CommandContext<CommandSourceStack> ctx){
+        CommandSender sender = ctx.getSource().getSender();
+        if (!(sender instanceof Player p)) {
+            sender.sendMessage(Component.text("该命令只能由玩家执行"));
+            return 0;
+        }
+
+        PlayerExt player = new PlayerExt(p);
+        if (!player.isInGame()){
+            player.sender().warn("你没有在等待任何游戏，请先加入游戏再尝试开始游戏");
+            return 0;
+        }
+        AbstractGame game = player.getGame();
+        assert game != null;
+        if (game.getState() != GameState.WAITING) {
+            player.sender().warn("游戏不在等待状态，无法尝试开始游戏");
+            return 0;
+        }
+        game.getGameWaitStrategy().tryStart();
         return Command.SINGLE_SUCCESS;
     }
 }

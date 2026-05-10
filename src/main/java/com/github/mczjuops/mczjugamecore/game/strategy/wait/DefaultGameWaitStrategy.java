@@ -14,9 +14,18 @@ import java.util.List;
  */
 public class DefaultGameWaitStrategy extends GameWaitStrategy {
     private final int playerLimit;
+
+    private final int minPlayer;
     public DefaultGameWaitStrategy(AbstractGame game, int playerLimit) {
         super(game);
         this.playerLimit = playerLimit;
+        this.minPlayer = 1;
+    }
+
+    public DefaultGameWaitStrategy(AbstractGame game, int playerLimit, int minPlayer) {
+        super(game);
+        this.playerLimit = playerLimit;
+        this.minPlayer = minPlayer;
     }
 
     @Override
@@ -31,7 +40,7 @@ public class DefaultGameWaitStrategy extends GameWaitStrategy {
     }
 
     private boolean onJoin(List<PlayerExt> newPlayers){
-        int size = MCZJUGameCore.getPlayerManager().getPlayers(game).size();
+        int size = game.getPlayers().size();
         if (size > playerLimit) return false;
 
         // 加入成功，先发消息
@@ -52,5 +61,12 @@ public class DefaultGameWaitStrategy extends GameWaitStrategy {
     public void onPlayerLeave(PlayerExt player) {
         game.sender().warn("玩家%s退出了该游戏（%d/%d）".formatted(player.getDisplayName(), game.getPlayers().size(), playerLimit));
 
+    }
+
+    @Override
+    public void tryStart() {
+        if (game.getPlayers().size() >= minPlayer){
+            startGame();
+        }
     }
 }

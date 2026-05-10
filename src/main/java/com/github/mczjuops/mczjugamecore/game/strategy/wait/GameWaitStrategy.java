@@ -35,6 +35,12 @@ public abstract class GameWaitStrategy {
      */
     public abstract void onPlayerLeave(PlayerExt player);
 
+    /**
+     * 尝试强制开始游戏，一般是指令触发。
+     * 很多游戏不用到满人开始，而是感觉人差不多了，就可以在等待房间点开始按钮尝试开始游戏。
+     */
+    public abstract void tryStart();
+
 
     /**
      * 确认可以开始了，就调用这个函数来开始游戏。由GameManager调用
