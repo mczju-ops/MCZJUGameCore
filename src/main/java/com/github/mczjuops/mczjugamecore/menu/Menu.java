@@ -21,23 +21,15 @@ public abstract class Menu implements InventoryHolder {
     protected @NotNull Inventory inventory;
 
     private final Map<Integer, SlotAction> slotActions = new HashMap<>(); // 槽位 -> 回调
+    protected final Object[] args;
 
-    public Menu(Player player) {
-
+    public Menu(Player player, Object... args) {
+        this.args = args;
         this.player = new PlayerExt(player);
         inventory = Bukkit.createInventory(
                 this,
                 getRows() * 9,
                 TextParser.parse(getTitle()));
-    }
-
-    /** 带标题和行数的重载（如果需要使用和注册时不一样的标题和行数） */
-    public Menu(Class<? extends Menu> menuClass, Player player, Component title, @Range(from = 1, to = 6) int rows) {
-        this.player = new PlayerExt(player);
-        inventory = Bukkit.createInventory(
-                this,
-                rows * 9,
-                title);
     }
 
     /** 子类填充菜单 */
@@ -75,6 +67,9 @@ public abstract class Menu implements InventoryHolder {
     }
 
     protected abstract String getTitle();
+    public Object[] getArgs(){
+        return this.args;
+    }
 
     protected abstract @Range(from = 1, to = 6) int getRows();
 
