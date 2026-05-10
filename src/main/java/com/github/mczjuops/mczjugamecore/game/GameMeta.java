@@ -2,11 +2,13 @@ package com.github.mczjuops.mczjugamecore.game;
 
 import org.bukkit.Material;
 
+import java.util.List;
+
 public record GameMeta(
         String displayName,
         Material icon,
         String author,
-        String description
+        List<String> description
 ) {
     public static Builder builder() {
         return new Builder();
@@ -24,7 +26,7 @@ public record GameMeta(
         private String displayName = "<gray>未命名游戏</gray>";
         private Material icon = Material.PAPER;
         private String author = "<gray>未知</gray>";
-        private String description = "<gray>无</gray>";
+        private List<String> description = List.of("<gray>无</gray>");
 
         public Builder displayName(String displayName) {
             this.displayName = displayName;
@@ -41,8 +43,8 @@ public record GameMeta(
             return this;
         }
 
-        public Builder description(String description) {
-            this.description = description;
+        public Builder description(List<String> lines) {
+            this.description = lines;
             return this;
         }
 

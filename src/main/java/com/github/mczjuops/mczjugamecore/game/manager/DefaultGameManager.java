@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.game.manager;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomState;
@@ -21,6 +22,7 @@ public class DefaultGameManager implements AbstractGameManager {
     private final Map<Class<? extends AbstractGame>, Class<? extends AbstractGameRoom>> registerGameMap = new HashMap<>();
     private final Map<String, Class<? extends AbstractGame>> gameIdMap = new HashMap<>();
     private final List<AbstractGame> gameList = new LinkedList<>();
+    private final Map<String, GameMeta> gameMetaMap = new HashMap<>(); // 反射创建对象后顺手存了，方便菜单用
 
     @Override
     public void registerGame(Class<? extends AbstractGame> gameClass, Class<? extends AbstractGameRoom> gameRoomClass) {
@@ -34,6 +36,7 @@ public class DefaultGameManager implements AbstractGameManager {
             }
             registerGameMap.put(gameClass, gameRoomClass);
             gameIdMap.put(gameId, gameClass);
+            gameMetaMap.put(gameId, game.getGameMeta());
             MCZJUGameCore.getGameRoomManager().loadGameRoom(gameId, gameRoomClass); // 加载并注册所有该游戏的游戏房间
         } catch (InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             logger.error("无法注册游戏%s，原因：无法访问无参构造器，无法创建游戏实例".formatted(gameClass));
@@ -181,5 +184,10 @@ public class DefaultGameManager implements AbstractGameManager {
     @Override
     public Set<String> getRegisteredGameIds() {
         return Set.copyOf(gameIdMap.keySet());
+    }
+
+    @Override
+    public Map<String, GameMeta> getGameMetas() {
+        return Collections.unmodifiableMap(gameMetaMap);
     }
 }

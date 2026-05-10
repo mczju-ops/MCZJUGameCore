@@ -11,7 +11,6 @@ import com.github.mczjuops.mczjugamecore.player.strategy.impl.DefaultPlayerQuitS
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.GameSender;
-import org.bukkit.Material;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -43,11 +42,6 @@ public abstract  class AbstractGame {
      * 游戏的一些信息，主要是展示用
      */
     public abstract GameMeta getGameMeta();
-
-    /**
-     * 出现在菜单中时的游戏图标
-     */
-    public abstract Material getIcon();
 
     /**
      * 获取游戏等待逻辑

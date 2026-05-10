@@ -1,9 +1,11 @@
 package com.github.mczjuops.mczjugamecore.game.manager;
 
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -54,4 +56,10 @@ public interface AbstractGameManager {
      * 用于命令补全、菜单展示等只读场景
      */
     Set<String> getRegisteredGameIds();
+
+    /**
+     * 获取所有已注册的游戏的 GameMeta
+     * 用于在菜单中展示信息
+     */
+    Map<String, GameMeta> getGameMetas();
 }
