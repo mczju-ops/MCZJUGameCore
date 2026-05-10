@@ -52,6 +52,9 @@ public class MenuCommand implements BrigadierCommand {
                         })
                         .then(Commands.argument("player", ArgumentTypes.player())
                                 .executes(this::executeMenu)
+                                .then(Commands.argument("args", StringArgumentType.greedyString())
+                                        .executes(this::executeMenu)
+                                )
                         )
                 )
                 .build();
@@ -75,7 +78,14 @@ public class MenuCommand implements BrigadierCommand {
             return 0;
         }
 
-        boolean result = MenuFacade.open(menuId, player);
+        String[] args = new String[0];
+
+        try {
+            String raw = StringArgumentType.getString(ctx, "args");
+            args = raw.split(" ");
+        } catch (IllegalArgumentException ignored) {
+        }
+        boolean result = MenuFacade.open(menuId, player, (Object[]) args);
         if (result) {
             sender.sendMessage(TextParser.parse("<green>为玩家%s打开菜单%s".formatted(player.getName(), menuId)));
             return Command.SINGLE_SUCCESS;
