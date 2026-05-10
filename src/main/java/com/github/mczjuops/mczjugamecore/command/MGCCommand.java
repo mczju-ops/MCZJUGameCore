@@ -112,6 +112,7 @@ public class MGCCommand implements BrigadierCommand {
             return 0;
         }
         AbstractGame game = player.getGame();
+        assert game != null;
         if (game.getState() != GameState.WAITING) {
             player.sender().warn("游戏不在等待状态，无法尝试开始游戏");
             return 0;
