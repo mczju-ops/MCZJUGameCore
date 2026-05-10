@@ -16,6 +16,9 @@ import com.github.mczjuops.mczjugamecore.menu.MenuFacade;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.party.PartyManager;
+import com.github.mczjuops.mczjugamecore.profile.ProfileManager;
+import com.github.mczjuops.mczjugamecore.profile.ProfileCapture;
+import com.github.mczjuops.mczjugamecore.profile.ProfileStorageManager;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
@@ -41,6 +44,10 @@ public final class MCZJUGameCore extends JavaPlugin {
     private ItemManager itemManager;
     private MenuFacade menuFacade;
 
+    private ProfileManager profileManager;
+    private ProfileCapture profileCapture;
+    private ProfileStorageManager profileStorageManager;
+
     @Override
     public void onEnable() {
         // Plugin startup logic
@@ -53,6 +60,10 @@ public final class MCZJUGameCore extends JavaPlugin {
         gameRoomManager = new GameRoomManager();
         menuFacade = new MenuFacade();
         itemManager = new ItemManager();
+
+        profileManager = new ProfileManager();
+        profileCapture = new ProfileCapture();
+        profileStorageManager = new ProfileStorageManager();
 
         MenuInitializer.initialize();
         ListenerInitializer.initialize();
@@ -70,6 +81,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
         gameRoomManager.saveAllGameRoomDirectly();  // 保存所有游戏房间
+        profileManager.shutdown(); // 保存所有玩家的 profile 数据
     }
 
     public static @NotNull MCZJUGameCore getInstance(){
@@ -115,6 +127,16 @@ public final class MCZJUGameCore extends JavaPlugin {
 
     public static @NotNull FileConfiguration getMGCConfig(){
         return getInstance().getConfig();
+    }
+
+    public static @NotNull ProfileManager getProfileManager(){
+        return getInstance().profileManager;
+    }
+    public static @NotNull ProfileCapture getProfileCapture() {
+        return getInstance().profileCapture;
+    }
+    public static @NotNull ProfileStorageManager getProfileStorageManager(){
+        return getInstance().profileStorageManager;
     }
 
     public static boolean isDebug(){

@@ -17,6 +17,8 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import static com.github.mczjuops.mczjugamecore.profile.ProfileData.LOBBY_PROFILE_ID;
+
 public record PlayerExt(@NotNull Player player) {
 
     public Sender sender(){
@@ -40,6 +42,16 @@ public record PlayerExt(@NotNull Player player) {
 
     public boolean isInGame(Class<? extends AbstractGame> gameClass){
         return MCZJUGameCore.getPlayerManager().isPlayerInGame(this, gameClass);
+    }
+
+    /**
+     * 切换玩家的 profile
+     *
+     * @param profileId 对应的游戏 ID
+     */
+    public void switchProfile(@Nullable String profileId) {
+        if (profileId == null) profileId = LOBBY_PROFILE_ID;
+        MCZJUGameCore.getProfileManager().switchProfile(player, profileId);
     }
 
     public @Nullable Party getParty(){

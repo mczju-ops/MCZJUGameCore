@@ -2,7 +2,6 @@ package com.github.mczjuops.mczjugamecore.player;
 
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameState;
-import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +41,7 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
             leaveGame(player, PlayerQuitReason.COMMAND_QUIT);
         }
         playerGameMap.put(player, game);
-
+        player.switchProfile(game.getName());
     }
 
     @Override
@@ -51,6 +50,9 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         // 如果原本在游戏中，则调用game中的退出游戏
         AbstractGame game = playerGameMap.get(player);
         playerGameMap.remove(player);
+
+        player.switchProfile(null);
+
         if (reason == PlayerQuitReason.JOIN_FAIL) return;   // 如果是加入游戏失败，不处理
         if (game.getState() == GameState.WAITING){
             // 如果是在等待阶段
@@ -68,7 +70,14 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
 
     @Override
     public void removeAllPlayer(AbstractGame game) {
-        playerGameMap.entrySet().removeIf(entry -> entry.getValue() == game);
+        playerGameMap.entrySet().removeIf(entry -> {
+            if (entry.getValue() == game) {
+                PlayerExt playerExt = entry.getKey();
+                playerExt.switchProfile(null);
+                return true;
+            }
+            return false;
+        });
     }
 
     @Override
