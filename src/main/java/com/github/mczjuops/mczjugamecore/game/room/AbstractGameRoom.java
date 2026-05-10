@@ -1,7 +1,10 @@
 package com.github.mczjuops.mczjugamecore.game.room;
 
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,7 +34,7 @@ public abstract class AbstractGameRoom {
      * @return  字段的值
      * @param <T>   字段的类型，如Location.class
      */
-    public abstract <T> T getField(String name, Class<T> clazz);
+    public abstract @Nullable <T> T getField(String name, Class<T> clazz);
 
     /**
      * 设置字段值。仅在本插件开发中有用，其它插件一般用不到
@@ -83,4 +86,6 @@ public abstract class AbstractGameRoom {
     }
 
     public abstract boolean deleteRoom();
+
+    public abstract  <T> @NotNull List<T> getList(String name, Class<T> clazz);
 }
