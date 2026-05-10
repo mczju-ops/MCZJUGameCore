@@ -41,7 +41,7 @@ public class MGCCommand implements BrigadierCommand {
         return Commands.literal(getName())
                 .requires(src -> src.getSender().hasPermission("mgc.mgc"))
                 .executes(ctx -> {
-                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgc join|leave"));
+                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgc join|leave|start"));
                     return 0;
                 })
                 .then(Commands.literal("join")
