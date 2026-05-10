@@ -5,5 +5,5 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 
 @FunctionalInterface
 public interface SlotAction {
-    void execute(PlayerExt clicker, InventoryClickEvent event);
+    void execute(PlayerExt clicker, InventoryClickEvent event, Object... args);
 }
