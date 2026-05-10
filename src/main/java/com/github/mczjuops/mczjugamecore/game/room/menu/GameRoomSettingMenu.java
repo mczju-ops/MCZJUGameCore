@@ -47,9 +47,9 @@ public class GameRoomSettingMenu extends Menu {
                                     room.setField(fieldName, newValue);
                                     room.setModified(true);
                                     player.sender().success("<green>设置成功：<dark_aqua>%s</dark_aqua> -> <dark_green>%s".formatted(fieldName, newValue));
-                                    reopenLater(player, room.getGameName(), room.getRoomName());
+                                    reopenLater(player, room.getGameId(), room.getRoomName());
                                 },
-                                "取消", (p, r) -> reopenLater(player, room.getGameName(), room.getRoomName())
+                                "取消", (p, r) -> reopenLater(player, room.getGameId(), room.getRoomName())
                         );
             }
         });
@@ -101,9 +101,9 @@ public class GameRoomSettingMenu extends Menu {
                                     room.setField(fieldName, input);
                                     room.setModified(true);
                                     player.sender().success("<green>设置成功：<dark_aqua>%s</dark_aqua> -> <dark_green>%s".formatted(fieldName, input));
-                                    reopenLater(player, room.getGameName(), room.getRoomName());
+                                    reopenLater(player, room.getGameId(), room.getRoomName());
                                 },
-                                "取消", (p, r) -> reopenLater(player, room.getGameName(), room.getRoomName())
+                                "取消", (p, r) -> reopenLater(player, room.getGameId(), room.getRoomName())
                         );
             }
         });
@@ -117,7 +117,7 @@ public class GameRoomSettingMenu extends Menu {
                     room.setField(fieldName, location);
                     room.setModified(true);
                     player.sender().success("<green>位置设置成功");
-                    reopenLater(player, room.getGameName(), room.getRoomName());
+                    reopenLater(player, room.getGameId(), room.getRoomName());
                 });
             }
         });
@@ -143,14 +143,14 @@ public class GameRoomSettingMenu extends Menu {
                                 room.setField(fieldName, parsed);
                                 room.setModified(true);
                                 player.sender().success("<green>设置成功：<dark_aqua>%s</dark_aqua> -> <dark_green>%s".formatted(fieldName, parsed));
-                                reopenLater(player, room.getGameName(), room.getRoomName());
+                                reopenLater(player, room.getGameId(), room.getRoomName());
                             } catch (NumberFormatException e) {
                                 player.sender().error("<red>输入格式错误：\"%s\"不是合法的%s".formatted(input, type.getSimpleName()));
                                 // 重新打开让玩家重试
-                                reopenLater(player, room.getGameName(), room.getRoomName());
+                                reopenLater(player, room.getGameId(), room.getRoomName());
                             }
                         },
-                        "取消", (p, r) -> reopenLater(player, room.getGameName(), room.getRoomName())
+                        "取消", (p, r) -> reopenLater(player, room.getGameId(), room.getRoomName())
                 );
     }
 
@@ -200,7 +200,7 @@ public class GameRoomSettingMenu extends Menu {
                 ItemBuilder.of(Material.WRITABLE_BOOK)
                         .customName("<green>编辑房间参数")
                         .lore(List.of(
-                                "<gray>游戏名：<white>%s".formatted(gameRoom.getGameName()),
+                                "<gray>游戏名：<white>%s".formatted(gameRoom.getGameId()),
                                 "<gray>房间名：<white>%s".formatted(gameRoom.getRoomName())
                         ))
                         .glint(true)
@@ -221,7 +221,7 @@ public class GameRoomSettingMenu extends Menu {
                         ))
                         .build(),
                 (p, r) -> {
-                    MCZJUGameCore.getGameRoomManager().saveGameRoom(gameRoom.getGameName(), gameRoom.getRoomName());
+                    MCZJUGameCore.getGameRoomManager().saveGameRoom(gameRoom.getGameId(), gameRoom.getRoomName());
                     player.player().playSound(player.player().getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
                     player.sender().success("<green>成功保存该房间的数据");
                 }
@@ -286,11 +286,11 @@ public class GameRoomSettingMenu extends Menu {
         else return value.toString();
     }
 
-    private static void reopenLater(PlayerExt player, String gameName, String roomName) {
+    private static void reopenLater(PlayerExt player, String gameId, String roomName) {
         Bukkit.getScheduler().runTask(
                 MCZJUGameCore.getInstance(),
                 () -> {
-                    AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getGameRoom(gameName, roomName);
+                    AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getGameRoom(gameId, roomName);
                     new GameRoomSettingMenu(player.player(), gameRoom).open();
                 }
         );

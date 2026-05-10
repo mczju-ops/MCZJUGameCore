@@ -19,24 +19,22 @@ public class DefaultGameManager implements AbstractGameManager {
     private final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
 
     private final Map<Class<? extends AbstractGame>, Class<? extends AbstractGameRoom>> registerGameMap = new HashMap<>();
-    private final Map<String, Class<? extends AbstractGame>> gameNameMap = new HashMap<>();
+    private final Map<String, Class<? extends AbstractGame>> gameIdMap = new HashMap<>();
     private final List<AbstractGame> gameList = new LinkedList<>();
-
-
 
     @Override
     public void registerGame(Class<? extends AbstractGame> gameClass, Class<? extends AbstractGameRoom> gameRoomClass) {
         try {
             AbstractGame game = gameClass.getDeclaredConstructor().newInstance();
-            String name = game.getId();
-            if (gameNameMap.containsKey(name)){
+            String gameId = game.getId();
+            if (gameIdMap.containsKey(gameId)){
                 // 有这个游戏了
-                logger.error("无法注册游戏 %s，相同 ID 的游戏已存在".formatted(name));
+                logger.error("无法注册游戏 %s，相同 ID 的游戏已存在".formatted(gameId));
                 return;
             }
             registerGameMap.put(gameClass, gameRoomClass);
-            gameNameMap.put(name, gameClass);
-            MCZJUGameCore.getGameRoomManager().loadGameRoom(name, gameRoomClass);    // 加载并注册所有该游戏的游戏房间
+            gameIdMap.put(gameId, gameClass);
+            MCZJUGameCore.getGameRoomManager().loadGameRoom(gameId, gameRoomClass); // 加载并注册所有该游戏的游戏房间
         } catch (InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             logger.error("无法注册游戏%s，原因：无法访问无参构造器，无法创建游戏实例".formatted(gameClass));
             throw new RuntimeException(e);
@@ -50,7 +48,7 @@ public class DefaultGameManager implements AbstractGameManager {
         AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getLeisureGameRoom(name);
         if (gameRoom == null) return null;
         try {
-            AbstractGame game = gameNameMap.get(name).getDeclaredConstructor().newInstance();
+            AbstractGame game = gameIdMap.get(name).getDeclaredConstructor().newInstance();
             game.setGameRoom(gameRoom);
             gameRoom.setState(GameRoomState.IN_GAME);   // 分配房间后，设置房间为占用状态
             logger.info("将房间 %s分配给游戏%s".formatted(gameRoom.getRoomName(), game.getId()));
@@ -132,18 +130,18 @@ public class DefaultGameManager implements AbstractGameManager {
     }
 
     @Override
-    public @Nullable AbstractGameRoom createGameRoom(String gameName, String gameRoomName) {
-        Class<? extends AbstractGame> gameClass = gameNameMap.get(gameName);
+    public @Nullable AbstractGameRoom createGameRoom(String gameId, String gameRoomName) {
+        Class<? extends AbstractGame> gameClass = gameIdMap.get(gameId);
         if (gameClass == null) return null; // 可能是名称输错，就先不报错了
         Class<? extends AbstractGameRoom> gameRoomClass = registerGameMap.get(gameClass);
         assert gameRoomClass != null;   // 不可能为空，因为这两个得一起注册
         try {
             AbstractGameRoom gameRoom = gameRoomClass.getDeclaredConstructor().newInstance();
-            gameRoom.setGameName(gameName);
+            gameRoom.setGameId(gameId);
             gameRoom.setRoomName(gameRoomName);
             return gameRoom;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            logger.error("无法创建新的游戏房间%s，原因：对应的游戏房间缺失无参构造器".formatted(gameName));
+            logger.error("无法创建新的游戏房间%s，原因：对应的游戏房间缺失无参构造器".formatted(gameId));
             throw new RuntimeException(e);
         }
 
@@ -181,7 +179,7 @@ public class DefaultGameManager implements AbstractGameManager {
     }
 
     @Override
-    public Set<String> getRegisteredGameNames() {
-        return Set.copyOf(gameNameMap.keySet());
+    public Set<String> getRegisteredGameIds() {
+        return Set.copyOf(gameIdMap.keySet());
     }
 }

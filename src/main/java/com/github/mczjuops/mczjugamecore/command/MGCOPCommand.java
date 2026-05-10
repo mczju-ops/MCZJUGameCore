@@ -60,7 +60,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                 })
                                 .then(Commands.argument("game", StringArgumentType.string())
                                         .suggests((ctx, builder)
-                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
+                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameIds(), builder)
                                         )
                                         .executes(this::executeRoomList)
                                 )
@@ -72,7 +72,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                 })
                                 .then(Commands.argument("game", StringArgumentType.string())
                                         .suggests((ctx, builder)
-                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
+                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameIds(), builder)
                                         )
                                         .executes(ctx -> {
                                             ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请输入房间ID"));
@@ -90,7 +90,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                 })
                                 .then(Commands.argument("game", StringArgumentType.string())
                                         .suggests((ctx, builder)
-                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
+                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameIds(), builder)
                                         )
                                         .executes(ctx -> {
                                             ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定房间ID"));
@@ -98,8 +98,8 @@ public class MGCOPCommand implements BrigadierCommand {
                                         })
                                         .then(Commands.argument("room", StringArgumentType.string())
                                                 .suggests((ctx, builder) -> {
-                                                    String gameName = CommandUtils.getToken(builder, 3);
-                                                    Set<String> names = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameName);
+                                                    String gameId = CommandUtils.getToken(builder, 3);
+                                                    Set<String> names = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameId);
                                                     return CommandUtils.suggestMatching(names, builder);
                                                 })
                                                 .executes(this::executeRoomEdit)
@@ -113,7 +113,7 @@ public class MGCOPCommand implements BrigadierCommand {
                                 })
                                 .then(Commands.argument("game", StringArgumentType.string())
                                         .suggests((ctx, builder)
-                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
+                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameIds(), builder)
                                         )
                                         .executes(ctx -> {
                                             ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定要删除的房间"));
@@ -121,8 +121,8 @@ public class MGCOPCommand implements BrigadierCommand {
                                         })
                                         .then(Commands.argument("room", StringArgumentType.string())
                                                 .suggests((ctx, builder) -> {
-                                                    String gameName = CommandUtils.getToken(builder, 3);
-                                                    Set<String> names = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameName);
+                                                    String gameId = CommandUtils.getToken(builder, 3);
+                                                    Set<String> names = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameId);
                                                     return CommandUtils.suggestMatching(names, builder);
                                                 })
                                                 .executes(this::executeRoomDelete)
@@ -142,16 +142,16 @@ public class MGCOPCommand implements BrigadierCommand {
     private int executeRoomList(CommandContext<CommandSourceStack> ctx) {
         CommandSender sender = ctx.getSource().getSender();
 
-        String gameName = StringArgumentType.getString(ctx, "game");
-        if (!MCZJUGameCore.getGameManager().getRegisteredGameNames().contains(gameName)) {
-            sender.sendMessage(TextParser.parse("<yellow>未注册游戏%s".formatted(gameName)));
+        String gameId = StringArgumentType.getString(ctx, "game");
+        if (!MCZJUGameCore.getGameManager().getRegisteredGameIds().contains(gameId)) {
+            sender.sendMessage(TextParser.parse("<yellow>未注册游戏%s".formatted(gameId)));
             return 0;
         }
 
-        Set<String> roomNames = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameName);
+        Set<String> roomNames = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameId);
         String list = String.join(", ", roomNames);
         String count = !roomNames.isEmpty() ? "<gold>共%s个".formatted(roomNames.size()) : "<red>无";
-        sender.sendMessage(TextParser.parse("<yellow>游戏%s的房间：%s".formatted(gameName, count)));
+        sender.sendMessage(TextParser.parse("<yellow>游戏%s的房间：%s".formatted(gameId, count)));
         if (!roomNames.isEmpty()) sender.sendMessage(Component.text(list).color(NamedTextColor.YELLOW));
 
         return Command.SINGLE_SUCCESS;
@@ -160,21 +160,21 @@ public class MGCOPCommand implements BrigadierCommand {
     private int executeRoomCreate(CommandContext<CommandSourceStack> ctx) {
         CommandSender sender = ctx.getSource().getSender();
 
-        String gameName = StringArgumentType.getString(ctx, "game");
-        if (!MCZJUGameCore.getGameManager().getRegisteredGameNames().contains(gameName)) {
-            sender.sendMessage(TextParser.parse("<yellow>未注册游戏%s".formatted(gameName)));
+        String gameId = StringArgumentType.getString(ctx, "game");
+        if (!MCZJUGameCore.getGameManager().getRegisteredGameIds().contains(gameId)) {
+            sender.sendMessage(TextParser.parse("<yellow>未注册游戏%s".formatted(gameId)));
             return 0;
         }
 
         String roomName = StringArgumentType.getString(ctx, "room");
-        Set<String> roomNames = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameName);
+        Set<String> roomNames = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameId);
         if (roomNames.contains(roomName)) {
-            sender.sendMessage(TextParser.parse("<red>游戏%s已存在ID为%s的房间".formatted(gameName, roomName)));
+            sender.sendMessage(TextParser.parse("<red>游戏%s已存在ID为%s的房间".formatted(gameId, roomName)));
             return 0;
         }
 
-        MCZJUGameCore.getGameRoomManager().createGameRoom(gameName, roomName);
-        sender.sendMessage(TextParser.parse("<green>成功为游戏%s创建ID为%s的房间".formatted(gameName, roomName)));
+        MCZJUGameCore.getGameRoomManager().createGameRoom(gameId, roomName);
+        sender.sendMessage(TextParser.parse("<green>成功为游戏%s创建ID为%s的房间".formatted(gameId, roomName)));
 
         return Command.SINGLE_SUCCESS;
     }
@@ -189,14 +189,14 @@ public class MGCOPCommand implements BrigadierCommand {
 
         PlayerExt player = new PlayerExt(p);
 
-        String gameName = StringArgumentType.getString(ctx, "game");
-        if (!MCZJUGameCore.getGameManager().getRegisteredGameNames().contains(gameName)) {
-            player.sender().warn("<yellow>未注册游戏%s".formatted(gameName));
+        String gameId = StringArgumentType.getString(ctx, "game");
+        if (!MCZJUGameCore.getGameManager().getRegisteredGameIds().contains(gameId)) {
+            player.sender().warn("<yellow>未注册游戏%s".formatted(gameId));
             return 0;
         }
 
         String roomName = StringArgumentType.getString(ctx, "room");
-        if (!MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameName).contains(roomName)) {
+        if (!MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameId).contains(roomName)) {
             player.sender().warn("""
                     <yellow>游戏%s不存在ID为%s的房间，请先创建 \
                     <gray>\
@@ -204,12 +204,12 @@ public class MGCOPCommand implements BrigadierCommand {
                     <click:run_command:mgcop room create %s %s>\
                     [点击创建]\
                     """
-                    .formatted(gameName, roomName, gameName, roomName, gameName, roomName)
+                    .formatted(gameId, roomName, gameId, roomName, gameId, roomName)
             );
             return 0;
         }
 
-        var gameRoom = MCZJUGameCore.getGameRoomManager().getGameRoom(gameName, roomName);
+        var gameRoom = MCZJUGameCore.getGameRoomManager().getGameRoom(gameId, roomName);
         new GameRoomSettingMenu(p, gameRoom).open();
 
         return Command.SINGLE_SUCCESS;
@@ -225,21 +225,21 @@ public class MGCOPCommand implements BrigadierCommand {
 
         PlayerExt player = new PlayerExt(p);
 
-        String gameName = StringArgumentType.getString(ctx, "game");
-        if (!MCZJUGameCore.getGameManager().getRegisteredGameNames().contains(gameName)) {
-            player.sender().warn("<yellow>未注册游戏%s".formatted(gameName));
+        String gameId = StringArgumentType.getString(ctx, "game");
+        if (!MCZJUGameCore.getGameManager().getRegisteredGameIds().contains(gameId)) {
+            player.sender().warn("<yellow>未注册游戏%s".formatted(gameId));
             return 0;
         }
 
         String roomName = StringArgumentType.getString(ctx, "room");
-        if (!MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameName).contains(roomName)) {
-            player.sender().warn("<yellow>游戏%s不存在ID为%s的房间".formatted(gameName, roomName));
+        if (!MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameId).contains(roomName)) {
+            player.sender().warn("<yellow>游戏%s不存在ID为%s的房间".formatted(gameId, roomName));
             return 0;
         }
 
         new AlertMenu(p, () -> {
-            boolean success = MCZJUGameCore.getGameRoomManager().deleteGameRoom(gameName, roomName);
-            if (success) player.sender().success("已删除游戏%s的房间%s".formatted(gameName, roomName));
+            boolean success = MCZJUGameCore.getGameRoomManager().deleteGameRoom(gameId, roomName);
+            if (success) player.sender().success("已删除游戏%s的房间%s".formatted(gameId, roomName));
             else player.sender().error("出错了，删除失败");
         }).open();
         return Command.SINGLE_SUCCESS;

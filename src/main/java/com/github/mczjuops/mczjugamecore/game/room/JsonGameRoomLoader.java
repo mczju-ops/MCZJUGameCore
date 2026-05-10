@@ -18,12 +18,12 @@ public class JsonGameRoomLoader implements GameRoomLoader{
 
     private final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
     @Override
-    public boolean loadAllGameRoom(String gameName, Class<? extends AbstractGameRoom> gameRoomClass) {
+    public boolean loadAllGameRoom(String gameId, Class<? extends AbstractGameRoom> gameRoomClass) {
         if(!JsonGameRoom.class.isAssignableFrom(gameRoomClass)) return false;
         // 由自己加载，找路径下的所有json文件
         Path gameDataPath = Paths.get(
                 MCZJUGameCore.getInstance().getDataFolder().getPath(),
-                gameName
+                gameId
         );
         if (!Files.exists(gameDataPath)) return true;   // 没有地图文件，直接返回
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(gameDataPath, "*.json")) {
@@ -31,16 +31,16 @@ public class JsonGameRoomLoader implements GameRoomLoader{
                 String fileName = entry.getFileName().toString();
                 int lastDotIndex = fileName.lastIndexOf('.');
                 String roomName = (lastDotIndex > 0) ? fileName.substring(0, lastDotIndex) : fileName;
-                AbstractGameRoom room = loadGameRoom(gameName, roomName, entry, gameRoomClass);
+                AbstractGameRoom room = loadGameRoom(gameId, roomName, entry, gameRoomClass);
                 if (room != null){
                     // 加载成功了
-                    MCZJUGameCore.getGameRoomManager().registerGameRoom(gameName, room);
+                    MCZJUGameCore.getGameRoomManager().registerGameRoom(gameId, room);
                 }else {
-                    logger.error("无法加载游戏%s的地图：%s".formatted(gameName, roomName));
+                    logger.error("无法加载游戏%s的地图：%s".formatted(gameId, roomName));
                 }
             }
         } catch (IOException e) {
-            logger.error("无法加载游戏地图：%s".formatted(gameName));
+            logger.error("无法加载游戏地图：%s".formatted(gameId));
             logger.error(e.toString());
         }
 
@@ -48,7 +48,7 @@ public class JsonGameRoomLoader implements GameRoomLoader{
     }
 
     private @Nullable <T extends AbstractGameRoom> T loadGameRoom(
-            String gameName,
+            String gameId,
             String roomName,
             Path file,
             Class<T> roomClass
@@ -71,14 +71,14 @@ public class JsonGameRoomLoader implements GameRoomLoader{
                 }
 
                 // 补充运行时字段（JSON里通常没有）
-                room.setGameName(gameName);
+                room.setGameId(gameId);
                 room.setRoomName(roomName);
 
                 // 注册
                 MCZJUGameCore.getGameRoomManager()
-                        .registerGameRoom(gameName, room);
+                        .registerGameRoom(gameId, room);
 
-                logger.info("已加载地图 %s - %s".formatted(gameName, room.getRoomName()));
+                logger.info("已加载地图 %s - %s".formatted(gameId, room.getRoomName()));
 
                 return room;
             }

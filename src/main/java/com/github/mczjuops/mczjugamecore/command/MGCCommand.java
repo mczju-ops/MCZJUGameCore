@@ -51,7 +51,7 @@ public class MGCCommand implements BrigadierCommand {
                         })
                         .then(Commands.argument("game", StringArgumentType.word())
                                 .suggests((ctx, builder) ->
-                                        CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameNames(), builder)
+                                        CommandUtils.suggestMatching(MCZJUGameCore.getGameManager().getRegisteredGameIds(), builder)
                                 )
                                 .executes(this::executeJoin)
                         )
@@ -73,13 +73,13 @@ public class MGCCommand implements BrigadierCommand {
         PlayerExt player = new PlayerExt(p);
 
         var gameManager = MCZJUGameCore.getGameManager();
-        String gameName = StringArgumentType.getString(ctx, "game");
-        if (!gameManager.getRegisteredGameNames().contains(gameName)) {
+        String gameId = StringArgumentType.getString(ctx, "game");
+        if (!gameManager.getRegisteredGameIds().contains(gameId)) {
             player.sender().warn("不存在该游戏");
             return 0;
         }
 
-        MCZJUGameCore.getGameManager().joinGame(player, gameName);
+        MCZJUGameCore.getGameManager().joinGame(player, gameId);
         return Command.SINGLE_SUCCESS;
     }
 
