@@ -52,6 +52,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     @Override
     public void onEnable() {
         // Plugin startup logic
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
 
         saveDefaultConfig();
         INSTANCE = this;

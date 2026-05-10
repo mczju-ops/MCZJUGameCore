@@ -3,6 +3,7 @@ package com.github.mczjuops.mczjugamecore.command;
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameState;
+import com.github.mczjuops.mczjugamecore.menu.MainMenu;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import com.github.mczjuops.mczjugamecore.utils.CommandUtils;
@@ -40,10 +41,7 @@ public class MGCCommand implements BrigadierCommand {
     public LiteralCommandNode<CommandSourceStack> getNode() {
         return Commands.literal(getName())
                 .requires(src -> src.getSender().hasPermission("mgc.mgc"))
-                .executes(ctx -> {
-                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgc join|leave|start"));
-                    return 0;
-                })
+                .executes(this::executeMGC)
                 .then(Commands.literal("join")
                         .executes(ctx -> {
                             ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定要加入的游戏"));
@@ -61,6 +59,16 @@ public class MGCCommand implements BrigadierCommand {
                 .then(Commands.literal("start") // 尝试开始当前玩家所在的游戏
                         .executes(this::executeStart))
                 .build();
+    }
+
+    private int executeMGC(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(TextParser.parse("<yellow>该命令只能由玩家执行"));
+            return 0;
+        }
+        new MainMenu(player).open();
+        return Command.SINGLE_SUCCESS;
     }
 
     private int executeJoin(CommandContext<CommandSourceStack> ctx) {
