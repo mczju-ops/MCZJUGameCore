@@ -22,12 +22,12 @@ public class GameRoomManager {
 
     /**
      * 加载某个游戏的所有房间。责任链模式
-     * @param gameName  游戏名
+     * @param gameId 游戏 ID
      * @param gameRoomClass 游戏房间类
      */
-    public void loadGameRoom(String gameName, Class<? extends AbstractGameRoom> gameRoomClass) {
+    public void loadGameRoom(String gameId, Class<? extends AbstractGameRoom> gameRoomClass) {
         for (GameRoomLoader loader : loaders) {
-            if (loader.loadAllGameRoom(gameName, gameRoomClass)) {
+            if (loader.loadAllGameRoom(gameId, gameRoomClass)) {
                 break;
             }
         }
@@ -35,12 +35,12 @@ public class GameRoomManager {
 
     /**
      * 注册游戏地图。创建新游戏或加载老地图后调用此函数。
-     * @param gameName  游戏名
+     * @param gameId 游戏 ID
      * @param gameRoom  游戏房间对象
      */
-    public void registerGameRoom(String gameName, AbstractGameRoom gameRoom){
-        if (!gameRoomMap.containsKey(gameName)) gameRoomMap.put(gameName, new LinkedList<>());
-        gameRoomMap.get(gameName).add(gameRoom);
+    public void registerGameRoom(String gameId, AbstractGameRoom gameRoom){
+        if (!gameRoomMap.containsKey(gameId)) gameRoomMap.put(gameId, new LinkedList<>());
+        gameRoomMap.get(gameId).add(gameRoom);
     }
 
     /** 异步保存所有修改过的游戏地图 */
@@ -49,18 +49,18 @@ public class GameRoomManager {
     }
 
     /** 异步保存某个游戏下所有修改过的房间 */
-    public void saveGameRoom(String gameName) {
+    public void saveGameRoom(String gameId) {
         Bukkit.getScheduler().runTaskAsynchronously(
                 MCZJUGameCore.getInstance(),
-                () -> saveGameRoomDirectly(gameName)
+                () -> saveGameRoomDirectly(gameId)
         );
     }
 
     /** 异步保存某个指定房间 */
-    public void saveGameRoom(String gameName, String roomName) {
+    public void saveGameRoom(String gameId, String roomName) {
         Bukkit.getScheduler().runTaskAsynchronously(
                 MCZJUGameCore.getInstance(),
-                () -> saveGameRoomDirectly(gameName, roomName)
+                () -> saveGameRoomDirectly(gameId, roomName)
         );
     }
 
@@ -76,8 +76,8 @@ public class GameRoomManager {
     }
 
     /** 直接保存某个游戏下所有修改过的房间 */
-    public int saveGameRoomDirectly(String gameName) {
-        List<AbstractGameRoom> gameRoomList = gameRoomMap.get(gameName);
+    public int saveGameRoomDirectly(String gameId) {
+        List<AbstractGameRoom> gameRoomList = gameRoomMap.get(gameId);
 
         if (gameRoomList == null || gameRoomList.isEmpty()) return 0;
 
@@ -85,8 +85,8 @@ public class GameRoomManager {
     }
 
     /** 直接保存某个指定房间 */
-    public boolean saveGameRoomDirectly(String gameName, String roomName) {
-        AbstractGameRoom gameRoom = getGameRoom(gameName, roomName);
+    public boolean saveGameRoomDirectly(String gameId, String roomName) {
+        AbstractGameRoom gameRoom = getGameRoom(gameId, roomName);
 
         if (gameRoom == null) return false;
 
@@ -111,27 +111,27 @@ public class GameRoomManager {
 
     /**
      * 获取空闲的地图，用于创建游戏
-     * @param gameName  游戏名
+     * @param gameId 游戏 ID
      * @return  游戏地图。没有空闲的，则返回null
      */
-    public @Nullable AbstractGameRoom getLeisureGameRoom(String gameName){
-        if (!gameRoomMap.containsKey(gameName)) return null;
-        for (AbstractGameRoom gameRoom : gameRoomMap.get(gameName)) {
+    public @Nullable AbstractGameRoom getLeisureGameRoom(String gameId){
+        if (!gameRoomMap.containsKey(gameId)) return null;
+        for (AbstractGameRoom gameRoom : gameRoomMap.get(gameId)) {
             if (gameRoom.getState() == GameRoomState.READY) return gameRoom;
         }
         return null;
     }
 
 
-    public AbstractGameRoom createGameRoom(String gameName, String gameRoomName){
-        AbstractGameRoom gameRoom = MCZJUGameCore.getGameManager().createGameRoom(gameName, gameRoomName);
-        registerGameRoom(gameName, gameRoom);
+    public AbstractGameRoom createGameRoom(String gameId, String gameRoomName){
+        AbstractGameRoom gameRoom = MCZJUGameCore.getGameManager().createGameRoom(gameId, gameRoomName);
+        registerGameRoom(gameId, gameRoom);
         gameRoom.save();
         return gameRoom;
     }
 
-    public boolean deleteGameRoom(String gameName, String roomName) {
-        return gameRoomMap.get(gameName).removeIf(gameRoom -> {
+    public boolean deleteGameRoom(String gameId, String roomName) {
+        return gameRoomMap.get(gameId).removeIf(gameRoom -> {
             if (gameRoom.getRoomName().equals(roomName)) {
                 gameRoom.deleteRoom();
                 return true;
@@ -140,8 +140,8 @@ public class GameRoomManager {
         });
     }
 
-    public @Nullable AbstractGameRoom getGameRoom(String gameName, String gameRoomName){
-        List<AbstractGameRoom> gameRooms = gameRoomMap.get(gameName);
+    public @Nullable AbstractGameRoom getGameRoom(String gameId, String gameRoomName){
+        List<AbstractGameRoom> gameRooms = gameRoomMap.get(gameId);
         if (gameRooms == null) return null;
         for (AbstractGameRoom gameRoom : gameRooms) {
             if (Objects.equals(gameRoom.getRoomName(), gameRoomName)){
@@ -151,9 +151,9 @@ public class GameRoomManager {
         return null;
     }
 
-    public Set<String> getGameRoomNames(String gameName) {
+    public Set<String> getGameRoomNames(String gameId) {
         Set<String> names = new HashSet<>();
-        List<AbstractGameRoom> gameRooms = gameRoomMap.get(gameName);
+        List<AbstractGameRoom> gameRooms = gameRoomMap.get(gameId);
         if (gameRooms != null) {
             for (AbstractGameRoom gameRoom : gameRooms) {
                 names.add(gameRoom.getRoomName());

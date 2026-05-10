@@ -40,7 +40,7 @@ public class GameSender implements Sender {
 
     private void send(String msg, String color){
         for (PlayerExt player : game.getPlayers()) {
-            player.player().sendMessage(TextParser.parse("<red>[<white>%s</white>]: <%s>%s".formatted(game.getName(), color, msg)));
+            player.player().sendMessage(TextParser.parse("<gold>[</gold>%s<reset><gold>]<gray>:</gray> <%s>%s".formatted(game.getGameMeta().displayName(), color, msg)));
         }
     }
 }

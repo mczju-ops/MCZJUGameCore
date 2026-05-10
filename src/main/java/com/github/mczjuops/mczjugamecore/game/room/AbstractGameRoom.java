@@ -2,7 +2,6 @@ package com.github.mczjuops.mczjugamecore.game.room;
 
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 
 /**
@@ -15,7 +14,7 @@ import java.util.Map;
 public abstract class AbstractGameRoom {
 
 
-    private String gameName; // 由Loader注入
+    private String gameId; // 由Loader注入
     private String roomName;    // 由Loader注入
 
     private GameRoomState state = GameRoomState.READY;
@@ -51,12 +50,12 @@ public abstract class AbstractGameRoom {
 
     abstract boolean save();
 
-    public String getGameName() {
-        return gameName;
+    public String getGameId() {
+        return gameId;
     }
 
-    public void setGameName(String gameName) {
-        this.gameName = gameName;
+    public void setGameId(String gameId) {
+        this.gameId = gameId;
     }
 
     public String getRoomName() {

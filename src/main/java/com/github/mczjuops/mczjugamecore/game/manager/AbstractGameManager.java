@@ -1,10 +1,11 @@
 package com.github.mczjuops.mczjugamecore.game.manager;
 
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
-import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -19,10 +20,10 @@ public interface AbstractGameManager {
 
     /**
      * 创建游戏
-     * @param name 游戏名
+     * @param id 游戏 ID
      * @return null：没这个游戏，或没空闲房间；非空：创建成功
      */
-    AbstractGame createGame(String name);
+    AbstractGame createGame(String id);
 
     void startGame(AbstractGame game);
 
@@ -38,21 +39,27 @@ public interface AbstractGameManager {
      * 如果有空闲房间，但没等待中的游戏，则直接调用createGame
      * 如果有等待中的游戏，直接加入等待
      * @param player 玩家
-     * @param gameName 游戏名
+     * @param gameId 游戏名
      */
-    void joinGame(PlayerExt player, String gameName);
+    void joinGame(PlayerExt player, String gameId);
 
     /**
      * 创建新的游戏房间
-     * @param gameName  游戏名
+     * @param gameId  游戏名
      * @param gameRoomName  游戏房间名
      * @return 游戏房间；如果为空，可能是名字输错了
      */
-    AbstractGameRoom createGameRoom(String gameName, String gameRoomName);
+    AbstractGameRoom createGameRoom(String gameId, String gameRoomName);
 
     /**
      * 获取所有已注册的游戏名
      * 用于命令补全、菜单展示等只读场景
      */
-    Set<String> getRegisteredGameNames();
+    Set<String> getRegisteredGameIds();
+
+    /**
+     * 获取所有已注册的游戏的 GameMeta
+     * 用于在菜单中展示信息
+     */
+    Map<String, GameMeta> getGameMetas();
 }

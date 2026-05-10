@@ -15,7 +15,7 @@ public interface Sender {
     void primary(String msg);
 
     default void debug(String msg) {
-        if (MCZJUGameCore.getMGCConfig().getBoolean("debug")){
+        if (MCZJUGameCore.getConfigManager().isDebug()){
             info(msg);
         }
     }

@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.game.manager;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomState;
@@ -19,24 +20,24 @@ public class DefaultGameManager implements AbstractGameManager {
     private final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
 
     private final Map<Class<? extends AbstractGame>, Class<? extends AbstractGameRoom>> registerGameMap = new HashMap<>();
-    private final Map<String, Class<? extends AbstractGame>> gameNameMap = new HashMap<>();
+    private final Map<String, Class<? extends AbstractGame>> gameIdMap = new HashMap<>();
     private final List<AbstractGame> gameList = new LinkedList<>();
-
-
+    private final Map<String, GameMeta> gameMetaMap = new HashMap<>(); // 反射创建对象后顺手存了，方便菜单用
 
     @Override
     public void registerGame(Class<? extends AbstractGame> gameClass, Class<? extends AbstractGameRoom> gameRoomClass) {
         try {
             AbstractGame game = gameClass.getDeclaredConstructor().newInstance();
-            String name = game.getName();
-            if (gameNameMap.containsKey(name)){
+            String gameId = game.getId();
+            if (gameIdMap.containsKey(gameId)){
                 // 有这个游戏了
-                logger.error("无法注册游戏%s，同名游戏已存在".formatted(name));
+                logger.error("无法注册游戏 %s，相同 ID 的游戏已存在".formatted(gameId));
                 return;
             }
             registerGameMap.put(gameClass, gameRoomClass);
-            gameNameMap.put(name, gameClass);
-            MCZJUGameCore.getGameRoomManager().loadGameRoom(name, gameRoomClass);    // 加载并注册所有该游戏的游戏房间
+            gameIdMap.put(gameId, gameClass);
+            gameMetaMap.put(gameId, game.getGameMeta());
+            MCZJUGameCore.getGameRoomManager().loadGameRoom(gameId, gameRoomClass); // 加载并注册所有该游戏的游戏房间
         } catch (InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             logger.error("无法注册游戏%s，原因：无法访问无参构造器，无法创建游戏实例".formatted(gameClass));
             throw new RuntimeException(e);
@@ -50,10 +51,10 @@ public class DefaultGameManager implements AbstractGameManager {
         AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getLeisureGameRoom(name);
         if (gameRoom == null) return null;
         try {
-            AbstractGame game = gameNameMap.get(name).getDeclaredConstructor().newInstance();
+            AbstractGame game = gameIdMap.get(name).getDeclaredConstructor().newInstance();
             game.setGameRoom(gameRoom);
             gameRoom.setState(GameRoomState.IN_GAME);   // 分配房间后，设置房间为占用状态
-            logger.info("将房间%s分配给游戏%s".formatted(gameRoom.getRoomName(), game.getName()));
+            logger.info("将房间 %s分配给游戏%s".formatted(gameRoom.getRoomName(), game.getId()));
             game.setState(GameState.WAITING);
             gameList.add(game);
             game.gameInit();
@@ -97,7 +98,7 @@ public class DefaultGameManager implements AbstractGameManager {
     }
 
     @Override
-    public void joinGame(PlayerExt player, String gameName) {
+    public void joinGame(PlayerExt player, String gameId) {
         if (player.isInParty() && !player.isPartyLeader()) {
             player.sender().warn("只有队长能开启游戏");
             return;
@@ -112,13 +113,13 @@ public class DefaultGameManager implements AbstractGameManager {
 
         // 2. 尝试加入现有房间
         for (AbstractGame game : gameList) {
-            if (Objects.equals(game.getName(), gameName) && game.getState() == GameState.WAITING) {
+            if (Objects.equals(game.getId(), gameId) && game.getState() == GameState.WAITING) {
                 if (tryJoin(player, game)) return;
             }
         }
 
         // 3. 尝试创建新房间并加入
-        AbstractGame newGame = createGame(gameName);
+        AbstractGame newGame = createGame(gameId);
         if (newGame == null) {
             player.sender().warn("该游戏没有空闲的房间，请稍后再试");
             return;
@@ -132,18 +133,18 @@ public class DefaultGameManager implements AbstractGameManager {
     }
 
     @Override
-    public @Nullable AbstractGameRoom createGameRoom(String gameName, String gameRoomName) {
-        Class<? extends AbstractGame> gameClass = gameNameMap.get(gameName);
+    public @Nullable AbstractGameRoom createGameRoom(String gameId, String gameRoomName) {
+        Class<? extends AbstractGame> gameClass = gameIdMap.get(gameId);
         if (gameClass == null) return null; // 可能是名称输错，就先不报错了
         Class<? extends AbstractGameRoom> gameRoomClass = registerGameMap.get(gameClass);
         assert gameRoomClass != null;   // 不可能为空，因为这两个得一起注册
         try {
             AbstractGameRoom gameRoom = gameRoomClass.getDeclaredConstructor().newInstance();
-            gameRoom.setGameName(gameName);
+            gameRoom.setGameId(gameId);
             gameRoom.setRoomName(gameRoomName);
             return gameRoom;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            logger.error("无法创建新的游戏房间%s，原因：对应的游戏房间缺失无参构造器".formatted(gameName));
+            logger.error("无法创建新的游戏房间%s，原因：对应的游戏房间缺失无参构造器".formatted(gameId));
             throw new RuntimeException(e);
         }
 
@@ -181,7 +182,12 @@ public class DefaultGameManager implements AbstractGameManager {
     }
 
     @Override
-    public Set<String> getRegisteredGameNames() {
-        return Set.copyOf(gameNameMap.keySet());
+    public Set<String> getRegisteredGameIds() {
+        return Set.copyOf(gameIdMap.keySet());
+    }
+
+    @Override
+    public Map<String, GameMeta> getGameMetas() {
+        return Collections.unmodifiableMap(gameMetaMap);
     }
 }

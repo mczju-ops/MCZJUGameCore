@@ -27,7 +27,7 @@ public class JsonGameRoom extends AbstractGameRoom {
             Object value = field.get(this);
             return clazz.cast(value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            logger.error("无法访问字段：%s，所属游戏：%s，游戏房间名：%s".formatted(name, getGameName(), getRoomName()));
+            logger.error("无法访问字段：%s，所属游戏：%s，游戏房间名：%s".formatted(name, getGameId(), getRoomName()));
             throw new RuntimeException(e);
         }
     }
@@ -60,7 +60,7 @@ public class JsonGameRoom extends AbstractGameRoom {
             Field field = this.getClass().getDeclaredField(name);
             return field.getType();
         } catch (NoSuchFieldException e) {
-            logger.error("无法访问字段：%s，所属游戏：%s，游戏房间名：%s".formatted(name, getGameName(), getRoomName()));
+            logger.error("无法访问字段：%s，所属游戏：%s，游戏房间名：%s".formatted(name, getGameId(), getRoomName()));
             throw new RuntimeException(e);
         }
     }
@@ -83,10 +83,10 @@ public class JsonGameRoom extends AbstractGameRoom {
             try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
                 gson.toJson(this, writer);
             }
-            logger.success("成功保存地图 %s: %s".formatted(getGameName(), getRoomName()));
+            logger.success("成功保存地图 %s: %s".formatted(getGameId(), getRoomName()));
 
         } catch (IOException e) {
-            logger.error("无法保存地图 %s: %s".formatted(getGameName(), getRoomName()));
+            logger.error("无法保存地图 %s: %s".formatted(getGameId(), getRoomName()));
             throw new RuntimeException(e);
         }
         return true;
@@ -94,7 +94,7 @@ public class JsonGameRoom extends AbstractGameRoom {
 
     private String getFilePath(){
         String dataPath = MCZJUGameCore.getInstance().getDataFolder().getAbsolutePath();
-        return "%s/%s/%s.json".formatted(dataPath, getGameName(), getRoomName());
+        return "%s/%s/%s.json".formatted(dataPath, getGameId(), getRoomName());
     }
 
     @Override
@@ -107,15 +107,15 @@ public class JsonGameRoom extends AbstractGameRoom {
             boolean deleted = Files.deleteIfExists(filePath);
 
             if (deleted) {
-                logger.success("成功删除地图 %s: %s".formatted(getGameName(), roomName));
+                logger.success("成功删除地图 %s: %s".formatted(getGameId(), roomName));
             } else {
-                logger.warn("地图文件不存在 %s: %s".formatted(getGameName(), roomName));
+                logger.warn("地图文件不存在 %s: %s".formatted(getGameId(), roomName));
             }
 
             return deleted;
 
         } catch (IOException e) {
-            logger.error("无法删除地图 %s: %s".formatted(getGameName(), roomName));
+            logger.error("无法删除地图 %s: %s".formatted(getGameId(), roomName));
             throw new RuntimeException(e);
         }
     }
