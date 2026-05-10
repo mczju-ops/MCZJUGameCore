@@ -11,6 +11,7 @@ import com.github.mczjuops.mczjugamecore.player.strategy.impl.DefaultPlayerQuitS
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.GameSender;
+import org.bukkit.Material;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -34,14 +35,23 @@ public abstract  class AbstractGame {
     protected final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
 
     /**
-     * 获取游戏名称，请勿和其它游戏重名。为方便，这个也当作display name。
-     * @return 游戏名
+     * 游戏的唯一 ID，不允许重复
      */
-    public abstract String getName();
+    public abstract String getId();
+
+    /**
+     * 游戏的一些信息，主要是展示用
+     */
+    public abstract GameMeta getGameMeta();
+
+    /**
+     * 出现在菜单中时的游戏图标
+     */
+    public abstract Material getIcon();
 
     /**
      * 获取游戏等待逻辑
-     * @return  游戏等待逻辑
+     * @return 游戏等待逻辑
      */
     public abstract GameWaitStrategy getGameWaitStrategy();
 

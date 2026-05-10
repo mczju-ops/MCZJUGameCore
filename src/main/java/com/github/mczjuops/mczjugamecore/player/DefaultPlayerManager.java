@@ -41,7 +41,7 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
             leaveGame(player, PlayerQuitReason.COMMAND_QUIT);
         }
         playerGameMap.put(player, game);
-        player.switchProfile(game.getName());
+        player.switchProfile(game.getId());
     }
 
     @Override

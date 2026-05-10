@@ -28,10 +28,10 @@ public class DefaultGameManager implements AbstractGameManager {
     public void registerGame(Class<? extends AbstractGame> gameClass, Class<? extends AbstractGameRoom> gameRoomClass) {
         try {
             AbstractGame game = gameClass.getDeclaredConstructor().newInstance();
-            String name = game.getName();
+            String name = game.getId();
             if (gameNameMap.containsKey(name)){
                 // 有这个游戏了
-                logger.error("无法注册游戏%s，同名游戏已存在".formatted(name));
+                logger.error("无法注册游戏 %s，相同 ID 的游戏已存在".formatted(name));
                 return;
             }
             registerGameMap.put(gameClass, gameRoomClass);
@@ -53,7 +53,7 @@ public class DefaultGameManager implements AbstractGameManager {
             AbstractGame game = gameNameMap.get(name).getDeclaredConstructor().newInstance();
             game.setGameRoom(gameRoom);
             gameRoom.setState(GameRoomState.IN_GAME);   // 分配房间后，设置房间为占用状态
-            logger.info("将房间%s分配给游戏%s".formatted(gameRoom.getRoomName(), game.getName()));
+            logger.info("将房间 %s分配给游戏%s".formatted(gameRoom.getRoomName(), game.getId()));
             game.setState(GameState.WAITING);
             gameList.add(game);
             game.gameInit();
@@ -97,7 +97,7 @@ public class DefaultGameManager implements AbstractGameManager {
     }
 
     @Override
-    public void joinGame(PlayerExt player, String gameName) {
+    public void joinGame(PlayerExt player, String gameId) {
         if (player.isInParty() && !player.isPartyLeader()) {
             player.sender().warn("只有队长能开启游戏");
             return;
@@ -112,13 +112,13 @@ public class DefaultGameManager implements AbstractGameManager {
 
         // 2. 尝试加入现有房间
         for (AbstractGame game : gameList) {
-            if (Objects.equals(game.getName(), gameName) && game.getState() == GameState.WAITING) {
+            if (Objects.equals(game.getId(), gameId) && game.getState() == GameState.WAITING) {
                 if (tryJoin(player, game)) return;
             }
         }
 
         // 3. 尝试创建新房间并加入
-        AbstractGame newGame = createGame(gameName);
+        AbstractGame newGame = createGame(gameId);
         if (newGame == null) {
             player.sender().warn("该游戏没有空闲的房间，请稍后再试");
             return;

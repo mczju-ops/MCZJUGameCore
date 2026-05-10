@@ -8,7 +8,7 @@ import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 public abstract class SinglePlayerGame extends AbstractGame {
 
     @Override
-    public String getName() {
+    public String getId() {
         return null;
     }
 
