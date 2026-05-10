@@ -92,7 +92,7 @@ public class JsonGameRoom extends AbstractGameRoom {
 
     private String getFilePath(){
         String dataPath = MCZJUGameCore.getInstance().getDataFolder().getAbsolutePath();
-        return "%s/%s/%s.json".formatted(dataPath, getGameId(), getRoomName());
+        return "%s/rooms/%s/%s.json".formatted(dataPath, getGameId(), getRoomName());
     }
 
     @Override

@@ -57,9 +57,10 @@ public class MainMenu extends Menu {
 
             setSlot(
                     entry.getKey(),
-                    ItemBuilder.of(meta.icon())
+                    ItemBuilder.of(Material.CLOCK)
                             .customName(meta.displayName())
                             .lore(lore)
+                            .itemModel(meta.icon())
                             .build(),
                     (player, event) -> {
                         player.player().closeInventory();

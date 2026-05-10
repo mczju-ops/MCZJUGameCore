@@ -23,7 +23,7 @@ public class JsonGameRoomLoader implements GameRoomLoader{
         // 由自己加载，找路径下的所有json文件
         Path gameDataPath = Paths.get(
                 MCZJUGameCore.getInstance().getDataFolder().getPath(),
-                gameId
+                "rooms", gameId
         );
         if (!Files.exists(gameDataPath)) return true;   // 没有地图文件，直接返回
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(gameDataPath, "*.json")) {
