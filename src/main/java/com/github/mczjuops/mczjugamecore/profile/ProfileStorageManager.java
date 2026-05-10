@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <pre>
  *   {uuid}.yml — 主档案
  *   {uuid}.yml.tmp — 写入中的临时文件
- *   {uuid}.bak.yml — 备份，上次保存前的主文件
+ *   backups/{uuid}.bak.yml — 备份，上次保存前的主文件
  * </pre>
  *
  * <h3>写入流程</h3>
@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class ProfileStorageManager {
 
     private final Path dataDir;
+    private final Path backupDir;
     private final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
 
     /** 独立锁，确保同一玩家的文件操作严格串行 */
@@ -42,10 +43,12 @@ public final class ProfileStorageManager {
 
     public ProfileStorageManager(){
         this.dataDir = MCZJUGameCore.getInstance().getDataFolder().toPath().resolve("profiles");
+        this.backupDir = dataDir.resolve("backups");
         try {
             Files.createDirectories(dataDir);
+            Files.createDirectories(backupDir);
         } catch (IOException e) {
-            logger.error("无法创建 profiles 文件夹：" + e);
+            logger.error("无法创建 profiles 或 backups 文件夹：" + e);
         }
     }
 
@@ -275,7 +278,7 @@ public final class ProfileStorageManager {
     }
 
     private Path backupFile(UUID uuid) {
-        return dataDir.resolve(uuid + ".bak.yml");
+        return backupDir.resolve(uuid + ".bak.yml");
     }
 
     /** 返回 [主文件, 备份文件] 顺序的候选列表，用于容错加载 */
