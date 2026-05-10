@@ -3,12 +3,11 @@ package com.github.mczjuops.mczjugamecore.player.party;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class PartyManager {
 
@@ -358,5 +357,111 @@ public class PartyManager {
 
         party.transferLeader(target);
         return TransferResult.SUCCESS;
+    }
+
+    /**
+     * 随机分队
+     * 尽可能平均地将队伍分成多个，随机指定新队长
+     *
+     * @param originalParty 原队伍
+     * @param splitCount 需要的队伍数量
+     * @return 最终队伍，若无法分队，将返回原来的队伍
+     * */
+    public Party[] splitParty(@NotNull Party originalParty, int splitCount) {
+
+        // 直接不分队
+        if (splitCount <= 1) {
+            return new Party[]{originalParty};
+        }
+
+        // 使用 partyList 中的真实对象
+        Party party = getPartyById(originalParty.getId());
+        if (party == null) {
+            return new Party[]{originalParty};
+        }
+
+        int totalSize = party.size();
+
+        // 每个队伍至少 2 人，所以总人数必须 >= splitCount * 2
+        if (totalSize < splitCount * 2) {
+            return new Party[]{party};
+        }
+
+        PlayerExt originalLeader = party.getLeader();
+
+        /*
+         * 当前模型：
+         * leader 不在 members 中
+         * 原 leader 固定成为第 1 支新队伍的 leader
+         * 其他 leader 从原 members 中随机抽取
+         */
+        List<PlayerExt> remainingPlayers = new ArrayList<>(party.getMembers());
+        Collections.shuffle(remainingPlayers, ThreadLocalRandom.current());
+
+        List<PlayerExt> newLeaders = new ArrayList<>(splitCount);
+        newLeaders.add(originalLeader);
+
+        for (int i = 1; i < splitCount; i++) {
+            newLeaders.add(remainingPlayers.removeLast());
+        }
+
+        // 剩余普通成员再次洗牌，提高随机性
+        Collections.shuffle(remainingPlayers, ThreadLocalRandom.current());
+
+        // 计算每支队伍目标人数，保证尽可能平均
+        int[] targetSizes = createRandomBalancedSizes(totalSize, splitCount);
+
+        /*
+         * 先解散旧队伍：
+         * 1. 从 partyList 移除旧队伍
+         * 2. 清理旧队伍相关邀请
+         */
+        disbandPartyInternal(party);
+
+        Party[] result = new Party[splitCount];
+
+        int memberIndex = 0;
+
+        for (int i = 0; i < splitCount; i++) {
+            Party newParty = new Party(newLeaders.get(i));
+
+            int needMembers = targetSizes[i] - 1; // 减去 leader
+
+            for (int j = 0; j < needMembers; j++) {
+                newParty.addMemberInternal(remainingPlayers.get(memberIndex++));
+            }
+
+            partyList.add(newParty);
+            newParty.sender().info("<blue>服务器已调整当前队伍，通过/party list查看新队伍信息");
+            result[i] = newParty;
+        }
+
+        return result;
+    }
+
+    private int[] createRandomBalancedSizes(int totalSize, int splitCount) {
+        int baseSize = totalSize / splitCount;
+        int remainder = totalSize % splitCount;
+
+        int[] sizes = new int[splitCount];
+        Arrays.fill(sizes, baseSize);
+
+        /*
+         * 多出来的人随机分配给若干支队伍。
+         * 例如 10 人分 3 队：基础 3 人，余 1 人；
+         * 最终会随机变成某一队 4 人，其他队 3 人。
+         */
+        List<Integer> indexes = new ArrayList<>(splitCount);
+        for (int i = 0; i < splitCount; i++) {
+            indexes.add(i);
+        }
+
+        Collections.shuffle(indexes, ThreadLocalRandom.current());
+
+        for (int i = 0; i < remainder; i++) {
+            sizes[indexes.get(i)]++;
+        }
+
+        return sizes;
     }
 }
