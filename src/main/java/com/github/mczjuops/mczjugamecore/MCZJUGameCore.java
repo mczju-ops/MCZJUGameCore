@@ -10,7 +10,6 @@ import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomManager;
 import com.github.mczjuops.mczjugamecore.initialize.ItemInitializer;
 import com.github.mczjuops.mczjugamecore.initialize.ListenerInitializer;
-import com.github.mczjuops.mczjugamecore.initialize.MenuInitializer;
 import com.github.mczjuops.mczjugamecore.item.ItemManager;
 import com.github.mczjuops.mczjugamecore.menu.MenuFacade;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
@@ -62,10 +61,10 @@ public final class MCZJUGameCore extends JavaPlugin {
         itemManager = new ItemManager();
 
         profileManager = new ProfileManager();
+        profileManager.startAutoSave(20 * 60 * 30L); // 每半小时自动落盘
         profileCapture = new ProfileCapture();
         profileStorageManager = new ProfileStorageManager();
 
-        MenuInitializer.initialize();
         ListenerInitializer.initialize();
         ItemInitializer.initialize();
 

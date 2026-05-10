@@ -10,17 +10,17 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ProfileManager implements Listener {
 
     private final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
     private final Map<UUID, ProfileData> playerProfileCache = new ConcurrentHashMap<>();
+    private BukkitTask autoSaveTask;
 
     public void switchProfile(Player player, String targetProfileId) {
 
@@ -60,6 +60,8 @@ public class ProfileManager implements Listener {
                 logger.error("玩家 %s 的 profile 数据落盘失败：%s".formatted(playerName, e));
             }
         });
+
+        logger.info("将玩家 %s 的 profile 切换为 %s".formatted(playerName, currentId));
     }
 
     @EventHandler
@@ -166,8 +168,84 @@ public class ProfileManager implements Listener {
         });
     }
 
+    public void startAutoSave(long intervalTicks) {
+        MCZJUGameCore plugin = MCZJUGameCore.getInstance();
+
+        if (autoSaveTask != null) {
+            autoSaveTask.cancel();
+        }
+
+        autoSaveTask = Bukkit.getScheduler().runTaskTimer(
+                plugin,
+                this::autoSaveOnlineProfiles,
+                intervalTicks,
+                intervalTicks
+        );
+    }
+
+    private void autoSaveOnlineProfiles() {
+        MCZJUGameCore plugin = MCZJUGameCore.getInstance();
+
+        // 当前方法在主线程执行，可以安全 capture Player
+        List<ProfileSaveJob> jobs = new ArrayList<>();
+
+        for (Map.Entry<UUID, ProfileData> entry : playerProfileCache.entrySet()) {
+            UUID uuid = entry.getKey();
+            ProfileData data = entry.getValue();
+
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null || !player.isOnline()) {
+                continue;
+            }
+
+            // 关键：把玩家当前状态捕获到当前 profile
+            PlayerSnapshot current =
+                    MCZJUGameCore.getProfileCapture().capture(player);
+
+            data.putProfile(data.currentProfileId(), current);
+            data.setPlayerName(player.getName());
+
+            // 在主线程生成保存快照，异步线程只负责写文件
+            jobs.add(new ProfileSaveJob(
+                    uuid,
+                    data.playerName(),
+                    data.currentProfileId(),
+                    data.snapshotForSave(),
+                    data.lastModified()
+            ));
+        }
+
+        if (jobs.isEmpty()) return;
+
+        Bukkit.getAsyncScheduler().runNow(plugin, task -> {
+            for (ProfileSaveJob job : jobs) {
+                try {
+                    MCZJUGameCore.getProfileStorageManager().save(
+                            job.uuid(),
+                            job.playerName(),
+                            job.currentProfileId(),
+                            job.profilesSnapshot(),
+                            job.lastModified()
+                    );
+                } catch (IOException e) {
+                    logger.error("玩家 %s 的 profile 自动保存失败：%s".formatted(job.playerName(), e));
+                }
+            }
+        });
+    }
+
+    public void stopAutoSave() {
+        if (autoSaveTask != null) {
+            autoSaveTask.cancel();
+            autoSaveTask = null;
+        }
+    }
+
     // onDisable() 调用
     public void shutdown() {
+
+        stopAutoSave();
+
         for (Map.Entry<UUID, ProfileData> entry : playerProfileCache.entrySet()) {
             UUID uuid = entry.getKey();
             Player p = Bukkit.getPlayer(uuid);
@@ -188,4 +266,12 @@ public class ProfileManager implements Listener {
         }
         playerProfileCache.clear();
     }
+
+    private record ProfileSaveJob(
+            UUID uuid,
+            String playerName,
+            String currentProfileId,
+            Map<String, PlayerSnapshot> profilesSnapshot,
+            long lastModified
+    ) {}
 }
