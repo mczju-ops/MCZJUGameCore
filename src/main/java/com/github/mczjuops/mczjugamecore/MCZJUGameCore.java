@@ -5,6 +5,7 @@ import com.github.mczjuops.mczjugamecore.command.MGCCommand;
 import com.github.mczjuops.mczjugamecore.command.MGCOPCommand;
 import com.github.mczjuops.mczjugamecore.command.MenuCommand;
 import com.github.mczjuops.mczjugamecore.command.partycommand.PartyCommand;
+import com.github.mczjuops.mczjugamecore.config.ConfigManager;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomManager;
@@ -24,7 +25,6 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -43,6 +43,8 @@ public final class MCZJUGameCore extends JavaPlugin {
     private ItemManager itemManager;
     private MenuFacade menuFacade;
 
+    private ConfigManager configManager;
+
     private ProfileManager profileManager;
     private ProfileCapture profileCapture;
     private ProfileStorageManager profileStorageManager;
@@ -58,6 +60,7 @@ public final class MCZJUGameCore extends JavaPlugin {
         playerManager = new DefaultPlayerManager();
         gameRoomManager = new GameRoomManager();
         menuFacade = new MenuFacade();
+        configManager = new ConfigManager();
         itemManager = new ItemManager();
 
         profileManager = new ProfileManager();
@@ -124,8 +127,8 @@ public final class MCZJUGameCore extends JavaPlugin {
         return getInstance().itemManager;
     }
 
-    public static @NotNull FileConfiguration getMGCConfig(){
-        return getInstance().getConfig();
+    public static @NotNull ConfigManager getConfigManager(){
+        return getInstance().configManager;
     }
 
     public static @NotNull ProfileManager getProfileManager(){
@@ -136,11 +139,6 @@ public final class MCZJUGameCore extends JavaPlugin {
     }
     public static @NotNull ProfileStorageManager getProfileStorageManager(){
         return getInstance().profileStorageManager;
-    }
-
-    public static boolean isDebug(){
-        if (INSTANCE == null) return false;
-        return getMGCConfig().getBoolean("debug");
     }
 
     private void registerCommands(BrigadierCommand... commands) {

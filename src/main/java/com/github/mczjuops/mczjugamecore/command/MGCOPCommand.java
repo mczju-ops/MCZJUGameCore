@@ -135,7 +135,7 @@ public class MGCOPCommand implements BrigadierCommand {
 
     private int executeReload(CommandContext<CommandSourceStack> ctx) {
         ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>正在重新加载插件配置"));
-        MCZJUGameCore.getInstance().reloadConfig();
+        MCZJUGameCore.getConfigManager().reload();
         return Command.SINGLE_SUCCESS;
     }
 
