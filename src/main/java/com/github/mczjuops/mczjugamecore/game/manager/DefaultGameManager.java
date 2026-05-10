@@ -57,8 +57,12 @@ public class DefaultGameManager implements AbstractGameManager {
             logger.info("将房间 %s分配给游戏%s".formatted(gameRoom.getRoomName(), game.getId()));
             game.setState(GameState.WAITING);
             gameList.add(game);
-            game.gameInit();
-            return game;
+            if (game.gameInit()) return game;
+            else {
+                // 初始化失败，可能是房间设置问题，比如有个参数没设置
+                abortGame(game);
+                return null;
+            }
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             // 这一步应该不可能执行到，因为create前肯定register过，那个时候是能访问构造器的
             logger.error("无法注册游戏%s，原因：无法访问无参构造器，无法创建游戏实例".formatted(name));
