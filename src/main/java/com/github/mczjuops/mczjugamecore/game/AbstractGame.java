@@ -69,12 +69,6 @@ public abstract  class AbstractGame {
         return MCZJUGameCore.getPlayerManager().getPlayers(this);
     }
 
-    public void playerJoin(PlayerExt player){
-        onPlayerJoin(player);
-    }
-
-    protected abstract void onPlayerJoin(PlayerExt player);
-
     /**
      * GameManager来调用这个方法
      * @return true: 游戏初始化成功，gameManager执行start；false: 游戏无法开始，执行销毁
