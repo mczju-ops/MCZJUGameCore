@@ -62,6 +62,15 @@ public class ItemManager {
         return items.get(id);
     }
 
+    public @Nullable MGCItem get(ItemStack itemStack){
+        if (itemStack == null) return null;
+        String id = getItemId(itemStack);
+        if (id == null || id.isEmpty()){
+            return null;
+        }
+        return get(id);
+    }
+
     /**
      * 根据物品 ID 获取对应的 ItemStack。
      *
@@ -95,4 +104,5 @@ public class ItemManager {
         String itemId = getItemId(item);
         return id.equals(itemId);
     }
+
 }
