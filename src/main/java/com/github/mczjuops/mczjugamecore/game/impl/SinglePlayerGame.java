@@ -17,8 +17,4 @@ public abstract class SinglePlayerGame extends AbstractGame {
         return new DefaultGameWaitStrategy(this, 1);
     }
 
-    @Override
-    protected void onPlayerJoin(PlayerExt player) {
-        // 啥都不做
-    }
 }
