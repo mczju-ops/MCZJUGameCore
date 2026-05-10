@@ -58,7 +58,7 @@ public class ItemManager {
      * @param id 物品唯一 ID
      * @return 对应的 MGCItem，如果不存在则返回 null
      */
-    public MGCItem get(String id) {
+    public @Nullable MGCItem get(String id) {
         return items.get(id);
     }
 
@@ -68,7 +68,7 @@ public class ItemManager {
      * @param id 物品唯一 ID
      * @return 对应的 ItemStack，如果不存在则返回 null
      */
-    public ItemStack getItem(String id) {
+    public @Nullable ItemStack getItem(String id) {
         MGCItem item = items.get(id);
         return item != null ? item.getItem() : null;
     }
