@@ -32,16 +32,6 @@ public abstract class Menu implements InventoryHolder {
                 TextParser.parse(getTitle()));
     }
 
-    /** 带标题和行数的重载（如果需要使用和注册时不一样的标题和行数） */
-    public Menu(Player player, Component title, @Range(from = 1, to = 6) int rows, Object... args) {
-        this.player = new PlayerExt(player);
-        this.args = args;
-        inventory = Bukkit.createInventory(
-                this,
-                rows * 9,
-                title);
-    }
-
     /** 子类填充菜单 */
     protected abstract void setup();
 
