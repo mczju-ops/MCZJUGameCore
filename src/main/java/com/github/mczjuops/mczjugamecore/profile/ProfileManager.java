@@ -24,6 +24,8 @@ public class ProfileManager implements Listener {
     public void switchProfile(Player player, String targetProfileId) {
 
         ProfileData data = playerProfileCache.get(player.getUniqueId()); // 内存缓存
+        UUID uuid = player.getUniqueId();
+        String playerName = player.getName();
 
         // 主线程同步：捕获 + 应用
         String fromProfileId = data.currentProfileId();
@@ -40,22 +42,21 @@ public class ProfileManager implements Listener {
 
         // 更新当前 profile 记录
         data.setCurrentProfileId(targetProfileId);
-        data.setPlayerName(player.getName()); // 同步最新名称
+        data.setPlayerName(playerName); // 同步最新名称
 
         // 异步落盘快照
         Map<String, PlayerSnapshot> profilesSnapshot = data.snapshotForSave();
         String currentId = data.currentProfileId();
-        String playerName = data.playerName();
         long ts = data.lastModified();
 
         Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), task -> {
             try {
                 MCZJUGameCore.getProfileStorageManager().save(
-                        player.getUniqueId(), playerName,
+                        uuid, playerName,
                         currentId, profilesSnapshot, ts
                 );
             } catch (IOException e) {
-                logger.error("玩家 %s 的 profile 数据落盘失败：%s".formatted(player.getName(), e));
+                logger.error("玩家 %s 的 profile 数据落盘失败：%s".formatted(playerName, e));
             }
         });
     }
@@ -70,17 +71,61 @@ public class ProfileManager implements Listener {
         Bukkit.getAsyncScheduler().runNow(plugin, task -> {
             try {
                 Optional<ProfileData> loaded = MCZJUGameCore.getProfileStorageManager().load(uuid);
-                ProfileData data = loaded.orElseGet(() ->
-                        new ProfileData(
-                                uuid, player.getName(),
-                                ProfileData.LOBBY_PROFILE_ID
-                        )
-                );
-
-                // 切回主线程应用数据
                 Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (!player.isOnline()) {
+                        return;
+                    }
+
+                    // 存在该玩家的数据，设置 profile
+                    if (loaded.isPresent()) {
+                        ProfileData data = loaded.get();
+
+                        playerProfileCache.put(uuid, data);
+                        MCZJUGameCore.getProfileCapture().apply(
+                                player,
+                                data.getProfile(data.currentProfileId())
+                        );
+                        return;
+                    }
+
+                    // 没有旧数据，可能是老玩家在首次安装插件后进入服务器，不要 apply 空的 profile，否则就清空原来的物品栏等数据了
+                    ProfileData data = new ProfileData(
+                            uuid,
+                            player.getName(),
+                            ProfileData.LOBBY_PROFILE_ID
+                    );
+
+                    // 把玩家当前物品栏捕获成初始 profile
+                    PlayerSnapshot current =
+                            MCZJUGameCore.getProfileCapture().capture(player);
+
+                    data.putProfile(ProfileData.LOBBY_PROFILE_ID, current);
+                    data.setCurrentProfileId(ProfileData.LOBBY_PROFILE_ID);
+                    data.setPlayerName(player.getName());
+
                     playerProfileCache.put(uuid, data);
-                    MCZJUGameCore.getProfileCapture().apply(player, data.getProfile(data.currentProfileId()));
+
+                    Map<String, PlayerSnapshot> profilesSnapshot = data.snapshotForSave();
+                    String currentId = data.currentProfileId();
+                    String nameForSave = data.playerName();
+                    long ts = data.lastModified();
+
+                    Bukkit.getAsyncScheduler().runNow(plugin, saveTask -> {
+                        try {
+                            MCZJUGameCore.getProfileStorageManager().save(
+                                    uuid,
+                                    nameForSave,
+                                    currentId,
+                                    profilesSnapshot,
+                                    ts
+                            );
+                        } catch (IOException e) {
+                            logger.error(
+                                    "玩家 %s 的初始 profile 数据落盘失败：%s"
+                                            .formatted(nameForSave, e)
+                            );
+                        }
+                    });
                 });
 
             } catch (IOException e) {
@@ -113,7 +158,7 @@ public class ProfileManager implements Listener {
             try {
                 MCZJUGameCore.getProfileStorageManager().save(uuid, playerName, currentId, profilesSnapshot, ts);
             } catch (IOException e) {
-                logger.error("玩家 %s 离线时 profile 数据落盘失败：%s".formatted(player.getName(), e));
+                logger.error("玩家 %s 离线时 profile 数据落盘失败：%s".formatted(playerName, e));
             } finally {
                 MCZJUGameCore.getProfileStorageManager().evict(uuid);
             }
