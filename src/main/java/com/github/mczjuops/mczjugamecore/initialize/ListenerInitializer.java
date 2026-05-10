@@ -1,7 +1,6 @@
 package com.github.mczjuops.mczjugamecore.initialize;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
-import com.github.mczjuops.mczjugamecore.menu.MenuFacade;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerDeathListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerQuitListener;
 import com.github.mczjuops.mczjugamecore.utils.LocationSelector;
@@ -14,6 +13,7 @@ public class ListenerInitializer {
         register(LocationSelector.getInstance());
         register(new PlayerDeathListener());
         register(new PlayerQuitListener());
+        register(MCZJUGameCore.getProfileManager());
     }
 
     private static void register(Listener listener){
