@@ -12,9 +12,7 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 public class JsonGameRoom extends AbstractGameRoom {
 
@@ -27,8 +25,8 @@ public class JsonGameRoom extends AbstractGameRoom {
             Object value = field.get(this);
             return clazz.cast(value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            logger.error("无法访问字段：%s，所属游戏：%s，游戏房间名：%s".formatted(name, getGameId(), getRoomName()));
-            throw new RuntimeException(e);
+            logger.debug("无法访问字段：%s，所属游戏：%s，游戏房间名：%s".formatted(name, getGameId(), getRoomName()));
+            return null;
         }
     }
 
@@ -118,5 +116,24 @@ public class JsonGameRoom extends AbstractGameRoom {
             logger.error("无法删除地图 %s: %s".formatted(getGameId(), roomName));
             throw new RuntimeException(e);
         }
+    }
+
+
+    /**
+     * 获取数组。i遍历到最多64，获取name${i}字段
+     * @param name 数组名
+     * @param clazz 类
+     * @return  数组, 长度为0, 代表没找到
+     * @param <T>   数据类型
+     */
+    @Override
+    public <T> @NotNull List<T> getList(String name, Class<T> clazz){
+        ArrayList<T> resultList = new ArrayList<>();
+        for (int i = 0; i < 64; i++){
+            T value = getField(name + i, clazz);
+            if (value == null) break;
+            resultList.add(value);
+        }
+        return resultList;
     }
 }
