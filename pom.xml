@@ -8,9 +8,10 @@
 
     <licenses>
         <license>
-            <name>The GNU Lesser General Public License, Version 3.0</name>
-            <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            <name>GNU General Public License, Version 3</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
             <distribution>repo</distribution>
+            <comments>GPLv3</comments>
         </license>
     </licenses>
 
