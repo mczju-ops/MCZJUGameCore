@@ -8,6 +8,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - uses: actions/checkout@v4
@@ -22,7 +24,6 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
-    # 👇 上传所有 jar 到 Release
     - name: Upload Release Assets
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v2
