@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.GameState;
+import com.github.mczjuops.mczjugamecore.game.MidGameJoinable;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomState;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
@@ -117,8 +118,19 @@ public class DefaultGameManager implements AbstractGameManager {
 
         // 2. 尝试加入现有房间
         for (AbstractGame game : gameList) {
-            if (Objects.equals(game.getId(), gameId) && game.getState() == GameState.WAITING) {
-                if (tryJoin(player, game)) return;
+            if (Objects.equals(game.getId(), gameId)) {
+                if (game.getState() == GameState.WAITING){
+                    if (tryJoin(player, game)) return;
+                }else if (game.getState() == GameState.RUNNING && game instanceof MidGameJoinable){
+                    // 允许中途加入，且正在运行的游戏
+                    if (((MidGameJoinable) game).onPlayerMidJoin(player)) {
+                        // 先判断是否允许玩家加入，允许时再将player放入playerList
+                        // 和tryJoin的流程相反，后面不合适再改
+                        // 只把这一个玩家拉进去
+                        MCZJUGameCore.getPlayerManager().joinGame(player, game);
+                        return;
+                    }
+                }
             }
         }
 
