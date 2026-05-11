@@ -153,6 +153,7 @@ public class ExampleGameRoom extends JsonGameRoom {
     public String mapName;
     public Location team1SpawnAt;
     public Location team2SpawnAt;
+    public int resourceRefreshSpeed = 20 * 60;    // 你可以设置默认值
     // 更多
 }
 ```
@@ -380,6 +381,23 @@ public @NotNull AbstractPlayerDeathStrategy getPlayerDeathStrategy(){
 
 > 如果你觉得自己的策略别人也可能用到，可以申请将其放入 `MGC` 中，造福其他开发者。
 > 其它人使用时，只需要在步骤 3 中，改成`new YourPlayerDeathStrategy(this)`
+
+
+### 允许中途加入游戏
+
+对于允许玩家中途加入游戏(如搜打撤、bingo)，你需要实现MidGameJoinable接口。然后玩家`mgc join example`就能加入正在进行的游戏了。
+
+```java
+// ExampleGame
+public class ExampleGame extends AbstractGame implements MidGameJoinable{
+    @Override
+    public boolean onPlayerMidJoin(PlayerExt player) {
+        // 允许玩家加入
+        sender.success("玩家%s中途加入游戏".formatted(player.player().getName())); // 除该玩家都能看到，因为此时getPlayers里还没有新玩家
+        return true;    // false代表不允许这个玩家加入
+    }
+}
+```
 
 ### PlayerExt 类
 
