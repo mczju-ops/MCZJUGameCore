@@ -8,6 +8,7 @@ import com.github.mczjuops.mczjugamecore.utils.LocationSelector;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.PlayerSender;
 import org.bukkit.Location;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -124,6 +125,22 @@ public record PlayerExt(@NotNull Player player) {
             return obj == player;
         }
         return false;
+    }
+
+    public void resetState() {
+        if (!player.isOnline()) return;
+
+        player.setFireTicks(0);
+        player.setFreezeTicks(0);
+
+        var attribute = player.getAttribute(Attribute.MAX_HEALTH);
+        if (attribute != null) {
+            player.setHealth(attribute.getValue());
+        }
+
+        player.setFoodLevel(20);
+        player.setSaturation(5f);
+        player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
     }
 
     /** 退出当前所在的游戏，不论游戏是否开始 */
