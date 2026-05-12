@@ -61,7 +61,7 @@ public class DefaultGameManager implements AbstractGameManager {
             if (game.gameInit()) return game;
             else {
                 // 初始化失败，可能是房间设置问题，比如有个参数没设置
-                abortGame(game);
+                cancelGame(game);
                 return null;
             }
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
