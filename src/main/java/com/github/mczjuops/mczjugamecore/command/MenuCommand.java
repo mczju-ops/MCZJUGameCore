@@ -74,7 +74,7 @@ public class MenuCommand implements BrigadierCommand {
         try {
             player = targetResolver.resolve(ctx.getSource()).getFirst();
         } catch (CommandSyntaxException ignored) {
-            sender.sendMessage("<yellow>无效的玩家或选择器");
+            sender.sendMessage(TextParser.parse("<yellow>无效的玩家或选择器"));
             return 0;
         }
 
