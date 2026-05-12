@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.strategy.wait.DefaultGameWaitStrategy;
 import com.github.mczjuops.mczjugamecore.game.strategy.wait.GameWaitStrategy;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class SinglePlayerGame extends AbstractGame {
 
@@ -12,7 +13,8 @@ public abstract class SinglePlayerGame extends AbstractGame {
         return new DefaultGameWaitStrategy(this, 1);
     }
 
-    public PlayerExt getPlayer() {
+    public @Nullable PlayerExt getPlayer() {
+        if (getPlayers().isEmpty()) return null;
         return getPlayers().getFirst();
     }
 }

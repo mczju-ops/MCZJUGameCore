@@ -424,4 +424,4 @@ public class ExampleGame extends AbstractGame implements MidGameJoinable{
 - `DialogBuilder`：交互非常友好，可以作为虚拟箱子菜单的辅助，其能力详见 [wiki](https://zh.minecraft.wiki/w/%E5%AF%B9%E8%AF%9D%E6%A1%86%E5%AE%9A%E4%B9%89%E6%A0%BC%E5%BC%8F)。
 Paper 原生 API 非常复杂，这个工具封装了部分功能，详见对应文档。
 - `CommandUtils`：当前的工具通常用于 `Brigadier` 命令系统的自动补全。
-- `CountDown`：便捷地为玩家显示倒计时，并在倒计时结束后执行特定逻辑。
+- `CountDown`：倒计时工具，便捷地创建一个倒计时，并设定每秒、结束时、取消时的回调，详见对应文档。
