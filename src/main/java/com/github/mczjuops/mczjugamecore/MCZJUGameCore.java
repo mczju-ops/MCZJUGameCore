@@ -15,6 +15,7 @@ import com.github.mczjuops.mczjugamecore.item.ItemManager;
 import com.github.mczjuops.mczjugamecore.menu.MenuFacade;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
+import com.github.mczjuops.mczjugamecore.player.data.PlayerDataManager;
 import com.github.mczjuops.mczjugamecore.player.party.PartyManager;
 import com.github.mczjuops.mczjugamecore.profile.ProfileManager;
 import com.github.mczjuops.mczjugamecore.profile.ProfileCapture;
@@ -48,6 +49,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     private ProfileManager profileManager;
     private ProfileCapture profileCapture;
     private ProfileStorageManager profileStorageManager;
+    private PlayerDataManager playerDataManager;
 
     @Override
     public void onEnable() {
@@ -63,6 +65,8 @@ public final class MCZJUGameCore extends JavaPlugin {
         menuFacade = new MenuFacade();
         configManager = new ConfigManager();
         itemManager = new ItemManager();
+        playerDataManager = new PlayerDataManager();
+        playerDataManager.startAutoSave(20 * 60 * 30L);
 
         profileManager = new ProfileManager();
         profileManager.startAutoSave(20 * 60 * 30L); // 每半小时自动落盘
@@ -84,6 +88,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
         gameRoomManager.saveAllGameRoomDirectly();  // 保存所有游戏房间
+        playerDataManager.saveAllPlayerData();
         profileManager.shutdown(); // 保存所有玩家的 profile 数据
     }
 
@@ -140,6 +145,9 @@ public final class MCZJUGameCore extends JavaPlugin {
     }
     public static @NotNull ProfileStorageManager getProfileStorageManager(){
         return getInstance().profileStorageManager;
+    }
+    public static @NotNull PlayerDataManager getPlayerDataManager(){
+        return getInstance().playerDataManager;
     }
 
     private void registerCommands(BrigadierCommand... commands) {

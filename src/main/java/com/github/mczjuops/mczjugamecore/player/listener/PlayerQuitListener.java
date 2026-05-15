@@ -43,4 +43,9 @@ public class PlayerQuitListener implements Listener {
             }
         }, 5L);
     }
+
+    @EventHandler
+    public void savePlayerDataOnQuit(PlayerQuitEvent event){
+        MCZJUGameCore.getPlayerDataManager().savePlayerDataAsync(event.getPlayer().getUniqueId().toString());
+    }
 }

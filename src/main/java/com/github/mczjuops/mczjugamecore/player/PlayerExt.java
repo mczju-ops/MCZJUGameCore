@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.player;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.player.data.AbstractPlayerData;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import com.github.mczjuops.mczjugamecore.utils.LocationSelector;
@@ -146,5 +147,16 @@ public record PlayerExt(@NotNull Player player) {
     /** 退出当前所在的游戏，不论游戏是否开始 */
     public void quitGame(PlayerQuitReason reason){
         MCZJUGameCore.getPlayerManager().leaveGame(this, reason);
+    }
+
+    /**
+     * 获取玩家的数据
+     * @param gameId 游戏Id
+     * @param dataClass 数据类
+     * @return  玩家数据，没有则新建一个
+     * @param <T> dataClass相同的数据类class
+     */
+    public <T extends AbstractPlayerData> @NotNull T getData(String gameId, Class<T> dataClass){
+        return MCZJUGameCore.getPlayerDataManager().getPlayerData(gameId, player.getUniqueId().toString(), dataClass);
     }
 }
