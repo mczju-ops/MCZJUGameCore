@@ -86,7 +86,7 @@ public interface JsonMGCSerializable extends MGCSerializable {
                 gson.toJson(this, writer);
             }
             getLogger().success("成功保存数据 %s".formatted(getFilePath()));
-
+            setModified(false);
         } catch (IOException e) {
             getLogger().error("无法保存数据 %s".formatted(getFilePath()));
             throw new RuntimeException(e);
