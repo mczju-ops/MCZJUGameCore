@@ -1,6 +1,5 @@
 package com.github.mczjuops.mczjugamecore.game.strategy.wait;
 
-import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.party.Party;

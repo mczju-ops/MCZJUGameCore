@@ -1,2 +1,9 @@
 debug: true
 main-server: "main"
+#lobby-spawn: # 大厅出生点
+#  world-key: "minecraft:overworld" # 世界键名（Bukkit world 自 26.1 起为 obsolete）
+#  x: 0.5
+#  y: 100
+#  z: 0.5
+#  yaw: 0
+#  pitch: 0

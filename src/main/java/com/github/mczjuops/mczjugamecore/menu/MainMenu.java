@@ -5,7 +5,10 @@ import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.utils.ItemBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Range;
@@ -69,23 +72,79 @@ public class MainMenu extends Menu {
             );
         }
 
+        boolean inGame = player.isInGame();
+        // 左下角按钮，传送到大厅出生点
         setSlot(
-                inventory.getSize() - 1,
-                ItemBuilder.of(Material.PALE_OAK_DOOR)
-                        .customName("<gold>返回主服")
+                inventory.getSize() - 9,
+                ItemBuilder.of(Material.COMPASS)
+                        .customName("<gold>返回出生点")
                         .lore(List.of(
-                                "<yellow>点击返回MCZJU主服"
+                                "<gray>传送到小游戏世界的出生点",
+                                inGame ? "<red>无法在游戏过程中使用该功能" : "<yellow>点击传送"
                         ))
+                        .glint(!inGame)
                         .build(),
                 (player, event) -> {
-                    String mainServer = MCZJUGameCore.getConfigManager().getMainServer();
+                    player.player().closeInventory();
 
-                    ByteArrayDataOutput out = ByteStreams.newDataOutput();
-                    out.writeUTF("Connect");
-                    out.writeUTF(mainServer);
-                    player.player().sendPluginMessage(MCZJUGameCore.getInstance(), "BungeeCord", out.toByteArray());
+                    if (inGame) {
+                        player.sender().warn("<yellow>无法在游戏过程中使用该功能");
+                        return;
+                    }
+
+                    Location lobbySpawn = MCZJUGameCore.getConfigManager().getLobbySpawn();
+                    if (lobbySpawn == null) {
+                        player.sender().warn("<yellow>无法识别出生点，请询问管理员");
+                    } else {
+                        Player p = player.player();
+                        p.teleport(lobbySpawn);
+                        Bukkit.getScheduler().runTask(
+                                MCZJUGameCore.getInstance(),
+                                () -> p.playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f)
+                        );
+                    }
                 }
         );
+
+        // 右下角，处于游戏内时为退出，处于大厅时为返回主城
+        if (inGame) {
+            var game = player.getGame();
+            assert game != null;
+            String gameName = game.getGameMeta().displayName();
+            setSlot(
+                    inventory.getSize() - 1,
+                    ItemBuilder.of(Material.PALE_OAK_DOOR)
+                            .customName("<gold>退出当前游戏")
+                            .lore(List.of(
+                                    "<yellow>点击退出游戏" + gameName
+                            ))
+                            .glint(true)
+                            .build(),
+                    (player, event) -> {
+                        player.player().closeInventory();
+                        player.player().performCommand("mgc leave");
+                    }
+            );
+        } else {
+            setSlot(
+                    inventory.getSize() - 1,
+                    ItemBuilder.of(Material.END_PORTAL_FRAME)
+                            .customName("<gold>返回主服")
+                            .lore(List.of(
+                                    "<yellow>点击返回MCZJU主服"
+                            ))
+                            .glint(true)
+                            .build(),
+                    (player, event) -> {
+                        String mainServer = MCZJUGameCore.getConfigManager().getMainServer();
+
+                        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+                        out.writeUTF("Connect");
+                        out.writeUTF(mainServer);
+                        player.player().sendPluginMessage(MCZJUGameCore.getInstance(), "BungeeCord", out.toByteArray());
+                    }
+            );
+        }
     }
 
     @Override
