@@ -4,14 +4,14 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
 
-public class DefaultOpenSessionGameWaitStrategy extends DefaultGameWaitStrategy {
+public class DefaultSinglePlayerGameWaitStrategy extends DefaultGameWaitStrategy {
 
-    public DefaultOpenSessionGameWaitStrategy(AbstractGame game) {
-        super(game, 67656); // 无人数上限
+    public DefaultSinglePlayerGameWaitStrategy(AbstractGame game) {
+        super(game, 1);
     }
 
     @Override
-    public boolean onPlayerJoin(PlayerExt playerExt) {
+    public boolean onPlayerJoin(PlayerExt player) {
         startGame();
         return true;
     }
