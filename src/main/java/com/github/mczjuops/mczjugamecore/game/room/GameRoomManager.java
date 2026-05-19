@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class GameRoomManager {
 
@@ -110,16 +111,22 @@ public class GameRoomManager {
     }
 
     /**
-     * 获取空闲的地图，用于创建游戏
+     * 获取随机一个空闲房间，用于创建游戏
      * @param gameId 游戏 ID
-     * @return  游戏地图。没有空闲的，则返回null
+     * @return 游戏房间。没有空闲的，则返回 null
      */
-    public @Nullable AbstractGameRoom getLeisureGameRoom(String gameId){
-        if (!gameRoomMap.containsKey(gameId)) return null;
-        for (AbstractGameRoom gameRoom : gameRoomMap.get(gameId)) {
-            if (gameRoom.getState() == GameRoomState.READY) return gameRoom;
-        }
-        return null;
+    public @Nullable AbstractGameRoom getRandomLeisureGameRoom(String gameId){
+        List<AbstractGameRoom> rooms = gameRoomMap.get(gameId);
+        if (rooms == null || rooms.isEmpty()) return null;
+
+        List<AbstractGameRoom> readyRooms = rooms.stream()
+                .filter(room -> room.getState() == GameRoomState.READY)
+                .toList();
+
+        if (readyRooms.isEmpty()) return null;
+
+        int randomIndex = ThreadLocalRandom.current().nextInt(readyRooms.size());
+        return readyRooms.get(randomIndex);
     }
 
 
@@ -149,6 +156,10 @@ public class GameRoomManager {
             }
         }
         return null;
+    }
+
+    public List<AbstractGameRoom> getGameRooms(String gameId) {
+        return Collections.unmodifiableList(gameRoomMap.get(gameId));
     }
 
     public Set<String> getGameRoomNames(String gameId) {

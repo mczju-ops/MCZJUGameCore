@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.game.room;
 
+import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.serialize.MGCSerializable;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 

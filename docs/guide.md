@@ -189,6 +189,27 @@ protected void onGameStart() {
 
 > 当一局游戏开始后，默认情况下游戏房间会被占用。所有房间均被占用后，更多玩家想要加入时会收到没有空余房间的提示。
 
+如果你希望你的游戏中，玩家可以自主选择加入哪个房间（比如不同房间是不同地图，体验有所不同），
+你可以给 `AbstractGameRoom` 的子类添加注解 `@PlayerSelectable`，这样玩家就可以可选地自主加入特定房间。
+
+为此，你还需要在这个子类中添加三个字段 `icon`、`displayName` 和 `description`（均为字符串），作为玩家选择房间时呈现的信息。例如：
+
+```java
+@PlayerSelectable
+public class ExampleGameRoom extends JsonGameRoom {
+    public String icon; // 例如 DIAMOND，DIAMOND_SWORD 等，作为这个房间对应的按钮的图标
+    public String displayName; // 例如 "<yellow>绯红荒原"
+    public String description; // 例如 "这张地图的特点是xxx"
+    
+    public String mapName;
+    public Location team1SpawnAt;
+    public Location team2SpawnAt;
+    public int resourceRefreshSpeed = 20 * 60;    // 你可以设置默认值
+    // 更多
+}
+```
+> `icon` 字符串就是物品的原版 ID 并将字母改为大写。
+
 ### 2. 注册游戏到`MGC`
 
 在插件主类的 onEnable() 中注册你设计的游戏和房间。

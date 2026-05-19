@@ -18,6 +18,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MGCCommand implements BrigadierCommand {
@@ -54,6 +55,35 @@ public class MGCCommand implements BrigadierCommand {
                                 .executes(this::executeJoin)
                         )
                 )
+                .then(Commands.literal("joinroom")
+                        .executes(ctx -> {
+                            ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定要加入的游戏"));
+                            return 0;
+                        })
+                        .then(Commands.argument("game", StringArgumentType.string())
+                                .suggests((ctx, builder) -> {
+                                    List<String> selectable = new ArrayList<>();
+                                    var gameManager = MCZJUGameCore.getGameManager();
+                                    var games = gameManager.getRegisteredGameIds();
+                                    games.forEach(id -> {
+                                        if (gameManager.playerSelectable(id)) selectable.add(id);
+                                    });
+                                    return CommandUtils.suggestMatching(selectable, builder);
+                                })
+                                .executes(ctx -> {
+                                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定游戏房间"));
+                                    return 0;
+                                })
+                                .then(Commands.argument("room", StringArgumentType.string())
+                                        .suggests((ctx, builder) -> {
+                                            String gameId = CommandUtils.getToken(builder, 2);
+                                            var roomNames = MCZJUGameCore.getGameRoomManager().getGameRoomNames(gameId);
+                                            return CommandUtils.suggestMatching(roomNames, builder);
+                                        })
+                                        .executes(this::executeJoinRoom)
+                                )
+                        )
+                )
                 .then(Commands.literal("leave")
                         .executes(this::executeLeave))
                 .then(Commands.literal("start") // 尝试开始当前玩家所在的游戏
@@ -88,6 +118,38 @@ public class MGCCommand implements BrigadierCommand {
         }
 
         MCZJUGameCore.getGameManager().joinGame(player, gameId);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeJoinRoom(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+        if (!(sender instanceof Player p)) {
+            sender.sendMessage(Component.text("该命令只能由玩家执行"));
+            return 0;
+        }
+
+        PlayerExt player = new PlayerExt(p);
+
+        var gameManager = MCZJUGameCore.getGameManager();
+        String gameId = StringArgumentType.getString(ctx, "game");
+        if (!gameManager.getRegisteredGameIds().contains(gameId)) {
+            player.sender().warn("不存在该游戏");
+            return 0;
+        }
+
+        if (!gameManager.playerSelectable(gameId)) {
+            player.sender().warn("该游戏无法自主选择加入的房间");
+            return 0;
+        }
+
+        String roomName = StringArgumentType.getString(ctx, "room");
+        var room = MCZJUGameCore.getGameRoomManager().getGameRoom(gameId, roomName);
+        if (room == null) {
+            player.sender().warn("此游戏不存在该游戏房间");
+            return 0;
+        }
+
+        gameManager.joinGame(player, gameId, roomName);
         return Command.SINGLE_SUCCESS;
     }
 

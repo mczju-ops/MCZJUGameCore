@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.Set;
@@ -25,6 +26,12 @@ public interface AbstractGameManager {
      */
     AbstractGame createGame(String id);
 
+    /**
+     * 尝试使用指定房间创建游戏
+     * @param roomName 房间名
+     */
+    @Nullable AbstractGame createGame(String id, String roomName);
+
     void startGame(AbstractGame game);
 
     void cancelGame(AbstractGame game);
@@ -42,6 +49,12 @@ public interface AbstractGameManager {
      * @param gameId 游戏名
      */
     void joinGame(PlayerExt player, String gameId);
+
+    /**
+     * 玩家加入游戏，且尝试加入指定房间，其他情况同上
+     * @param roomName 房间名
+     */
+    void joinGame(PlayerExt player, String gameId, String roomName);
 
     /**
      * 创建新的游戏房间
@@ -62,4 +75,14 @@ public interface AbstractGameManager {
      * 用于在菜单中展示信息
      */
     Map<String, GameMeta> getGameMetas();
+
+    /**
+     * 该游戏是否支持玩家自行选择房间
+     */
+    boolean playerSelectable(String gameId);
+
+    /**
+     * 获取一个正在运行的游戏
+     */
+    @Nullable AbstractGame getGame(String gameId, String roomName);
 }

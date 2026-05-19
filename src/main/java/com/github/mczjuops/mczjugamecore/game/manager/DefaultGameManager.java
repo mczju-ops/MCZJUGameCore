@@ -7,6 +7,7 @@ import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.game.MidGameJoinable;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomState;
+import com.github.mczjuops.mczjugamecore.game.room.PlayerSelectable;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
@@ -47,15 +48,15 @@ public class DefaultGameManager implements AbstractGameManager {
     }
 
     @Override
-    public @Nullable AbstractGame createGame(String name) {
+    public @Nullable AbstractGame createGame(String gameId) {
         // 先检查是否有空的游戏房间
-        AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getLeisureGameRoom(name);
+        AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getRandomLeisureGameRoom(gameId);
         if (gameRoom == null) return null;
         try {
-            AbstractGame game = gameIdMap.get(name).getDeclaredConstructor().newInstance();
+            AbstractGame game = gameIdMap.get(gameId).getDeclaredConstructor().newInstance();
             game.setGameRoom(gameRoom);
             gameRoom.setState(GameRoomState.IN_GAME);   // 分配房间后，设置房间为占用状态
-            logger.info("将房间 %s分配给游戏%s".formatted(gameRoom.getRoomName(), game.getId()));
+            logger.info("将房间 %s 分配给游戏 %s".formatted(gameRoom.getRoomName(), game.getId()));
             game.setState(GameState.WAITING);
             gameList.add(game);
             if (game.gameInit()) return game;
@@ -66,7 +67,31 @@ public class DefaultGameManager implements AbstractGameManager {
             }
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             // 这一步应该不可能执行到，因为create前肯定register过，那个时候是能访问构造器的
-            logger.error("无法注册游戏%s，原因：无法访问无参构造器，无法创建游戏实例".formatted(name));
+            logger.error("无法注册游戏%s，原因：无法访问无参构造器，无法创建游戏实例".formatted(gameId));
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public @Nullable AbstractGame createGame(String gameId, String roomName) {
+        AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getGameRoom(gameId, roomName);
+        if (gameRoom == null) return null;
+        try {
+            AbstractGame game = gameIdMap.get(gameId).getDeclaredConstructor().newInstance();
+            game.setGameRoom(gameRoom);
+            gameRoom.setState(GameRoomState.IN_GAME);
+            logger.info("将房间 %s 分配给游戏 %s".formatted(gameRoom.getRoomName(), game.getId()));
+            game.setState(GameState.WAITING);
+            gameList.add(game);
+
+            if (game.gameInit()) return game;
+            else {
+                // 初始化失败，可能是房间设置问题，比如有个参数没设置
+                cancelGame(game);
+                return null;
+            }
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            logger.error("无法注册游戏%s，原因：无法访问无参构造器，无法创建游戏实例".formatted(gameId));
             throw new RuntimeException(e);
         }
     }
@@ -149,6 +174,47 @@ public class DefaultGameManager implements AbstractGameManager {
     }
 
     @Override
+    public void joinGame(PlayerExt player, String gameId, String roomName) {
+        if (player.isInParty() && !player.isPartyLeader()) {
+            player.sender().warn("只有队长能开启游戏");
+            return;
+        }
+
+        if (player.isInGame()) {
+            player.sender().warn("请退出当前游戏，再进行下一个游戏！");
+            return;
+        }
+
+        var game = getGame(gameId, roomName);
+
+        if (game != null)  {
+            // 尝试加入这个房间
+            if (game.getState() == GameState.WAITING) {
+                tryJoin(player, game);
+                // 无法加入时，不提示
+                return;
+            }
+
+            if (game.getState() == GameState.RUNNING && game instanceof MidGameJoinable joinable) {
+                if (joinable.onPlayerMidJoin(player)) {
+                    MCZJUGameCore.getPlayerManager().joinGame(player, game);
+                } // 无法加入时，不提示
+            } else {
+                player.sender().warn("游戏已开始，无法中途加入");
+            }
+        } else {
+            // 尝试使用这个房间创建游戏并加入
+            AbstractGame newGame = createGame(gameId, roomName);
+            if (newGame == null) {
+                player.sender().warn("这个房间无法加入，请询问管理员");
+            } else {
+                tryJoin(player, newGame);
+                // 无法加入时，不提示
+            }
+        }
+    }
+
+    @Override
     public @Nullable AbstractGameRoom createGameRoom(String gameId, String gameRoomName) {
         Class<? extends AbstractGame> gameClass = gameIdMap.get(gameId);
         if (gameClass == null) return null; // 可能是名称输错，就先不报错了
@@ -205,5 +271,26 @@ public class DefaultGameManager implements AbstractGameManager {
     @Override
     public Map<String, GameMeta> getGameMetas() {
         return Collections.unmodifiableMap(gameMetaMap);
+    }
+
+    @Override
+    public boolean playerSelectable(String gameId) {
+        var gameClass = gameIdMap.get(gameId);
+        if (gameClass == null) return false;
+        var gameRoomClass = registerGameMap.get(gameClass);
+        if (gameRoomClass == null) return false;
+        return gameRoomClass.isAnnotationPresent(PlayerSelectable.class);
+    }
+
+    @Override
+    public @Nullable AbstractGame getGame(String gameId, String roomName) {
+        for (AbstractGame game : gameList) {
+            if (Objects.equals(game.getId(), gameId)) {
+                if (game.getGameRoom().getRoomName().equals(roomName)) {
+                    return game;
+                }
+            }
+        }
+        return null;
     }
 }
