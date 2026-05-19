@@ -74,10 +74,6 @@ public class JsonGameRoomLoader implements GameRoomLoader{
                 room.setGameId(gameId);
                 room.setRoomName(roomName);
 
-                // 注册
-                MCZJUGameCore.getGameRoomManager()
-                        .registerGameRoom(gameId, room);
-
                 logger.info("已加载地图 %s - %s".formatted(gameId, room.getRoomName()));
 
                 return room;

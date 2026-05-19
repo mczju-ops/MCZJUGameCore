@@ -2,6 +2,8 @@ package com.github.mczjuops.mczjugamecore.menu;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.GameMeta;
+import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
+import com.github.mczjuops.mczjugamecore.game.room.menu.GameRoomSelectMenu;
 import com.github.mczjuops.mczjugamecore.utils.ItemBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
@@ -10,12 +12,15 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Range;
 
 import java.util.*;
 
 public class MainMenu extends Menu {
+
+    private final AbstractGameManager gameManager;
 
     // 用于决定小游戏的布局
     private static final int COLUMNS = 9;
@@ -24,6 +29,7 @@ public class MainMenu extends Menu {
 
     public MainMenu(Player player) {
         super(player);
+        this.gameManager = MCZJUGameCore.getGameManager();
     }
 
     @Override
@@ -46,17 +52,23 @@ public class MainMenu extends Menu {
                         .build()
         );
 
-        var gameMetas = MCZJUGameCore.getGameManager().getGameMetas();
+        var gameMetas = gameManager.getGameMetas();
         Map<Integer, String> arrangedIds = arrange(gameMetas.keySet());
 
         for (var entry : arrangedIds.entrySet()) {
             String gameId = arrangedIds.get(entry.getKey());
             GameMeta meta = gameMetas.get(gameId);
+            boolean playerSelectable = gameManager.playerSelectable(gameId);
             List<String> lore = new ArrayList<>(meta.description());
             lore.add("");
             lore.add("<yellow>作者：<white>%s".formatted(meta.author()));
             lore.add("");
-            lore.add("<yellow><b>▶ 点击游玩");
+            if (playerSelectable) {
+                lore.add("<yellow><b>▶ 左键 加入游戏");
+                lore.add("<yellow><b>▶ 右键 选择房间");
+            } else {
+                lore.add("<yellow><b>▶ 点击加入游戏");
+            }
 
             setSlot(
                     entry.getKey(),
@@ -67,7 +79,16 @@ public class MainMenu extends Menu {
                             .build(),
                     (player, event) -> {
                         player.player().closeInventory();
-                        MCZJUGameCore.getGameManager().joinGame(player, gameId);
+                        if (playerSelectable) {
+                            if (event.getClick() == ClickType.LEFT) {
+                                gameManager.joinGame(player, gameId); // 直接接入游戏
+                            } else if (event.getClick() == ClickType.RIGHT) {
+                                // 打开房间选择菜单
+                                new GameRoomSelectMenu(player.player(), gameId, meta).open();
+                            }
+                        } else {
+                            gameManager.joinGame(player, gameId); // 直接加入游戏
+                        }
                     }
             );
         }

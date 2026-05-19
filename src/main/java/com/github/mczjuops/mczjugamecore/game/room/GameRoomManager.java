@@ -158,6 +158,10 @@ public class GameRoomManager {
         return null;
     }
 
+    public List<AbstractGameRoom> getGameRooms(String gameId) {
+        return Collections.unmodifiableList(gameRoomMap.get(gameId));
+    }
+
     public Set<String> getGameRoomNames(String gameId) {
         Set<String> names = new HashSet<>();
         List<AbstractGameRoom> gameRooms = gameRoomMap.get(gameId);
