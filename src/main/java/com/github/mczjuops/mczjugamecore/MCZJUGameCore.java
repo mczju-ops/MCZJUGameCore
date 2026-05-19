@@ -20,6 +20,7 @@ import com.github.mczjuops.mczjugamecore.player.party.PartyManager;
 import com.github.mczjuops.mczjugamecore.profile.ProfileManager;
 import com.github.mczjuops.mczjugamecore.profile.ProfileCapture;
 import com.github.mczjuops.mczjugamecore.profile.ProfileStorageManager;
+import com.github.mczjuops.mczjugamecore.score.leaderboard.LeaderboardManager;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
@@ -50,6 +51,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     private ProfileCapture profileCapture;
     private ProfileStorageManager profileStorageManager;
     private PlayerDataManager playerDataManager;
+    private LeaderboardManager leaderboardManager;
 
     @Override
     public void onEnable() {
@@ -72,6 +74,8 @@ public final class MCZJUGameCore extends JavaPlugin {
         profileManager.startAutoSave(20 * 60 * 30L); // 每半小时自动落盘
         profileCapture = new ProfileCapture();
         profileStorageManager = new ProfileStorageManager();
+        leaderboardManager = new LeaderboardManager();
+        leaderboardManager.startAutoRefresh(20 * 60 * 10L); // 每 10 分钟自动刷新
 
         ListenerInitializer.initialize();
         ItemInitializer.initialize();
@@ -90,6 +94,7 @@ public final class MCZJUGameCore extends JavaPlugin {
         gameRoomManager.saveAllGameRoomDirectly();  // 保存所有游戏房间
         playerDataManager.saveAllPlayerData();
         profileManager.shutdown(); // 保存所有玩家的 profile 数据
+        leaderboardManager.shutdown();
     }
 
     public static @NotNull MCZJUGameCore getInstance(){
@@ -148,6 +153,9 @@ public final class MCZJUGameCore extends JavaPlugin {
     }
     public static @NotNull PlayerDataManager getPlayerDataManager(){
         return getInstance().playerDataManager;
+    }
+    public static @NotNull LeaderboardManager getLeaderboardManager(){
+        return getInstance().leaderboardManager;
     }
 
     private void registerCommands(BrigadierCommand... commands) {
