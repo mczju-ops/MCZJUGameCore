@@ -49,7 +49,7 @@ public class DefaultGameManager implements AbstractGameManager {
     @Override
     public @Nullable AbstractGame createGame(String name) {
         // 先检查是否有空的游戏房间
-        AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getLeisureGameRoom(name);
+        AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getRandomLeisureGameRoom(name);
         if (gameRoom == null) return null;
         try {
             AbstractGame game = gameIdMap.get(name).getDeclaredConstructor().newInstance();
