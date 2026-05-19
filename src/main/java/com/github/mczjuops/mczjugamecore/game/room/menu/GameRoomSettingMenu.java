@@ -116,7 +116,6 @@ public class GameRoomSettingMenu extends Menu {
                 player.selectLocation(location -> {
                     room.setField(fieldName, location);
                     room.setModified(true);
-                    player.sender().success("<green>位置设置成功");
                     reopenLater(player, room.getGameId(), room.getRoomName());
                 });
             }

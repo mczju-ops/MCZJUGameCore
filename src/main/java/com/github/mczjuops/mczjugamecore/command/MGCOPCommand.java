@@ -4,6 +4,8 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.room.menu.GameRoomSettingMenu;
 import com.github.mczjuops.mczjugamecore.menu.AlertMenu;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import com.github.mczjuops.mczjugamecore.score.leaderboard.textdisplay.JsonTextDisplayRecord;
+import com.github.mczjuops.mczjugamecore.score.leaderboard.textdisplay.TextDisplayEditMenu;
 import com.github.mczjuops.mczjugamecore.utils.CommandUtils;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import com.mojang.brigadier.Command;
@@ -130,6 +132,88 @@ public class MGCOPCommand implements BrigadierCommand {
                                 )
                         )
                 )
+                .then(Commands.literal("leaderboard")
+                        .executes(ctx -> {
+                            ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop leaderboard list|create|edit|delete <leaderboardId> [entityId]"));
+                            return 0;
+                        })
+                        .then(Commands.literal("list")
+                                .executes(ctx -> {
+                                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定一个排行榜的ID"));
+                                    return 0;
+                                })
+                                .then(Commands.argument("leaderboardId", StringArgumentType.string())
+                                        .suggests((ctx, builder)
+                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getLeaderboardManager().getAllLeaderboardIds(), builder)
+                                        )
+                                        .executes(this::executeLeaderboardList)
+                                )
+                        )
+                        .then(Commands.literal("create")
+                                .executes(ctx -> {
+                                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop leaderboard create <leaderboardId> <displayId>"));
+                                    return 0;
+                                })
+                                .then(Commands.argument("leaderboardId", StringArgumentType.string())
+                                        .suggests((ctx, builder)
+                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getLeaderboardManager().getAllLeaderboardIds(), builder)
+                                        )
+                                        .executes(ctx -> {
+                                            ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请输入展示实体ID"));
+                                            return 0;
+                                        })
+                                        .then(Commands.argument("displayId", StringArgumentType.string())
+                                                .executes(this::executeLeaderboardCreate)
+                                        )
+                                )
+                        )
+                        .then(Commands.literal("edit")
+                                .executes(ctx -> {
+                                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop leaderboard edit <leaderboardId> <displayId>"));
+                                    return 0;
+                                })
+                                .then(Commands.argument("leaderboardId", StringArgumentType.string())
+                                        .suggests((ctx, builder)
+                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getLeaderboardManager().getAllLeaderboardIds(), builder)
+                                        )
+                                        .executes(ctx -> {
+                                            ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定展示实体ID"));
+                                            return 0;
+                                        })
+                                        .then(Commands.argument("displayId", StringArgumentType.string())
+                                                .suggests((ctx, builder) -> {
+                                                    String leaderboardId = CommandUtils.getToken(builder, 3);
+                                                    var entityIds = MCZJUGameCore.getLeaderboardManager().getAllDisplayIds(leaderboardId);
+                                                    return CommandUtils.suggestMatching(entityIds, builder);
+                                                })
+                                                .executes(this::executeLeaderboardEdit)
+                                        )
+                                )
+                        )
+                        .then(Commands.literal("delete")
+                                .executes(ctx -> {
+                                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop leaderboard delete <leaderboardId> <displayId>"));
+                                    return 0;
+                                })
+                                .then(Commands.argument("leaderboardId", StringArgumentType.string())
+                                        .suggests((ctx, builder)
+                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getLeaderboardManager().getAllLeaderboardIds(), builder)
+                                        )
+                                        .executes(ctx -> {
+                                            ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定要删除的实体ID"));
+                                            return 0;
+                                        })
+                                        .then(Commands.argument("displayId", StringArgumentType.string())
+                                                .suggests((ctx, builder) -> {
+                                                    String leaderboardId = CommandUtils.getToken(builder, 3);
+                                                    var entityIds = MCZJUGameCore.getLeaderboardManager().getAllDisplayIds(leaderboardId);
+                                                    return CommandUtils.suggestMatching(entityIds, builder);
+                                                })
+                                                .executes(this::executeLeaderboardDelete)
+                                        )
+                                )
+                        )
+                )
                 .build();
     }
 
@@ -240,6 +324,113 @@ public class MGCOPCommand implements BrigadierCommand {
         new AlertMenu(p, () -> {
             boolean success = MCZJUGameCore.getGameRoomManager().deleteGameRoom(gameId, roomName);
             if (success) player.sender().success("已删除游戏%s的房间%s".formatted(gameId, roomName));
+            else player.sender().error("出错了，删除失败");
+        }).open();
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeLeaderboardList(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+
+        String leaderboardId = StringArgumentType.getString(ctx, "leaderboardId");
+        if (!MCZJUGameCore.getLeaderboardManager().getAllLeaderboardIds().contains(leaderboardId)) {
+            sender.sendMessage(TextParser.parse("<yellow>未注册排行榜%s".formatted(leaderboardId)));
+            return 0;
+        }
+
+        var displayIds = MCZJUGameCore.getLeaderboardManager().getAllDisplayIds(leaderboardId);
+        String list = String.join(", ", displayIds);
+        String count = !displayIds.isEmpty() ? "<gold>共%s个".formatted(displayIds.size()) : "<red>无";
+        sender.sendMessage(TextParser.parse("<yellow>排行榜%s的展示实体：%s".formatted(leaderboardId, count)));
+        if (!displayIds.isEmpty()) sender.sendMessage(Component.text(list).color(NamedTextColor.YELLOW));
+
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeLeaderboardCreate(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+
+        String leaderboardId = StringArgumentType.getString(ctx, "leaderboardId");
+        if (!MCZJUGameCore.getLeaderboardManager().getAllLeaderboardIds().contains(leaderboardId)) {
+            sender.sendMessage(TextParser.parse("<yellow>未注册排行榜%s".formatted(leaderboardId)));
+            return 0;
+        }
+
+        String displayId = StringArgumentType.getString(ctx, "displayId");
+        var displayIds = MCZJUGameCore.getLeaderboardManager().getAllDisplayIds(leaderboardId);
+        if (displayIds.contains(displayId)) {
+            sender.sendMessage(TextParser.parse("<red>排行榜%s已存在ID为%s的展示实体".formatted(leaderboardId, displayId)));
+            return 0;
+        }
+
+        var record = new JsonTextDisplayRecord(leaderboardId, displayId);
+        MCZJUGameCore.getLeaderboardManager().createTextDisplay(leaderboardId, record);
+        sender.sendMessage(TextParser.parse("<green>成功为排行榜%s创建ID为%s的展示实体（请在编辑界面生成实体）".formatted(leaderboardId, displayId)));
+
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeLeaderboardEdit(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+
+        if (!(sender instanceof Player p)) {
+            sender.sendMessage(TextParser.parse("<yellow>该命令只能由玩家执行"));
+            return 0;
+        }
+
+        PlayerExt player = new PlayerExt(p);
+
+        String leaderboardId = StringArgumentType.getString(ctx, "leaderboardId");
+        if (!MCZJUGameCore.getLeaderboardManager().getAllLeaderboardIds().contains(leaderboardId)) {
+            sender.sendMessage(TextParser.parse("<yellow>未注册排行榜%s".formatted(leaderboardId)));
+            return 0;
+        }
+
+        String displayId = StringArgumentType.getString(ctx, "displayId");
+        if (!MCZJUGameCore.getLeaderboardManager().getAllDisplayIds(leaderboardId).contains(displayId)) {
+            player.sender().warn("""
+                    <yellow>排行榜%s不存在ID为%s的房间，请先创建 \
+                    <gray>\
+                    <hover:show_text:"<yellow>点击发送/mgcop leaderboard create %s %s</yellow>">\
+                    <click:run_command:mgcop leaderboard create %s %s>\
+                    [点击创建]\
+                    """
+                    .formatted(leaderboardId, displayId, leaderboardId, displayId, leaderboardId, displayId)
+            );
+            return 0;
+        }
+
+        var record = MCZJUGameCore.getLeaderboardManager().getDisplayRecord(leaderboardId, displayId);
+        new TextDisplayEditMenu(p, record).open();
+
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeLeaderboardDelete(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+
+        if (!(sender instanceof Player p)) {
+            sender.sendMessage(TextParser.parse("<yellow>该命令只能由玩家执行"));
+            return 0;
+        }
+
+        PlayerExt player = new PlayerExt(p);
+
+        String leaderboardId = StringArgumentType.getString(ctx, "leaderboardId");
+        if (!MCZJUGameCore.getLeaderboardManager().getAllLeaderboardIds().contains(leaderboardId)) {
+            sender.sendMessage(TextParser.parse("<yellow>未注册排行榜%s".formatted(leaderboardId)));
+            return 0;
+        }
+
+        String displayId = StringArgumentType.getString(ctx, "displayId");
+        if (!MCZJUGameCore.getLeaderboardManager().getAllDisplayIds(leaderboardId).contains(displayId)) {
+            player.sender().warn("<yellow>排行榜%s不存在ID为%s的展示实体".formatted(leaderboardId, displayId));
+            return 0;
+        }
+
+        new AlertMenu(p, () -> {
+            boolean success = MCZJUGameCore.getLeaderboardManager().removeTextDisplay(leaderboardId, displayId);
+            if (success) player.sender().success("已删除排行榜%s的展示实体%s".formatted(leaderboardId, displayId));
             else player.sender().error("出错了，删除失败");
         }).open();
         return Command.SINGLE_SUCCESS;
