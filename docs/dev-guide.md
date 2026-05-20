@@ -236,7 +236,7 @@ public class ExampleGame extends AbstractGame {
 类似地，还有 `getPlayerQuitStrategy()` 也可以重写，它定义了玩家退出游戏时（使用命令 `/mgc leave` 退出，或直接退出服务器）需要做什么。
 
 默认情况下，任意玩家退出会使这局游戏直接终止（流局），所有玩家都被移出游戏。
-如果你希望实现自定义逻辑（比如剩下的玩家继续游戏），你就需要写一个 `DefaultPlayerQuitStrategy` 的子类，然后重写 `getPlayerQuitStrategy()`。
+如果你希望实现自定义逻辑（比如剩下的玩家继续游戏），你就需要写一个 `AbstractPlayerQuitStrategy` 的子类，然后重写 `getPlayerQuitStrategy()`。
 
 > 你也可以理解为，这是 `MGC` 在要求你，必须定义玩家死亡、退出时的处理模式，否则游戏设计是不完整的。
 
@@ -253,34 +253,9 @@ public class ExampleGame extends AbstractGame {
 public class ExampleGame extends AbstractGame implements MidGameJoinable {
     
     @Override
-    public String getId() {
-        return "example_game";
-    }
+    public String getId() { return "example_game"; }
     
-    @Override
-    public GameMeta getGameMeta() {
-        return GameMeta.builder()
-                .displayName("<gold>示例小游戏")
-                .icon(Material.OAK_PLANKS)
-                .author("<green>MCZJU")
-                .description(List.of(
-                        "<aqua>这是一个示例小游戏",
-                        "<aqua>单人游玩",
-                        "<dark_aqua>开始游戏后，跳跃一次就会结束游戏"
-                ))
-                .build();
-    }
-
-    @Override protected boolean onGameInit() { return true; }
-    @Override protected void onGameStart() {}
-    @Override protected void onGameCancel() {}
-    @Override protected void onGameAbort() {}
-    @Override protected void onGameEnd() {}
-    
-    @Override
-    public GameWaitStrategy getGameWaitStrategy() {
-        return new DefaultGameWaitStrategy(this, 4, 2);
-    }
+    // 其他方法略
     
     // 一个玩家中途加入时
     @Override
@@ -301,7 +276,7 @@ public class ExampleGame extends AbstractGame implements MidGameJoinable {
 ##### a. 特殊类型：`SinglePlayerGame`
 
 观察 `getGameWaitStrategy()`，不难理解一个事实：如果这个小游戏完全是单人游玩的，
-那么大部分情况下的等待策略都是一样的——只要有一个玩家加入，就直接开始游戏（因为最少人数和最大人数都是 1）。
+那么大部分情况下的等待策略都是一样的——只要有一个玩家加入，就直接开始游戏（因为最小人数和最大人数都是 1）。
 
 因此，`MGC` 预设了一个游戏类型 `SinglePlayerGame`，它本身也是一个抽象类，是 `AbstractGame` 的子类。
 相比于 `AbstractGame`，它额外实现了适用于单人游戏的等待策略，也就是只要有一个玩家加入，就直接开始。
@@ -449,14 +424,20 @@ public class WhackAMoleGameRoom extends JsonGameRoom {
 > 由于可以设置默认值，你也可以把“配置”放在这里。比如不同摊位的地鼠的生成间隔均为 40 tick，你就可以加一个字段
 > `public Integer interval = 40`，这样就不需要做额外的配置工作了。
 
+> 如果你不需要设置任何房间参数，你也需要创建一个房间类作为占位符。可以不添加任何字段。
+
+> 对于 `OpenSessionGame`，同样也需要有一个房间类，并且你应该只新建一个房间。
+
+
 关于房间，有一个特殊情况是，希望玩家可以自主选择加入的房间。比如这几种情况：
 
 - 不同的房间对应不同的地图，体验有所差别，你希望玩家可以自主选择游玩哪个地图；
-- 某个房间已有玩家且处于等待状态，另一个玩家可能不希望和他一起游玩，后者可能希望加入另一个房间。
+- 某个房间已有玩家且处于等待状态，另一个玩家可能不希望和他一起游玩，而是希望加入另一个房间。
 
-要实现允许玩家自主选择房间，非常简单，你只需要为房间类添加一个注解 `@PlayerSelectable`。
+要实现允许玩家自主选择房间，你只需要做两件事：
 
-为此，你还需要在这个子类中添加三个字段 `icon`、`displayName` 和 `description`（均为字符串），作为玩家选择房间时呈现的信息。
+- 为房间类添加一个注解 `@PlayerSelectable`。
+- 在这个子类中添加三个字段 `icon`、`displayName` 和 `description`（均为字符串），作为玩家选择房间时呈现的信息。
 
 示例：
 
@@ -478,16 +459,11 @@ public class WhackAMoleGameRoom extends JsonGameRoom {
 
 玩家也可以通过命令 `/mgc joinroom <gameId> <roomName>` 来直接加入一个游戏的一个房间（若允许自主选择）。
 
-> 如果你不需要设置任何房间参数，你也需要创建一个房间类作为占位符。可以不添加任何字段。
-
-> 对于 `OpenSessionGame`，同样也需要有一个房间类，并且你应该只新建一个房间。
-
 ---
 
 ### 3. 向 `MCZJUGameCore` 注册游戏
 
-写好上面说的这个游戏类和这个的房间类后，`MGC` 还识别不了你的游戏。你需要向它注册。
-
+写好上面说的这个游戏类和这个的房间类后，`MGC` 还识别不了你的游戏。
 你需要在插件的主类的 `onEnable()` 中注册：
 
 ```java
