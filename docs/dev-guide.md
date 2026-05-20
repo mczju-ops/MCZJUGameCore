@@ -112,15 +112,13 @@
 
 ---
 
-#### 游戏类代码示例
+#### (1) 游戏类代码示例
 
 下面给出一个例子。请观察其中的注释，并结合下方的说明来理解。
 
 > 先别着急直接把这段内容移植到你的代码中，因为很可能会很不一样，请看后面的补充。
 
 ```java
-import com.github.mczjuops.mczjugamecore.game.strategy.wait.DefaultGameWaitStrategy;
-
 public class ExampleGame extends AbstractGame {
 
     // 小游戏唯一 ID，不同小游戏不能重复
@@ -151,7 +149,7 @@ public class ExampleGame extends AbstractGame {
         return true; // 返回 true 表示初始化成功。如果返回 false，玩家将无法进入游戏
     }
 
-    // 游戏真正开始时需要做什么。从这里开始，整个游戏的过程就是由本插件
+    // 游戏真正开始时需要做什么
     @Override
     protected void onGameStart() {
         ExampleGameRoom gameRoom = (ExampleGameRoom) getGameRoom();
@@ -203,25 +201,24 @@ public class ExampleGame extends AbstractGame {
 
 ---
 
-#### 处理“策略”（Strategy）
+#### (2) 处理“策略”（Strategy）
 
 为了处理游戏过程中发生的特定情况，需要使用特定“策略”。你可以将其理解为一种模式。请看下面的说明。
 
 ##### a. 等待策略
 
-阅读了 `getGameWaitStrategy()`，你应该大致能理解，游戏的开始过程其实是 `MGC` 负责的。
+> 阅读了 `getGameWaitStrategy()`，你应该大致能理解，游戏的开始过程其实是 `MGC` 负责的。
 
 上面的例子中的这个写法，它的含义是，当有至少两个玩家在游戏中时，就可以使用 `/mgc start` 正式开始游戏；
 当人数到达 4 人时，就会自动开始游戏。
 
-因此，你就不需要手动实现这个功能了。这也是 `MGC` 的重要意义之一。
+> 因此，你就不需要手动实现这个功能了。这也是 `MGC` 的重要意义之一。
 
-`GameWaitStrategy` 也是一个抽象类，可以理解为等待策略的一个模型。
 如果你想设计一个自定义的等待策略，例如：
 - 当等待的玩家数量变为 2 人时，自动开始一个 30 秒的游戏开始倒计时。
 - 当等待的玩家数量变为 4 人时，进入一个 5 秒的游戏开始倒计时。
 
-你就可以写一个 `GameWaitStrategy` 的子类，并在 `getGameWaitStrategy()` 中声明它。
+你可以写一个 `GameWaitStrategy` 的子类（`GameWaitStrategy` 也是一个抽象类），并在 `getGameWaitStrategy()` 中返回它的实例。
 
 阅读 `AbstractGame` 的源码后，你可能会注意到还有一些方法也可以被重写，其中就包括下面这两个策略。
 
@@ -236,10 +233,9 @@ public class ExampleGame extends AbstractGame {
 
 ##### c. 玩家退出处理策略
 
-类似地，还有 `getPlayerQuitStrategy()` 也可以重写，它定义了玩家退出游戏时（使用命令 `/mgc leave` 退出，或直接退出服务器）时需要做什么。
+类似地，还有 `getPlayerQuitStrategy()` 也可以重写，它定义了玩家退出游戏时（使用命令 `/mgc leave` 退出，或直接退出服务器）需要做什么。
 
-默认情况下，任意玩家退出会使这局游戏直接中断（流局），所有玩家都被移出。
-
+默认情况下，任意玩家退出会使这局游戏直接终止（流局），所有玩家都被移出游戏。
 如果你希望实现自定义逻辑（比如剩下的玩家继续游戏），你就需要写一个 `DefaultPlayerQuitStrategy` 的子类，然后重写 `getPlayerQuitStrategy()`。
 
 > 你也可以理解为，这是 `MGC` 在要求你，必须定义玩家死亡、退出时的处理模式，否则游戏设计是不完整的。
@@ -248,7 +244,7 @@ public class ExampleGame extends AbstractGame {
 
 默认情况下，一局游戏开始后，其他玩家就无法中途加入了。但是如果你希望可以中途加入，也很简单。
 
-你需要让这个游戏类，在继承 `AbstractGame` 的情况下，同时实现接口 `MidGameJoinable`，
+你需要让这个游戏类，在继承 `AbstractGame` 的同时，实现接口 `MidGameJoinable`，
 并重写这个接口声明的唯一方法 `onPlayerMidJoin(PlayerExt player)`，代表一个玩家加入时的处理模式。
 
 示例：
@@ -298,22 +294,24 @@ public class ExampleGame extends AbstractGame implements MidGameJoinable {
 
 ---
 
-#### 特殊类型的小游戏
+#### (3) 特殊类型的小游戏
 
 上面这个例子 `ExampleGame`，它是最通用的写法。但是，部分情况下，你不一定要照着这个例子写。
 
 ##### a. 特殊类型：`SinglePlayerGame`
 
 观察 `getGameWaitStrategy()`，不难理解一个事实：如果这个小游戏完全是单人游玩的，
-那么大部分情况下，等待策略都是，只要有一个玩家加入，就直接开始游戏，不需要手动设置最少人数、最大人数，因为都是 1。
+那么大部分情况下的等待策略都是一样的——只要有一个玩家加入，就直接开始游戏（因为最少人数和最大人数都是 1）。
 
 因此，`MGC` 预设了一个游戏类型 `SinglePlayerGame`，它本身也是一个抽象类，是 `AbstractGame` 的子类。
 相比于 `AbstractGame`，它额外实现了适用于单人游戏的等待策略，也就是只要有一个玩家加入，就直接开始。
 
+它还顺手把“xxx 加入了游戏（1/1）”这个提示去掉了，因为没有显示的必要。
+
 此外，它还添加了一个适用于单人游戏的方法 `getPlayer()`，可以直接拿到当前游戏中的玩家。
 
 如果你开发的是一个单人游戏，你就可以不继承 `AbstractGame`，而是直接继承 `SinglePlayerGame`。
-此时仍然间接继承了 `AbstractGame`，因此仍符合 `MGC` 的要求，也让你的开发更加方便了。
+此时仍然间接继承了 `AbstractGame`，因此仍符合 `MGC` 的要求，同时可以让你的开发更加简便。
 
 ---
 
@@ -391,7 +389,7 @@ public class ExampleParkourGame extends OpenSessionGame {
 目前 `MGC` 只有上面说的 `SinglePlayerGame` 和 `OpenSessionGame` 这两个特殊的“预设”，
 没有其他的诸如 `MultiplyPlayersGame`、`TeamBasedGame` 等预设。
 
-也就是说，如果你开发的游戏不属于有预设的这两类游戏，你就只能直接 `AbstractGame`，并一一重写方法。
+也就是说，如果你开发的游戏不属于有预设的这两类游戏，你就只能直接继承 `AbstractGame`，并一一重写方法。
 
 如果你认为 `MGC` 有必要加一种新的游戏预设，欢迎随时提出。
 
@@ -431,14 +429,14 @@ public class WhackAMoleGameRoom extends JsonGameRoom {
 - 字段的作用域只能是 `public`。
 - 字段类型只支持基本类型 `Integer`、`Boolean`、`String` 等，以及 bukkit 的 `Location`。
 
-进入服务器后，你可以通过这个命令来编辑房间数据（当然，需要先完成注册才可以编辑，具体见后面的编辑部分）：
+进入服务器后，你可以通过这个命令来编辑房间数据（当然，需要先完成注册才可以编辑，具体见后面的注册部分）：
 
 ```
 /mgcop room list|create|edit|delete <gameId> [roomId]
 ```
 
 一开始，你的游戏是没有任何房间的。此时尝试加入游戏只会收到提示“没有空余房间”。
-你需要通过 `create` 子命令创建。比如如果你想创建三个房间，就可以创建 ID 分别为 `roomA`、`roomB`、`roomC` 的房间。
+你需要通过 `create` 子命令创建。比如如果你想创建三个房间，就可以创建名称分别为 `roomA`、`roomB`、`roomC` 的房间。
 
 创建成功后，`edit` 子命令会为你打开一个菜单。你可以根据提示，为当前这个房间设置参数值。
 具体的操作方式，游戏内已经足够直观，这里不赘述。
@@ -518,21 +516,21 @@ MCZJUGameCore.getGameManager().endGame(game);
 如何获取 `game` 这个实例呢？其实上面已经提到过了，一般有两种方法：
 
 - 如果当前的逻辑就在 `AbstractGame` 的子类中，显然 `this` 就是 `game`。
-- 另一种方式是，如果一个玩家正在游戏中，可以通过它来查询。这里需要使用包装的玩家类 `PlayerExt` 的方法 `getGame()`。
+- 另一种方式是，如果一个玩家正在游戏中，可以通过他来查询。这里需要使用包装的玩家类 `PlayerExt` 的方法 `getGame()`。
 
 > 如果没有 `PlayerExt` 的实例，随时通过 bukkit 的 `Player` 实例创建即可：`PlayerExt playerExt = new PlayerExt(player)`。
 > 在进阶文档中会有针对 `PlayerExt` 的更具体的说明。
 
 很显然，小游戏的核心功能中，经常需要检查玩家是否处于你的游戏中。比如打地鼠游戏中，你需要识别玩家攻击“地鼠”。
-此时需要排除其他玩家和地鼠的交互，你可以在监听到玩家攻击时，通过 `PlayerExt` 的方法，判断当前玩家是不是真的在玩打地鼠，示例：
+此时需要排除其他玩家和地鼠的交互。你可以在监听到玩家攻击时，通过 `PlayerExt` 的方法，判断当前玩家是不是真的在玩打地鼠，示例：
 
 ```java
-@EventHandler(ignoreCancelled = true)
+@EventHandler
 public void onPlayerPunch(EntityDamageByEntityEvent event) {
     if (!(event.getDamager() instanceof Player player)) return;
 
     PlayerExt playerExt = new PlayerExt(player); // 创建 PlayerExt 实例
-    if (!playerExt.isInGame(WhackAMoleGame.class)) return; // 如果这个玩家不再 WhackAMoleGame 这个类型的游戏中，则直接返回
+    if (!playerExt.isInGame(WhackAMoleGame.class)) return; // 如果这个玩家不在 WhackAMoleGame 这个类型的游戏中，则直接返回
 
     UUID hitId = event.getEntity().getUniqueId();
     boothManager.handleHit(player, hitId); // 后续逻辑，比如给玩家加分、播放地鼠钻地动画等
