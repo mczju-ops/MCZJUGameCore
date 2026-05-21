@@ -357,3 +357,7 @@ ExamplePlayerData data = player.getData("example", ExamplePlayerData.class);
 data.wins += 1;
 data.setModified(true); // 修改数据后，记得标志modified为true，否则不会保存
 ```
+- 在制作排行榜时，你可能需要获取所有玩家的数据：
+```java
+List<ExamplePlayerData> dataList = MCZJUGameCore.getPlayerDataManager().getAllPlayerData(gameId, ExamplePlayerData.class);
+```

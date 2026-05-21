@@ -167,4 +167,13 @@ public record PlayerExt(@NotNull Player player) {
     public <T extends AbstractPlayerData> @NotNull T getData(String gameId, Class<T> dataClass){
         return MCZJUGameCore.getPlayerDataManager().getPlayerData(gameId, player.getUniqueId().toString(), dataClass);
     }
+
+    /**
+     * 获取玩家数据，这个函数一般用于获取其它游戏的玩家数据，不推荐使用
+     * @param gameId    游戏ID
+     * @return  玩家数据，如果gameID对应的数据类未注册，返回空
+     */
+    public @Nullable AbstractPlayerData getData(String gameId){
+        return MCZJUGameCore.getPlayerDataManager().getPlayerData(gameId, player.getUniqueId().toString());
+    }
 }
