@@ -14,6 +14,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * 实现这个接口，即可让类能被用Json序列化，只需要实现一个getFilePath方法即可
+ * 类似JsonPlayerData，但你需要再写一个ExampleDataManager来加载和保存数据
+ */
 public interface JsonMGCSerializable extends MGCSerializable {
 
     @Override

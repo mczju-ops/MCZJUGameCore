@@ -68,6 +68,10 @@ public record PlayerExt(@NotNull Player player) {
         return getParty() != null;
     }
 
+    /**
+     * 让玩家选择位置。执行后，玩家会得到一个调试棒，用于选择位置
+     * @param callback  选择位置后，要执行的callback
+     */
     public void selectLocation(Consumer<Location> callback){
         LocationSelector.getInstance().selectLocation(this, callback);
     }
@@ -150,9 +154,13 @@ public record PlayerExt(@NotNull Player player) {
     }
 
     /**
-     * 获取玩家的数据
-     * @param gameId 游戏Id
-     * @param dataClass 数据类
+     * 获取玩家的数据，在使用前，你需要在onEnable时注册数据类，注册时MGC会自动加载已有的数据
+     * 直接调用即可获取玩家数据，如果此前改玩家没有数据，则会创建一个新的playerData对象
+     * 数据文件默认以JSON的格式保存在player/{gameId}/{playerId}.json
+     * 每5分钟会自动保存，玩家退出和关服时也会自动保存
+     * 修改后记得data.setModified(true)
+     * @param gameId 游戏Id，但也可以用别的游戏的ID，获取它的玩家数据
+     * @param dataClass 数据类，不能填JsonPlayerData等抽象类
      * @return  玩家数据，没有则新建一个
      * @param <T> dataClass相同的数据类class
      */
