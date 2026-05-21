@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 /**
- * 玩家数据，继承此类即可自动保存玩家相关的游戏数据
+ * 玩家数据，继承此类即可自动保存玩家相关的游戏数据。一般推荐继承JsonPlayerData，以用默认的保存实现。
  * 用法和GameRoom类似
  */
 public abstract class AbstractPlayerData implements MGCSerializable {

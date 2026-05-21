@@ -60,6 +60,11 @@ public class PlayerDataManager {
                 MCZJUGameCore.getInstance(), () -> savePlayerData(playerId));
     }
 
+    /**
+     * 注册玩家数据类
+     * @param gameId 建议填游戏ID，但实际上填啥都行
+     * @param dataClass 你的数据类
+     */
     public void registerPlayerData(String gameId, Class<? extends AbstractPlayerData> dataClass){
         loadAllPlayerData(gameId, dataClass);
     }

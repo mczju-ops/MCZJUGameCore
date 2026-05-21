@@ -330,3 +330,30 @@ private void onGameEnd() {
 - `CommandUtils`：当前的工具通常用于 `Brigadier` 命令系统的自动补全。
 - `TimeFormat`：时间格式化工具，用于将毫秒数格式化为字符串。
 - `CountDown`：倒计时工具，便捷地创建一个倒计时，并设定每秒、结束时、取消时的回调，详见对应文档。
+
+## 六、玩家数据`PlayerData`
+
+`MGC`内置了一个玩家数据持久化工具，使用方法和`GameRoom`比较像:
+
+- 先创建一个玩家数据类: 
+
+```java
+   public class ExamplePlayerData extends JsonPlayerData {
+   public Integer wins = 0;    // 可以设置默认值
+   private Material m;         // 设置为private，就不会被MGC保存
+   public List<String> strList;        // 可以用复杂类型，但ItemStack等暂时无法保存，如果有需求，可以提issue
+   }
+```
+
+- 注册数据类，第一个参数填游戏ID(未注册的游戏也可以随便填一个字符串)，第二个填数据类:
+```java
+// onEnable
+MCZJUGameCore.getPlayerDataManager().registerPlayerData("example", ExamplePlayerData.class);
+```
+
+- 在任何地方都可以用`PlayerExt`获取玩家数据(前提是前面的注册步骤已经执行过):
+```java
+ExamplePlayerData data = player.getData("example", ExamplePlayerData.class);
+data.wins += 1;
+data.setModified(true); // 修改数据后，记得标志modified为true，否则不会保存
+```
