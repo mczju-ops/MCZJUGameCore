@@ -6,9 +6,12 @@
 
 ---
 
-## 示例插件
+## 开发指南
 
-[查看具体插件示例](./docs/guide.md)
+请参考：
+
+- [小游戏插件开发流程](./docs/dev-guide.md)
+- [小游戏插件开发进阶指南](./docs/dev-advanced.md)
 
 ---
 
@@ -66,15 +69,15 @@
 其他功能模块：
 
 - `PlayerExt`：为方便小游戏开发，为 Bukkit 的 `Player` 接口新增了一些扩展方法。
-- `Menu`：基于虚拟箱子的菜单。具体用法请查看[示例插件](./docs/guide.md)中给出的例子。
-- `Leaderboard`：排行榜功能。具体功法请查看[示例插件](./docs/guide.md)中给出的例子。
+- `Menu`：基于虚拟箱子的菜单。具体用法请查看[小游戏插件开发进阶指南](./docs/dev-advanced.md)中给出的例子。
+- `Leaderboard`：排行榜功能。具体功法请查看[小游戏插件开发进阶指南](./docs/dev-advanced.md)中给出的例子。
 - `Party`：组队系统（类似于 hypixel 的），处理需要多人参与游戏的情况。
 - `ScoreManager`：单局的计分管理器，具体插件调用它来设置玩家分数。未来会添加排行榜功能。
 - `ItemManager`：特殊物品管理器，提供物品辨别（`isThis`）等功能（识别物品的 pdc）。
 
 工具：
 
-详见[示例插件](./docs/guide.md)中的说明。
+详见[小游戏插件开发进阶指南](./docs/dev-advanced.md)中的说明。
 
 ---
 
