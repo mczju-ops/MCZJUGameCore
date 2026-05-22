@@ -7,10 +7,7 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class PlayerDataManager {
@@ -120,13 +117,20 @@ public class PlayerDataManager {
 
     /**
      * 获取玩家数据，并自动做类型转换，推荐用这个
-     * @param gameId    游戏id
      * @param playerId  玩家uuid
      * @param dataClass 数据类
      * @return  转换过的playerData
      * @param <T>   数据类
      */
-    public @NotNull <T extends AbstractPlayerData> T getPlayerData(String gameId, String playerId, Class<T> dataClass){
+    public @NotNull <T extends AbstractPlayerData> T getPlayerData(String playerId, Class<T> dataClass){
+        String gameId = registeredPlayerData.entrySet().stream()
+                .filter(entry -> Objects.equals(dataClass, entry.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+
+        if (gameId == null) throw new RuntimeException("数据类 %s 未注册，无法获取玩家 %s 的数据".formatted(dataClass.getSimpleName(), playerId));
+
         // 获取该游戏ID对应的玩家数据映射
         AbstractPlayerData playerData = getPlayerData(gameId, playerId);
         if (playerData == null) throw new RuntimeException("%s 数据类未注册，无法获取玩家%s的数据".formatted(gameId, playerId));
@@ -143,12 +147,19 @@ public class PlayerDataManager {
 
     /**
      * 获取所有玩家的数据，仅返回已经有数据的
-     * @param gameId    游戏ID
      * @param dataClass 数据类
      * @return  所有玩家的数据
      * @param <T> 数据类
      */
-    public @NotNull <T extends AbstractPlayerData> List<T> getAllPlayerData(String gameId, Class<T> dataClass){
+    public @NotNull <T extends AbstractPlayerData> List<T> getAllPlayerData(Class<T> dataClass){
+        String gameId = registeredPlayerData.entrySet().stream()
+                .filter(entry -> Objects.equals(dataClass, entry.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+
+        if (gameId == null) throw new RuntimeException("数据类 %s 未注册，无法获取所有玩家的数据".formatted(dataClass.getSimpleName()));
+
         Map<String, AbstractPlayerData> playerDataMap = pDataMap.get(gameId);
         if (playerDataMap == null) throw new RuntimeException("%s 数据类未注册，无法获取所有玩家的数据".formatted(gameId));
 
