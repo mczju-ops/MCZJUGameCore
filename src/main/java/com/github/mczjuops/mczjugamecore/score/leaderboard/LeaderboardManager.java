@@ -87,7 +87,7 @@ public class LeaderboardManager {
         autoRefreshTask = Bukkit.getScheduler().runTaskTimer(
                 MCZJUGameCore.getInstance(),
                 () -> leaderboards.forEach((leaderboardId, leaderboard) -> {
-                    if (leaderboard.autoRefresh()) refresh(leaderboardId);
+                    if (leaderboard.getClass().isAnnotationPresent(AutoRefresh.class)) refresh(leaderboardId);
                 }),
                 60 * 20, // 开服 1 分钟时先刷新一次
                 intervalTicks
