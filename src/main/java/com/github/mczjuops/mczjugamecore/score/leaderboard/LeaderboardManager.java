@@ -241,13 +241,13 @@ public class LeaderboardManager {
         Component result = TextParser.parse(leaderboard.getTitle()).append(Component.newline()).append(TextParser.parse(leaderboard.getSubtitle()));
 
         if (entries.isEmpty()) {
-            result = result.append(Component.newline()).append(leaderboard.renderEmpty());
+            result = result.append(Component.newline()).append(TextParser.parse(leaderboard.renderEmpty()));
         } else {
             int size = entries.size();
             for (int i = 0; i < limit; i++) {
                 if (i < size) {
                     LeaderboardEntry entry = entries.get(i);
-                    Component line = leaderboard.renderLine(i + 1, entry.playerName(), entry.displayValue());
+                    Component line = TextParser.parse(leaderboard.renderLine(i + 1, entry.playerName(), entry.value()));
                     result = result.append(Component.newline()).append(line);
                 } else {
                     result = result.append(Component.newline()); // 人数不足，仍补满

@@ -1,8 +1,5 @@
 package com.github.mczjuops.mczjugamecore.score.leaderboard;
 
-import com.github.mczjuops.mczjugamecore.utils.TextParser;
-import net.kyori.adventure.text.Component;
-
 import java.util.List;
 
 public abstract class AbstractLeaderboard {
@@ -26,22 +23,17 @@ public abstract class AbstractLeaderboard {
         return 12;
     }
 
-    /** 排行榜是否自动定期刷新，默认否 */
-    public boolean autoRefresh() {
-        return false;
-    }
-
     /**
      * 渲染每一个条目行
      * 默认格式：1. Steve - 100
      */
-    public Component renderLine(int rank, String playerName, String displayValue) {
-        return TextParser.parse("<yellow>%d.</yellow> <green>%s</green> <gray>-</gray> <yellow>%s<yellow>"
-                .formatted(rank, playerName, displayValue));
+    public String renderLine(int rank, String playerName, double value) {
+        return "<yellow>%d.</yellow> <green>%s</green> <gray>-</gray> <yellow>%.0f</yellow>"
+                .formatted(rank, playerName, value);
     }
 
     /** 当排行榜没有数据时显示的内容 */
-    public Component renderEmpty() {
-        return TextParser.parse("<gray>暂无数据");
+    public String renderEmpty() {
+        return "<gray>暂无数据</gray>";
     }
 }
