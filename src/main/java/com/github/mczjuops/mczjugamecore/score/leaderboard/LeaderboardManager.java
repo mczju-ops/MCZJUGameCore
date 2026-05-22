@@ -86,6 +86,22 @@ public class LeaderboardManager {
         });
     }
 
+    /**
+     * 立即刷新指定类型的排行榜（所有实体）
+     *
+     * @param leaderboardClass 排行榜类
+     */
+    public void refresh(Class<? extends AbstractLeaderboard> leaderboardClass) {
+        String leaderboardId = leaderboards.entrySet().stream()
+                .filter(entry ->  leaderboardClass.isInstance(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+
+        if (leaderboardId == null) throw new RuntimeException("排行榜 %s 未注册，无法获得对应 ID".formatted(leaderboardClass.getSimpleName()));
+        refresh(leaderboardId);
+    }
+
     /** 自动刷新所有排行榜 */
     public void startAutoRefresh(long intervalTicks) {
         if (autoRefreshTask != null) {
