@@ -40,11 +40,19 @@ public class LeaderboardManager {
      * 注册一个排行榜
      *
      * @param leaderboardId 排行榜唯一 ID，不能重复
-     * @param leaderboard AbstractLeaderboard 子类实例
+     * @param leaderboardClass AbstractLeaderboard 子类
      */
-    public void registerLeaderboard(String leaderboardId, AbstractLeaderboard leaderboard) {
+    public void registerLeaderboard(String leaderboardId, Class<? extends AbstractLeaderboard> leaderboardClass) {
         if (leaderboards.containsKey(leaderboardId)) {
             throw new IllegalStateException("Duplicate leaderboard ID: " + leaderboardId);
+        }
+
+        AbstractLeaderboard leaderboard;
+        try {
+            leaderboard = leaderboardClass.getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            logger.error("Failed to create new instance of leaderboard %s: %s".formatted(leaderboardClass.getSimpleName(), e.getMessage()));
+            throw new RuntimeException(e);
         }
         leaderboards.put(leaderboardId, leaderboard);
         loadTextDisplays(leaderboardId); // 从文件加载该排行榜的所有展示实体（若有）
