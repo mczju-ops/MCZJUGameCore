@@ -72,6 +72,11 @@ public class PlayerDataManager {
         loadAllPlayerData(gameId, dataClass);
     }
 
+    protected void addEmptyData(String gameId) {
+        pDataMap.computeIfAbsent(gameId, k -> new HashMap<>());
+        logger.debug("Added empty player data map for gameId: %s".formatted(gameId));
+    }
+
     protected void addPlayerData(String gameId, String playerId, AbstractPlayerData data){
         // 获取或创建该游戏ID对应的玩家数据映射
         Map<String, AbstractPlayerData> playerDataMap = pDataMap.computeIfAbsent(gameId, k -> new HashMap<>());

@@ -25,7 +25,11 @@ public class JsonPlayerDataLoader implements AbstractPlayerDataLoader{
                 MCZJUGameCore.getInstance().getDataFolder().getPath(),
                 "player", gameId
         );
-        if (!Files.exists(pDataPath)) return true;
+        if (!Files.exists(pDataPath)) {
+            // 内存中添加空的 Map
+            MCZJUGameCore.getPlayerDataManager().addEmptyData(gameId);
+            return true;
+        }
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(pDataPath, "*.json")) {
             for (Path entry : stream) {
                 String fileName = entry.getFileName().toString();
