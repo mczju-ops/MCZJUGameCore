@@ -172,114 +172,7 @@ private void confirmDelete(Player player) {
 ```
 ---
 
-## 二、排行榜
-
-你可以注册排行榜，并为特定排行榜创建文本展示实体，展示玩家排名。
-
-排行榜系统与游戏完全独立，即使不注册游戏，也可以注册排行榜。你可以按需注册多个排行榜。
-
-排行榜系统的设计与小游戏系统高度对称，定义、注册模式和展示实体的管理方式，均与游戏或房间的管理模式类似。
-
-需要进行一次排名时，你需要创建一个 `AbstractLeaderboard` 的子类。
-必须重写的方法包括排行榜标题、副标题（均支持 `MiniMessage` 格式），以及最关键的 `fetchEntries`。
-
-其中，`fetchEntries` 需要你提供一个 `LeaderboardEntry` 的列表。`LeaderboardEntry` 是对玩家数据的一个简单包装，
-字段包括玩家名（字符串）、原始分数（`double`）、格式化分数（字符串）。
-
-而且，你**不需要**自行进行排名，`MGC` 会使用你提供的原始分数自动进行排名。
-
-> 原始分数可能是得分、用时等，而格式化分数是最终展示时显示的字符串。
-> 例如，你可以将毫秒数格式化为 `<aqua>xx:xx` 的形式，或是将关卡数格式化为 `<yellow>第x关` 的形式。
-
-示例如下：
-
-```java
-public class ExampleGameWinsLeaderboard extends AbstractLeaderboard {
-    
-    @Override
-    public String getTitle() {
-        return "   <gold>示例小游戏<yellow>排行榜   ";
-    }
-
-    @Override
-    public String getSubtitle() {
-        return "<gray>最高分数榜";
-    }
-
-    @Override
-    public List<LeaderboardEntry> fetchEntries() {
-        List<LeaderboardEntry> entries = new ArrayList<>(); // 这是最终要返回的数据源
-        
-        // 示例：从小游戏插件自己管理的数据中，拿到所有玩家的玩家名、分数，以及分数格式化后的字符串
-        var cache = storageManager.getCache();
-        cache.forEach((uuid, playerData) -> {
-            int highest = storageManager.getHighestScore(uuid);
-            if (highest > 0) {
-                entries.add(new LeaderboardEntry(playerData.getName(), highest, "<yellow>%d分".formatted(highest)));
-            }
-        });
-        return entries;
-    }
-}
-```
-
-此外，还可以可选地重写：
-
-- 升序或降序（默认降序，如果是最短用时这样的排名，则需要设置为升序）
-- 最多显示前几名（默认 12）
-- 是否自动刷新（默认否），若设置为是，每 10 分钟 `MGC` 将强制刷新该排行榜
-- 每行的渲染样式，默认是 `<yellow>1. <green>Steve <gray>- <yellow>14:10` 这样的形式
-- 没有任何记录时显示的内容
-
-最终，排行榜在文本展示实体上渲染为这样的形式（每行均居中）：
-
-```
-你设置的标题
-你设置的副标题
-1. xxx - xx（可设置样式）
-2. xxx - xx
-3. xxx - xx
-...（可设置最多排到第几名，默认 12）
-```
-
-然后，类似于游戏，你也需要在主类的 `onEnable` 中注册这个排行榜，且需要为排行榜设定一个 ID。
-这个 ID 不能与任何其他插件的排行榜重复。
-
-这个 ID 会在命令或代码中手动刷新时用到。
-
-完成注册后，仍然没有可以看到的排行榜，因为你还需要为这个排行榜添加文本展示实体。（这也是当前展示排行榜的唯一形式）
-
-每个排行榜都可以添加不止 1 个展示实体。比如说，你可以在你的小游戏场景内，和小游戏大厅中放置两个相同的排行榜，它们会同时刷新。
-
-管理展示实体的模式和管理房间的模式非常类似，使用如下命令：
-
-```
-/mgcop leaderboard list|create|edit|delete <leaderboardId> [entityId]
-```
-
-在游戏中通过 `create` 子命令创建展示实体后（需要指定一个展示实体的 ID，例如 `default`、`lobby` 等），通过 `edit` 子命令打开菜单编辑。
-
-你可以设置实体的位置、渲染模式、是否有半透明背景。设置完成后，点击左下角的按钮就可以生成或刷新展示实体。
-
-> 每次刷新时，如果找不到展示实体（会主动加载对应区块），就会视为实体被误杀，会重新生成。
-
-当你需要在代码中主动刷新一个排行榜时（例如一局游戏结束时），可以通过访问 `MGC` 的排行榜管理器刷新：
-
-```java
-// 示例：游戏结束时主动让 MGC 刷新排行榜
-@Override
-private void onGameEnd() {
-    // 刷新注册的 ID 为 example_leaderboard 的排行榜
-    MCZJUGameCore.getLeaderboardManager().refresh("example_leaderboard"); // 所有展示实体均会刷新
-}
-```
-
-> 如果你的游戏完全找不到合适的时机手动刷新，就在这个排行榜子类中，设置为自动刷新。这样 `MGC` 会每 10 分钟刷新一次。
-> 这也意味着，这个排行榜的信息是稍微滞后的，你可以在副标题说明。
-
----
-
-## 三、`PlayerExt` 类
+## 二、`PlayerExt` 类
 
 为了方便小游戏的开发，你可能希望通过玩家获取他正在游玩的游戏、他的队伍等信息。为此，你需要向 `MGC` 的游戏管理器、队伍管理器等管理器查询。
 
@@ -304,7 +197,191 @@ private void onGameEnd() {
 
 ---
 
-## 四、队伍系统
+## 三、玩家数据 `PlayerData`
+
+如果你需要持久化数据（比如玩家的游玩次数、游玩进度、最高分数等），你可以使用 `MGC` 内置的玩家数据持久化工具， 使用方法类似于游戏房间。
+
+首先创建一个 `JsonPlayerData` 的子类，作为针对一个玩家的数据存储容器:
+
+```java
+public class ExamplePlayerData extends JsonPlayerData {
+   public Integer wins = 0; // 可以设置默认值
+   private Material m; // 设置为private，就不会被MGC保存
+   public List<String> strList; // 可以用复杂类型，但ItemStack等暂时无法保存，如果有需求，可以提issue
+}
+```
+
+> 如果有数据需要临时挂在玩家这里，但是不希望被 `MGC` 持久化记录，可以将其作用域设为 `private`。
+
+类似于游戏，你需要在主类的 `onEnable()` 中注册这个数据类。第一个参数可以直接填游戏 ID（其实任意能起到 ID 作用的字符串均可，不能和其他小游戏的重复）：
+
+```java
+@Override
+public void onEnable() {
+    MCZJUGameCore.getPlayerDataManager().registerPlayerData("example", ExamplePlayerData.class);
+    // 其他初始化逻辑
+}
+```
+
+在任何地方，都可以用 `PlayerExt` 实例来获取已注册的玩家数据。下面是一个例子，一场游戏结束时，需要获取数据并更新：
+
+```java
+private void onEnd() {
+    ExamplePlayerData data = player.getData(ExamplePlayerData.class);
+    data.wins += 1;
+    data.setModified(true); // 将其标记为已修改
+}
+```
+
+> 重要：如果修改了数据，别忘了通过 `data.setModified(true);` 将其设为已修改，否则不会保存到文件。
+
+---
+
+## 四、排行榜
+
+你可以注册排行榜，并为特定排行榜创建文本展示实体，展示玩家排名。
+
+排行榜系统与游戏完全独立，即使不注册游戏，也可以注册排行榜。你可以按需注册多个排行榜（例如挑战次数榜、分数榜等）。
+
+排行榜系统的设计思路与小游戏和房间系统比较类似，定义和注册模式都差不多。
+
+需要进行一次排名时，你需要创建一个 `AbstractLeaderboard` 的子类。
+
+如果排行榜的数据来源是 `PlayerData`，那么你可以直接继承 `PlayerDataLeaderboard`。示例如下：
+
+```java
+public class ExampleGameWinsLeaderboard extends PlayerDataLeaderboard {
+    
+    @Override
+    public String getTitle() {
+        return "   <gold>示例小游戏<yellow>排行榜   ";
+    }
+
+    @Override
+    public String getSubtitle() {
+        return "<gray>胜利次数榜";
+    }
+
+    @Override
+    public @NotNull Class<? extends AbstractPlayerData> getPlayerDataClass() {
+        return ExamplePlayerData.class; // 数据源为 ExamplePlayerData
+    }
+
+    @Override
+    public @NotNull String getFieldName() {
+        return "wins"; // 数据源为字段 wins
+    }
+    
+    // 可选重写：每行的文本形式
+    @Override
+    public String renderLine(int rank, String playerName, double value) {
+        return "<yellow>%d.</yellow> <green>%s</green> <gray>-</gray> <yellow>%.0f场</yellow>"
+                .formatted(rank, playerName, value);
+    }
+
+    // 可选重写：排序方向（默认降序，只有需要改为升序时需要重写）
+    @Override
+    public SortOrder getSortOrder() {
+        return SortOrder.DESCENDING;
+    }
+
+    // 可选重写：排序方向（默认降序，只有需要改为升序时需要重写）
+    @Override
+    public int getDisplayCount() {
+        return 12;
+    }
+}
+```
+
+补充说明：
+
+- 如果不重写方法 `renderLine()`，默认会直接把分数放在排行榜上。分数数值为 `double`，会显示最近的整数。
+- 有时候，`renderLine()` 肯定需要重写，比如如果排序的是“用时”，数据源是毫秒数，你需要将值格式化为 "mm:ss" 的形式。
+- 一般来说，排行榜是降序的，但是有时候也可能需要升序排列，比如排序的是“最短用时”的情况。
+
+如果你不是用 `PlayerData` 存储的玩家数据，你需要直接继承 `AbstractLeaderboard`。
+
+此时，最关键的需要重写的方法是 `fetchEntries()`。
+非常好理解，你只需要提供一个 `LeaderboardEntry` 的列表。`LeaderboardEntry` 是对玩家数据的一个简单包装，
+字段包括玩家名（字符串）、原始分数（`double`）。
+
+而且，你**不需要**自行进行排名，`MGC` 会使用你提供的原始分数自动进行排名。其他同上。
+
+示例如下：
+
+```java
+public class ExampleGameWinsLeaderboard extends AbstractLeaderboard {
+    
+    @Override
+    public String getTitle() {
+        return "   <gold>示例小游戏<yellow>排行榜   ";
+    }
+
+    @Override
+    public String getSubtitle() {
+        return "<gray>最高分数榜";
+    }
+
+    @Override
+    public List<LeaderboardEntry> fetchEntries() {
+        List<LeaderboardEntry> entries = new ArrayList<>(); // 这是最终要返回的数据源
+        
+        // 示例：从小游戏插件自己管理的数据中，拿到所有玩家的玩家名、分数，以及分数格式化后的字符串
+        var cache = storageManager.getCache();
+        cache.forEach((uuid, playerData) -> {
+            int wins = storageManager.getWins(uuid);
+            if (wins > 0) {
+                entries.add(new LeaderboardEntry(playerData.getName(), wins));
+            }
+        });
+        return entries;
+    }
+}
+```
+
+类似于游戏，你也需要在主类的 `onEnable` 中注册这个排行榜，且需要为排行榜设定一个 ID。
+这个 ID 不能与任何其他插件的排行榜重复。示例：
+
+```java
+@Override
+public void onEnable() {
+    MCZJUGameCore.getLeaderboardManager().registerLeaderboard("example_wins", ExampleGameWinsLeaderboard.class);
+    // 其他初始化逻辑
+}
+```
+
+完成注册后，仍然没有可以看到的排行榜，因为你还需要为这个排行榜添加文本展示实体。（这也是当前展示排行榜的唯一形式）
+
+每个排行榜都可以添加不止 1 个展示实体。比如说，你可以在你的小游戏场景内，和小游戏大厅中放置两个相同的排行榜，它们会同时刷新。
+
+管理展示实体的模式和管理房间的模式非常类似，使用如下命令：
+
+```
+/mgcop leaderboard list|create|edit|delete <leaderboardId> [entityId]
+```
+
+在游戏中通过 `create` 子命令创建展示实体后（需要指定一个展示实体的 ID，例如 `default`、`lobby` 等），通过 `edit` 子命令打开菜单编辑。
+
+你可以设置实体的位置、渲染模式、是否有半透明背景。设置完成后，点击左下角的按钮就可以生成或刷新展示实体。
+
+> 每次刷新时，如果找不到展示实体（会主动加载对应区块），就会视为实体被误杀，会重新生成。
+
+当你需要在代码中主动刷新一个排行榜时（例如一局游戏结束时），可以通过访问 `MGC` 的排行榜管理器刷新：
+
+```java
+// 示例：游戏结束时主动让 MGC 刷新排行榜
+private void onGameEnd() {
+    MCZJUGameCore.getLeaderboardManager().refresh(ExampleGameWinsLeaderboard.class); // 所有展示实体均会刷新
+}
+```
+
+如果你的游戏完全找不到合适的时机手动刷新，你可以为排行榜类添加一个注解 `@AutoRefresh`。这样 `MGC` 会每 10 分钟刷新一次。
+
+> 这意味着，这个排行榜的信息是稍微滞后的。如有需要，你可以在副标题等位置向玩家说明。
+
+---
+
+## 五、队伍系统
 
 `MGC` 内置了一个队伍（`Party`）系统，类似 `hypixel` 中的队伍。
 
@@ -317,7 +394,7 @@ private void onGameEnd() {
 
 ---
 
-## 五、工具类
+## 六、工具类
 
 详细说明见对应工具类的文档（源码中的 javadoc），这里简单介绍：
 
@@ -330,34 +407,3 @@ private void onGameEnd() {
 - `CommandUtils`：当前的工具通常用于 `Brigadier` 命令系统的自动补全。
 - `TimeFormat`：时间格式化工具，用于将毫秒数格式化为字符串。
 - `CountDown`：倒计时工具，便捷地创建一个倒计时，并设定每秒、结束时、取消时的回调，详见对应文档。
-
-## 六、玩家数据`PlayerData`
-
-`MGC`内置了一个玩家数据持久化工具，使用方法和`GameRoom`比较像:
-
-- 先创建一个玩家数据类: 
-
-```java
-   public class ExamplePlayerData extends JsonPlayerData {
-   public Integer wins = 0;    // 可以设置默认值
-   private Material m;         // 设置为private，就不会被MGC保存
-   public List<String> strList;        // 可以用复杂类型，但ItemStack等暂时无法保存，如果有需求，可以提issue
-   }
-```
-
-- 注册数据类，第一个参数填游戏ID(未注册的游戏也可以随便填一个字符串)，第二个填数据类:
-```java
-// onEnable
-MCZJUGameCore.getPlayerDataManager().registerPlayerData("example", ExamplePlayerData.class);
-```
-
-- 在任何地方都可以用`PlayerExt`获取玩家数据(前提是前面的注册步骤已经执行过):
-```java
-ExamplePlayerData data = player.getData("example", ExamplePlayerData.class);
-data.wins += 1;
-data.setModified(true); // 修改数据后，记得标志modified为true，否则不会保存
-```
-- 在制作排行榜时，你可能需要获取所有玩家的数据：
-```java
-List<ExamplePlayerData> dataList = MCZJUGameCore.getPlayerDataManager().getAllPlayerData(gameId, ExamplePlayerData.class);
-```

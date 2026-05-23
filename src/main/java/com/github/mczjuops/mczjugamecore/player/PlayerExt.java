@@ -155,17 +155,16 @@ public record PlayerExt(@NotNull Player player) {
 
     /**
      * 获取玩家的数据，在使用前，你需要在onEnable时注册数据类，注册时MGC会自动加载已有的数据
-     * 直接调用即可获取玩家数据，如果此前改玩家没有数据，则会创建一个新的playerData对象
-     * 数据文件默认以JSON的格式保存在player/{gameId}/{playerId}.json
-     * 每5分钟会自动保存，玩家退出和关服时也会自动保存
-     * 修改后记得data.setModified(true)
-     * @param gameId 游戏Id，但也可以用别的游戏的ID，获取它的玩家数据
+     * <p>直接调用即可获取玩家数据，如果此前改玩家没有数据，则会创建一个新的playerData对象
+     * <p>数据文件默认以JSON的格式保存在player/{gameId}/{playerId}.json
+     * <p>每5分钟会自动保存，玩家退出和关服时也会自动保存
+     * <p>重要：修改后记得 data.setModified(true)
      * @param dataClass 数据类，不能填JsonPlayerData等抽象类
      * @return  玩家数据，没有则新建一个
      * @param <T> dataClass相同的数据类class
      */
-    public <T extends AbstractPlayerData> @NotNull T getData(String gameId, Class<T> dataClass){
-        return MCZJUGameCore.getPlayerDataManager().getPlayerData(gameId, player.getUniqueId().toString(), dataClass);
+    public <T extends AbstractPlayerData> @NotNull T getData(Class<T> dataClass){
+        return MCZJUGameCore.getPlayerDataManager().getPlayerData(player.getUniqueId().toString(), dataClass);
     }
 
     /**

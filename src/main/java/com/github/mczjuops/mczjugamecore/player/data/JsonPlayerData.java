@@ -15,6 +15,6 @@ public class JsonPlayerData extends AbstractPlayerData implements JsonMGCSeriali
     @Override
     public String getFilePath() {
         String dataPath = MCZJUGameCore.getInstance().getDataFolder().getAbsolutePath();
-        return "%s/player/%s/%s.json".formatted(dataPath, getGameID(), getPlayerID());
+        return "%s/player_data/%s/%s.json".formatted(dataPath, getGameID(), getPlayerID());
     }
 }

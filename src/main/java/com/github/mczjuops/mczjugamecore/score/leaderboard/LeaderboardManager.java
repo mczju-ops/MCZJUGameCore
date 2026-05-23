@@ -40,11 +40,19 @@ public class LeaderboardManager {
      * 注册一个排行榜
      *
      * @param leaderboardId 排行榜唯一 ID，不能重复
-     * @param leaderboard AbstractLeaderboard 子类实例
+     * @param leaderboardClass AbstractLeaderboard 子类
      */
-    public void registerLeaderboard(String leaderboardId, AbstractLeaderboard leaderboard) {
+    public void registerLeaderboard(String leaderboardId, Class<? extends AbstractLeaderboard> leaderboardClass) {
         if (leaderboards.containsKey(leaderboardId)) {
             throw new IllegalStateException("Duplicate leaderboard ID: " + leaderboardId);
+        }
+
+        AbstractLeaderboard leaderboard;
+        try {
+            leaderboard = leaderboardClass.getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            logger.error("Failed to create new instance of leaderboard %s: %s".formatted(leaderboardClass.getSimpleName(), e.getMessage()));
+            throw new RuntimeException(e);
         }
         leaderboards.put(leaderboardId, leaderboard);
         loadTextDisplays(leaderboardId); // 从文件加载该排行榜的所有展示实体（若有）
@@ -78,6 +86,22 @@ public class LeaderboardManager {
         });
     }
 
+    /**
+     * 立即刷新指定类型的排行榜（所有实体）
+     *
+     * @param leaderboardClass 排行榜类
+     */
+    public void refresh(Class<? extends AbstractLeaderboard> leaderboardClass) {
+        String leaderboardId = leaderboards.entrySet().stream()
+                .filter(entry ->  leaderboardClass.isInstance(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+
+        if (leaderboardId == null) throw new RuntimeException("排行榜 %s 未注册，无法获得对应 ID".formatted(leaderboardClass.getSimpleName()));
+        refresh(leaderboardId);
+    }
+
     /** 自动刷新所有排行榜 */
     public void startAutoRefresh(long intervalTicks) {
         if (autoRefreshTask != null) {
@@ -87,7 +111,7 @@ public class LeaderboardManager {
         autoRefreshTask = Bukkit.getScheduler().runTaskTimer(
                 MCZJUGameCore.getInstance(),
                 () -> leaderboards.forEach((leaderboardId, leaderboard) -> {
-                    if (leaderboard.autoRefresh()) refresh(leaderboardId);
+                    if (leaderboard.getClass().isAnnotationPresent(AutoRefresh.class)) refresh(leaderboardId);
                 }),
                 60 * 20, // 开服 1 分钟时先刷新一次
                 intervalTicks
@@ -241,13 +265,13 @@ public class LeaderboardManager {
         Component result = TextParser.parse(leaderboard.getTitle()).append(Component.newline()).append(TextParser.parse(leaderboard.getSubtitle()));
 
         if (entries.isEmpty()) {
-            result = result.append(Component.newline()).append(leaderboard.renderEmpty());
+            result = result.append(Component.newline()).append(TextParser.parse(leaderboard.renderEmpty()));
         } else {
             int size = entries.size();
             for (int i = 0; i < limit; i++) {
                 if (i < size) {
                     LeaderboardEntry entry = entries.get(i);
-                    Component line = leaderboard.renderLine(i + 1, entry.playerName(), entry.displayValue());
+                    Component line = TextParser.parse(leaderboard.renderLine(i + 1, entry.playerName(), entry.value()));
                     result = result.append(Component.newline()).append(line);
                 } else {
                     result = result.append(Component.newline()); // 人数不足，仍补满
