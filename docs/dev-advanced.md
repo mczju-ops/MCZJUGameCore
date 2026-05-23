@@ -407,3 +407,68 @@ private void onGameEnd() {
 - `CommandUtils`：当前的工具通常用于 `Brigadier` 命令系统的自动补全。
 - `TimeFormat`：时间格式化工具，用于将毫秒数格式化为字符串。
 - `CountDown`：倒计时工具，便捷地创建一个倒计时，并设定每秒、结束时、取消时的回调，详见对应文档。
+
+## 七、游戏道具(物品)
+
+`MGC`提供了一个规范的物品类`MGCItem`，和一套物品注册、发放方法。如果你的游戏中，有很多游戏道具，推荐使用`MGCItem`。
+
+先声明一个物品类，重写createRawItem和getId方法：
+
+```java
+public class ExampleItem extends MGCItem {
+    @Override
+    protected ItemStack createRawItem() {
+        return ItemBuilder.of(Material.FEATHER).
+                customName("加速羽毛").
+                lore(List.of("点击获得5秒加速")).
+                build();
+    }
+
+    @Override
+    public String getId() {
+        return "example:speed_feather";
+    }
+    
+    // 如果点击这个物品有效果，可以加一个使用方法，但需要自己注册Listener来实现这个效果
+    public void use(PlayerExt player){
+      player.player().addPotionEffect(
+              new PotionEffect(PotionEffectType.SPEED, 5 * 20, 8, false));
+    }
+}
+```
+
+再注册物品: 
+```java
+MCZJUGameCore.getItemManager().register(new ExampleItem());
+```
+
+然后你可以调用`PlayerExt.giveItem`来给玩家这个物品
+```java
+//player.giveItem("example:speed_feather");     // 也可以通过ID给
+player.giveItem(new ExampleItem().getItem());   // 注意要用getItem，不是createRawItem
+```
+
+注册Listener来实现道具的效果：
+```java
+    @EventHandler
+    public void onUseFeather(PlayerInteractEvent event){
+        PlayerExt player = new PlayerExt(event.getPlayer());
+        ItemStack itemInMainHand = player.player().getInventory().getItemInMainHand();
+        if (new ExampleItem().isThis(itemInMainHand)){
+            // 如果是你的物品
+            itemInMainHand.setAmount(itemInMainHand.getAmount() - 1);
+            new ExampleItem().use(player);
+        }
+    }
+```
+
+如果你的物品比较多，更推荐的用法是声明一个`AbstractExampleItem`抽象类，声明`use`抽象方法，然后用下面的方式使用物品
+```java
+MGCItem item = MCZJUGameCore.getItemManager().get(itemInMainHand);
+if (item instanceof AbstractExampleItem){
+  ((AbstractExampleItem) item).use(player);
+}
+```
+
+> 还有更多的给玩家物品的方法，详见`PlayerExt`
+> 还有更多的比较物品是否是`ExampleItem`的方法，详见`MGCItem`和`ItemManager`
