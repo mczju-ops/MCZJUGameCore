@@ -3,10 +3,11 @@ package com.github.mczjuops.mczjugamecore.player.strategy;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class AbstractPlayerDeathStrategy {
     protected final AbstractGame game;
-    public AbstractPlayerDeathStrategy(AbstractGame game){
+    public AbstractPlayerDeathStrategy(@NotNull AbstractGame game){
         this.game = game;
     }
 
@@ -15,5 +16,5 @@ public abstract class AbstractPlayerDeathStrategy {
      * @param player    死亡玩家
      * @param event    死亡事件
      */
-    public abstract void onPlayerDeath(PlayerExt player, PlayerDeathEvent event);
+    public abstract void onPlayerDeath(@NotNull PlayerExt player, @NotNull  PlayerDeathEvent event);
 }

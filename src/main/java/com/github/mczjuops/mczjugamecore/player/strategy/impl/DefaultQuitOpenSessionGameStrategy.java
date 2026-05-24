@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.impl.OpenSessionGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
+import org.jetbrains.annotations.NotNull;
 
 public class DefaultQuitOpenSessionGameStrategy extends DefaultPlayerQuitStrategy {
 
@@ -12,7 +13,7 @@ public class DefaultQuitOpenSessionGameStrategy extends DefaultPlayerQuitStrateg
     }
 
     @Override
-    public void onPlayerQuit(PlayerExt player, PlayerQuitReason reason) {
+    public void onPlayerQuit(@NotNull PlayerExt player, @NotNull PlayerQuitReason reason) {
         if (game instanceof OpenSessionGame osg) {
             osg.onPlayerQuit(player);
         }

@@ -5,6 +5,7 @@ import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.strategy.AbstractPlayerDeathStrategy;
 import org.bukkit.Location;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * 默认玩家死亡处理策略，直接别死了
@@ -15,7 +16,7 @@ public class DefaultPlayerDeathStrategy extends AbstractPlayerDeathStrategy {
     }
 
     @Override
-    public void onPlayerDeath(PlayerExt player, PlayerDeathEvent event) {
+    public void onPlayerDeath(@NotNull PlayerExt player, @NotNull PlayerDeathEvent event) {
         player.player().setNoDamageTicks(10);   // 设置10t无敌
         event.setCancelled(true);
     }
