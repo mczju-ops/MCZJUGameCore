@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.player.strategy;
 
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * 玩家中途退出的解决逻辑
@@ -9,7 +10,7 @@ import com.github.mczjuops.mczjugamecore.player.PlayerExt;
  */
 public abstract class AbstractPlayerQuitStrategy {
     protected final AbstractGame game;
-    public AbstractPlayerQuitStrategy(AbstractGame game){
+    public AbstractPlayerQuitStrategy(@NotNull AbstractGame game){
         this.game = game;
     }
 
@@ -18,5 +19,5 @@ public abstract class AbstractPlayerQuitStrategy {
      * @param player    退出玩家
      * @param reason    退出原因
      */
-    public abstract void onPlayerQuit(PlayerExt player, PlayerQuitReason reason);
+    public abstract void onPlayerQuit(@NotNull PlayerExt player, @NotNull  PlayerQuitReason reason);
 }

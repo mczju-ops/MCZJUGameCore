@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.strategy.AbstractPlayerQuitStrategy;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
+import org.jetbrains.annotations.NotNull;
 
 public class DoNothingPlayerQuitStrategy extends AbstractPlayerQuitStrategy {
     public DoNothingPlayerQuitStrategy(AbstractGame game) {
@@ -11,7 +12,7 @@ public class DoNothingPlayerQuitStrategy extends AbstractPlayerQuitStrategy {
     }
 
     @Override
-    public void onPlayerQuit(PlayerExt player, PlayerQuitReason reason) {
+    public void onPlayerQuit(@NotNull PlayerExt player, @NotNull PlayerQuitReason reason) {
         // do nothing
     }
 }
