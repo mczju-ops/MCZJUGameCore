@@ -8,7 +8,6 @@ import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import com.github.mczjuops.mczjugamecore.utils.LocationSelector;
 import com.github.mczjuops.mczjugamecore.utils.sender.Sender;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.PlayerSender;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -147,7 +146,6 @@ public record PlayerExt(@NotNull Player player) {
         player.setFoodLevel(20);
         player.setSaturation(5f);
         player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
-        player.setGameMode(GameMode.ADVENTURE);
     }
 
     /** 退出当前所在的游戏，不论游戏是否开始 */
