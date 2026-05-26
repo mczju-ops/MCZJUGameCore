@@ -132,16 +132,18 @@ public record PlayerExt(@NotNull Player player) {
     }
 
     /**
-     * 重写equal函数，不确定这样写在mc中对不对
+     * 重写equal函数
+     * 只能PlayerExt和player或PlayerExt比较，不能写成player.equals(playerExt)
+     * 必须用equals函数，不能用==，因为java不能重载运算符
      * @param obj   the reference object with which to compare.
      * @return  他们的player为同一个，则返回true
      */
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof PlayerExt){
-            return ((PlayerExt) obj).player == player;
+            return ((PlayerExt) obj).player.getUniqueId().equals(player.getUniqueId());
         } else if (obj instanceof Player) {
-            return obj == player;
+            return ((Player) obj).getUniqueId().equals(player.getUniqueId());
         }
         return false;
     }
