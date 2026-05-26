@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,6 +33,15 @@ public class ItemManager {
      */
     public ItemManager() {
         this.key = new NamespacedKey(MCZJUGameCore.getInstance(), "mgc_item_id");
+    }
+
+    /**
+     * 获取所有注册的物品的id
+     * 具体插件应该用不上，仅给指令补全用
+     * @return  所有物品的id
+     */
+    public List<String> getAllRegisteredItemNames(){
+        return items.keySet().stream().toList();
     }
 
     /**
