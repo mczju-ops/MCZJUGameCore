@@ -85,12 +85,26 @@ public record PlayerExt(@NotNull Player player) {
         giveItem(id);
     }
 
+    /**
+     * 给玩家游戏道具
+     * @param id 注册的物品id
+     */
     public void giveItem(String id){
+        giveItem(id, 1);
+    }
+
+    /**
+     * 给玩家游戏道具
+     * @param id    注册的物品id
+     * @param amount    数量
+     */
+    public void giveItem(String id, int amount){
         ItemStack item = MCZJUGameCore.getItemManager().getItem(id);
         if (item == null){
             sender().error("无法获取物品%s，因为物品不存在".formatted(id));
             return;
         }
+        item.setAmount(amount);
         giveItem(item);
     }
 

@@ -9,11 +9,15 @@ import com.github.mczjuops.mczjugamecore.score.leaderboard.textdisplay.TextDispl
 import com.github.mczjuops.mczjugamecore.utils.CommandUtils;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
+import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.CommandSender;
@@ -214,7 +218,44 @@ public class MGCOPCommand implements BrigadierCommand {
                                 )
                         )
                 )
+                .then(Commands.literal("item")  // 给玩家注册的物品
+                        .executes(ctx -> {
+                            ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop item <player> <itemId> [amount]"));
+                            return 0;
+                        })
+                        .then(Commands.argument("player", ArgumentTypes.player())
+                                .then(Commands.argument("itemId", StringArgumentType.string())
+                                        .suggests((ctx, builder)
+                                                -> CommandUtils.suggestMatching(MCZJUGameCore.getItemManager().getAllRegisteredItemNames(), builder)
+                                        )
+                                        .executes(ctx -> executeGiveItem(ctx, 1))
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer(1)).
+                                                executes(ctx ->{
+                                                    int amount = IntegerArgumentType.getInteger(ctx, "amount");
+                                                    return executeGiveItem(ctx, amount);
+                                                })
+                                        )
+                                )
+                        )
+                )
+
                 .build();
+    }
+
+    private int executeGiveItem(CommandContext<CommandSourceStack> ctx, int amount){
+        CommandSender sender = ctx.getSource().getSender();
+        String itemId = StringArgumentType.getString(ctx, "itemId");
+        Player player;
+        PlayerSelectorArgumentResolver targetResolver =
+                ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+        try {
+            player = targetResolver.resolve(ctx.getSource()).getFirst();
+        } catch (CommandSyntaxException ignored) {
+            sender.sendMessage(TextParser.parse("<yellow>无效的玩家或选择器"));
+            return 0;
+        }
+        new PlayerExt(player).giveItem(itemId, amount);
+        return Command.SINGLE_SUCCESS;
     }
 
     private int executeReload(CommandContext<CommandSourceStack> ctx) {
