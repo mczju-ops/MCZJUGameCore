@@ -2,7 +2,8 @@ name: MCZJUGameCore
 version: '${project.version}'
 main: com.github.mczjuops.mczjugamecore.MCZJUGameCore
 api-version: '1.21.7'
-
+softdepend:
+  - Multiverse-Core
 commands:
   mgc:
     description: "小游戏基础命令"
