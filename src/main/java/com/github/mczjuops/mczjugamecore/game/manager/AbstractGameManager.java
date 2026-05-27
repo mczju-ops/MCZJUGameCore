@@ -4,8 +4,10 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -85,4 +87,10 @@ public interface AbstractGameManager {
      * 获取一个正在运行的游戏
      */
     @Nullable AbstractGame getGame(String gameId, String roomName);
+
+    /**
+     * 获取所有游戏，用于在服务器重启时停止所有游戏
+     * @return  所有等待或在运行的游戏，没有则返回空list
+     */
+    public @NotNull List<AbstractGame> getAllGames();
 }

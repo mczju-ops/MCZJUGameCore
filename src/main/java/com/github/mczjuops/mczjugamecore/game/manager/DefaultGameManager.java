@@ -12,6 +12,7 @@ import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
@@ -292,5 +293,10 @@ public class DefaultGameManager implements AbstractGameManager {
             }
         }
         return null;
+    }
+
+    @Override
+    public @NotNull List<AbstractGame> getAllGames() {
+        return gameList;
     }
 }
