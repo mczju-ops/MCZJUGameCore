@@ -6,6 +6,8 @@ import com.github.mczjuops.mczjugamecore.command.MGCOPCommand;
 import com.github.mczjuops.mczjugamecore.command.MenuCommand;
 import com.github.mczjuops.mczjugamecore.command.partycommand.PartyCommand;
 import com.github.mczjuops.mczjugamecore.config.ConfigManager;
+import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.manager.DefaultGameManager;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomManager;
@@ -91,6 +93,11 @@ public final class MCZJUGameCore extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        // 停止所有游戏
+        for (AbstractGame game : gameManager.getAllGames()) {
+            if (game.getState() == GameState.WAITING) gameManager.cancelGame(game);
+            else gameManager.abortGame(game);
+        }
         gameRoomManager.saveAllGameRoomDirectly();  // 保存所有游戏房间
         playerDataManager.saveAllPlayerData();
         profileManager.shutdown(); // 保存所有玩家的 profile 数据
