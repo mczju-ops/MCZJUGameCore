@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.game.strategy.wait;
 
+import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
@@ -59,7 +60,7 @@ public class DefaultGameWaitStrategy extends GameWaitStrategy {
     @Override
     public void onPlayerLeave(PlayerExt player) {
         game.sender().warn("玩家%s退出了该游戏（%d/%d）".formatted(player.getDisplayName(), game.getPlayers().size(), playerLimit));
-
+        if (game.getPlayers().isEmpty()) MCZJUGameCore.getGameManager().cancelGame(game);
     }
 
     @Override
