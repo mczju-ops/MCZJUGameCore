@@ -159,6 +159,8 @@ public class GameRoomManager {
     }
 
     public List<AbstractGameRoom> getGameRooms(String gameId) {
+        var rooms = gameRoomMap.get(gameId);
+        if (rooms == null || rooms.isEmpty()) return List.of();
         return Collections.unmodifiableList(gameRoomMap.get(gameId));
     }
 
