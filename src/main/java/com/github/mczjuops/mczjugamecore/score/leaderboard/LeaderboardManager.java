@@ -266,6 +266,10 @@ public class LeaderboardManager {
 
         if (entries.isEmpty()) {
             result = result.append(Component.newline()).append(TextParser.parse(leaderboard.renderEmpty()));
+            int emptyLines = leaderboard.getDisplayCount() - 1;
+            for (int i = 0; i < emptyLines; i++) {
+                result = result.append(Component.newline());
+            }
         } else {
             int size = entries.size();
             for (int i = 0; i < limit; i++) {
