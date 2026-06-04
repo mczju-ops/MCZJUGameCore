@@ -68,8 +68,6 @@ public class ExampleMenu extends Menu {
 
     @Override
     public void setup() {
-        inventory.clear(); // 如果这个菜单支持打开期间刷新，一般需要先清空。这个操作不影响玩家自己的物品栏
-
         setSlot(
                 0,
                 ItemBuilder.of(Material.CLOCK)
@@ -113,7 +111,7 @@ public class ExampleMenu extends Menu {
 
 - `Menu` 的成员变量包含一个 `PlayerExt` 实例，也就是正在查看这个菜单的玩家。
 - `Menu` 的成员变量 `inventory` 代表虚拟箱子这个区域的物品栏，不包括玩家自己的物品栏。
-- `Menu` 还带有方法 `refresh()`（刷新菜单，默认行为是再调用一次 `setup()` 并让客户端为玩家刷新物品栏）和 `handleClose()`（玩家关闭菜单时做什么，自动调用）。
+- `Menu` 还带有方法 `clearMenu()`（清除所有菜单内的物品，并清除所有回调）、`refresh()`（刷新菜单，默认行为是调用 `clearMenu()` 后调用一次 `setup()` 并让客户端为玩家刷新物品栏）和 `handleClose()`（玩家关闭菜单时做什么，自动调用）。
   有需要时可以重写。
 
 > `Menu` 的实例，在 new 它的时候创建，在玩家关闭物品栏时就会被回收。

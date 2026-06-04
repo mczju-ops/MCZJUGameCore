@@ -2,7 +2,6 @@ package com.github.mczjuops.mczjugamecore.menu;
 
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -61,9 +60,15 @@ public abstract class Menu implements InventoryHolder {
     public void handleClose() {}
 
     /** 刷新此菜单 */
-    public void refresh() {
+    protected void refresh() {
+        clearMenu();
         setup();
         player.player().updateInventory();
+    }
+
+    protected void clearMenu() {
+        inventory.clear();
+        slotActions.clear();
     }
 
     protected abstract String getTitle();
