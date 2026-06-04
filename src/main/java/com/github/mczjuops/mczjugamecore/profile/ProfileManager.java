@@ -50,7 +50,7 @@ public class ProfileManager implements Listener {
         String currentId = data.currentProfileId();
         long ts = data.lastModified();
 
-        Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), task -> {
+        if (!MCZJUGameCore.getInstance().isEnabled()) {
             try {
                 MCZJUGameCore.getProfileStorageManager().save(
                         uuid, playerName,
@@ -59,7 +59,18 @@ public class ProfileManager implements Listener {
             } catch (IOException e) {
                 logger.error("玩家 %s 的 profile 数据落盘失败：%s".formatted(playerName, e));
             }
-        });
+        } else {
+            Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), task -> {
+                try {
+                    MCZJUGameCore.getProfileStorageManager().save(
+                            uuid, playerName,
+                            currentId, profilesSnapshot, ts
+                    );
+                } catch (IOException e) {
+                    logger.error("玩家 %s 的 profile 数据落盘失败：%s".formatted(playerName, e));
+                }
+            });
+        }
 
         logger.info("将玩家 %s 的 profile 切换为 %s".formatted(playerName, currentId));
     }
