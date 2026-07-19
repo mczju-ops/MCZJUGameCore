@@ -3,13 +3,15 @@ package com.github.mczjuops.mczjugamecore.item;
 import com.github.mczjuops.mczjugamecore.utils.ItemBuilder;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 
 public class DebugStick extends MGCItem{
 
     @Override
-    protected ItemStack createRawItem() {
+    protected @NonNull ItemStack createRawItem() {
 
         return ItemBuilder.of(Material.BLAZE_ROD)
                 .customName("<gold>调试棒")
@@ -22,7 +24,7 @@ public class DebugStick extends MGCItem{
     }
 
     @Override
-    public String getId() {
+    public @NotNull String getId() {
         return MGCMaterial.DEBUG_STICK.toString();
     }
 }

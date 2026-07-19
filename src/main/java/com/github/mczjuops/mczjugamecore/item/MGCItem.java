@@ -4,14 +4,15 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
 public abstract class MGCItem {
 
-    protected abstract ItemStack createRawItem();
+    protected abstract  @NotNull ItemStack createRawItem();
 
-    public abstract String getId();
+    public abstract @NotNull String getId();
 
     public final ItemStack getItem() {
         ItemStack item = createRawItem();
