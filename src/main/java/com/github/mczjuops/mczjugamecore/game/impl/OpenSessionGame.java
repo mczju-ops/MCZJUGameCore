@@ -8,6 +8,7 @@ import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.strategy.AbstractPlayerQuitStrategy;
 import com.github.mczjuops.mczjugamecore.player.strategy.impl.DefaultQuitOpenSessionGameStrategy;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 /**
  * 开放会话型游戏
@@ -47,7 +48,7 @@ public abstract class OpenSessionGame extends AbstractGame implements MidGameJoi
 
     /** 默认行为：直接允许加入，阻止队伍加入 */
     @Override
-    public GameWaitStrategy getGameWaitStrategy() {
+    public @NonNull GameWaitStrategy getGameWaitStrategy() {
         return new DefaultOpenSessionGameWaitStrategy(this);
     }
 

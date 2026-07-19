@@ -5,11 +5,12 @@ import com.github.mczjuops.mczjugamecore.game.strategy.wait.DefaultSinglePlayerG
 import com.github.mczjuops.mczjugamecore.game.strategy.wait.GameWaitStrategy;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 public abstract class SinglePlayerGame extends AbstractGame {
 
     @Override
-    public GameWaitStrategy getGameWaitStrategy() {
+    public @NonNull GameWaitStrategy getGameWaitStrategy() {
         return new DefaultSinglePlayerGameWaitStrategy(this);
     }
 

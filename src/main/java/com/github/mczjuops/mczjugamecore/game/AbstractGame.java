@@ -36,18 +36,18 @@ public abstract  class AbstractGame {
     /**
      * 游戏的唯一 ID，不允许重复
      */
-    public abstract String getId();
+    public abstract @NotNull String getId();
 
     /**
      * 游戏的一些信息，主要是展示用
      */
-    public abstract GameMeta getGameMeta();
+    public abstract @NotNull GameMeta getGameMeta();
 
     /**
      * 获取游戏等待逻辑
      * @return 游戏等待逻辑
      */
-    public abstract GameWaitStrategy getGameWaitStrategy();
+    public abstract @NotNull GameWaitStrategy getGameWaitStrategy();
 
     /**
      * 获取玩家退出处理策略
@@ -69,7 +69,7 @@ public abstract  class AbstractGame {
      * 获取加入了游戏的玩家，在onGameInit
      * @return  玩家列表
      */
-    public List<PlayerExt> getPlayers(){
+    public @NotNull List<PlayerExt> getPlayers(){
         return MCZJUGameCore.getPlayerManager().getPlayers(this);
     }
 
