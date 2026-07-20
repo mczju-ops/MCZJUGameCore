@@ -56,6 +56,7 @@ public interface MGCSerializable {
         try {
             Field field = this.getClass().getDeclaredField(fieldName);
             FieldDescription annotation = field.getAnnotation(FieldDescription.class);
+            if (annotation == null || annotation.value() == null) return new String[0];
             return annotation.value();
         } catch (NoSuchFieldException e) {
             return new String[0];
