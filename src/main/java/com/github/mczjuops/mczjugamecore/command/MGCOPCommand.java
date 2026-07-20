@@ -238,8 +238,31 @@ public class MGCOPCommand implements BrigadierCommand {
                                 )
                         )
                 )
-
+                .then(Commands.literal("stop_game")
+                        .then(Commands.argument("player", ArgumentTypes.player())
+                                .executes(this::stopPlayerGame)))
                 .build();
+    }
+
+    private int stopPlayerGame(CommandContext<CommandSourceStack> ctx){
+        CommandSender sender = ctx.getSource().getSender();
+        PlayerExt player;
+        PlayerSelectorArgumentResolver targetResolver =
+                ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+        try {
+            player = new PlayerExt(targetResolver.resolve(ctx.getSource()).getFirst());
+        } catch (CommandSyntaxException ignored) {
+            sender.sendMessage(TextParser.parse("<yellow>无效的玩家或选择器"));
+            return 0;
+        }
+
+        if (!player.isInARunningGame()) {
+            sender.sendMessage(TextParser.parse("<yellow>玩家不在游戏中"));
+            return 0;
+        }
+
+        MCZJUGameCore.getGameManager().abortGame(player.getGame());
+        return 1;
     }
 
     private int executeGiveItem(CommandContext<CommandSourceStack> ctx, int amount){
