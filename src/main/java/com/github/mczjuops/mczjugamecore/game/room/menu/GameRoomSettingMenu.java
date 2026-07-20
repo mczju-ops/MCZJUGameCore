@@ -12,11 +12,10 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class GameRoomSettingMenu extends Menu {
 
@@ -233,35 +232,35 @@ public class GameRoomSettingMenu extends Menu {
         for (Map.Entry<String, Class<?>> entry : allFields.entrySet()) {
             String fieldName = entry.getKey();
             Class<?> type = box(entry.getValue());
+            String[] description = gameRoom.getFieldDescription(fieldName);
 
             Object value = gameRoom.getField(fieldName, type);
             String valueStr = value != null ? format(value) : "<red>未设置</red>";
 
             FieldHandler handler = HANDLERS.get(type);
+            List<String> lore = new ArrayList<>(List.of(
+                    "<yellow>类型：<dark_aqua>%s".formatted(type.getSimpleName()),
+                    "<green>值：<dark_green>%s".formatted(valueStr)
+            ));
+            lore.addAll(Arrays.asList(description));
+            lore.add("");
             if (handler == null) {
+                lore.add("<red>此类型暂不支持编辑");
                 // 不支持的类型，显示但是说明不可编辑
                 setSlot(
                         slot,
                         ItemBuilder.of(Material.BARRIER)
                                 .customName("<yellow>参数名<white>%s".formatted(fieldName))
-                                .lore(List.of(
-                                        "<yellow>类型：<dark_aqua>%s".formatted(type.getName()),
-                                        "",
-                                        "<red>此类型暂不支持编辑"
-                                ))
+                                .lore(lore)
                                 .build()
                 );
             } else {
+                lore.add("<yellow>点击编辑");
                 setSlot(
                         slot,
                         ItemBuilder.of(handler.getMaterial())
                                 .customName("<yellow>参数名：<white>%s".formatted(fieldName))
-                                .lore(List.of(
-                                        "<green>类型：<dark_aqua>%s".formatted(type.getSimpleName()),
-                                        "<green>值：<dark_green>%s".formatted(valueStr),
-                                        "",
-                                        "<yellow>点击编辑"
-                                ))
+                                .lore(lore)
                                 .glint(value != null)
                                 .build(),
                         (p, r) -> handler.handle(player, gameRoom, fieldName)
