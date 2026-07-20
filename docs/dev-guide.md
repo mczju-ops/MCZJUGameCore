@@ -399,6 +399,20 @@ public class WhackAMoleGameRoom extends JsonGameRoom {
 }
 ```
 
+如果你希望能在编辑菜单中看到字段的描述，也可以写成下面的注解形式：
+
+```java
+public class WhackAMoleGameRoom extends JsonGameRoom {
+  @FieldDescription("开始游戏后被传送到的位置")
+  public Location spawnAt;
+  
+  // 也可以写成数组，以分多行显示
+  @FieldDescription({"地鼠的颜色", "你可以设置一个默认值。若不设置，默认为 null"})
+  public String color = "red";
+  // 更多
+}
+```
+
 需要注意两点：
 
 - 字段的作用域只能是 `public`。
