@@ -40,6 +40,9 @@ public interface AbstractGameManager {
 
     void abortGame(AbstractGame game);
 
+    // 强制停止游戏，不论abortGame是否报错
+    void forceAbortGame(AbstractGame game);
+
     void endGame(AbstractGame game);
 
     /**

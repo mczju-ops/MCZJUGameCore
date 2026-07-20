@@ -121,6 +121,17 @@ public class DefaultGameManager implements AbstractGameManager {
         solveGameEnd(game);
     }
 
+    public void forceAbortGame(AbstractGame game){
+        try {
+            game.abortGame();
+        }catch (Exception e){
+            logger.error("停止游戏时出错，但仍强制执行停止命令: ");
+            logger.error(Arrays.toString(e.getStackTrace()));
+        }finally {
+            solveGameEnd(game);
+        }
+    }
+
     private void solveGameEnd(AbstractGame game){
         game.setState(GameState.END);
         MCZJUGameCore.getPlayerManager().removeAllPlayer(game);

@@ -261,7 +261,7 @@ public class MGCOPCommand implements BrigadierCommand {
             return 0;
         }
 
-        MCZJUGameCore.getGameManager().abortGame(player.getGame());
+        MCZJUGameCore.getGameManager().forceAbortGame(player.getGame());
         return 1;
     }
 
