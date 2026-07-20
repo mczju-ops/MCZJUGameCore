@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.player;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.player.data.AbstractPlayerData;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
@@ -40,6 +41,11 @@ public record PlayerExt(@NotNull Player player) {
     /** 玩家是否在任意游戏中 */
     public boolean isInGame(){
         return getGame() != null;
+    }
+
+    /** 玩家是否在一个正在进行的游戏中 */
+    public boolean isInARunningGame(){
+        return getGame() != null && getGame().getState().equals(GameState.RUNNING);
     }
 
     public boolean isInGame(Class<? extends AbstractGame> gameClass){
