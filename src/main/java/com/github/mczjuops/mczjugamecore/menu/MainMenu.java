@@ -113,7 +113,7 @@ public class MainMenu extends Menu {
                         return;
                     }
 
-                    Location lobbySpawn = MCZJUGameCore.getConfigManager().getLobbySpawn();
+                    Location lobbySpawn = MCZJUGameCore.getLobbyManager().getMainLobby();
                     if (lobbySpawn == null) {
                         player.sender().warn("<yellow>无法识别出生点，请询问管理员");
                     } else {
