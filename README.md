@@ -15,6 +15,13 @@
 
 ---
 
+## 示例插件
+
+- [example plugin](https://github.com/mczju-ops/MGC-example-plugin) 有比较全的功能示例
+- [Wool Wordle](https://github.com/mczju-ops/mc-wool-wordle/tree/java-translate) 实际在用的一个简单的小游戏项目
+
+---
+
 ## 设计思路
 
 - 设计了多个组件管理器（manager），具体插件只需和这些管理器打交道。
