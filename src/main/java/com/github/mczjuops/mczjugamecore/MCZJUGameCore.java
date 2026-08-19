@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.command.BrigadierCommand;
 import com.github.mczjuops.mczjugamecore.command.MGCCommand;
 import com.github.mczjuops.mczjugamecore.command.MGCOPCommand;
 import com.github.mczjuops.mczjugamecore.command.MenuCommand;
+import com.github.mczjuops.mczjugamecore.command.LobbyCommand;
 import com.github.mczjuops.mczjugamecore.command.partycommand.PartyCommand;
 import com.github.mczjuops.mczjugamecore.config.ConfigManager;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
@@ -15,6 +16,7 @@ import com.github.mczjuops.mczjugamecore.initialize.ItemInitializer;
 import com.github.mczjuops.mczjugamecore.initialize.ListenerInitializer;
 import com.github.mczjuops.mczjugamecore.item.ItemManager;
 import com.github.mczjuops.mczjugamecore.menu.MenuFacade;
+import com.github.mczjuops.mczjugamecore.lobby.LobbyManager;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.data.PlayerDataManager;
@@ -48,6 +50,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     private MenuFacade menuFacade;
 
     private ConfigManager configManager;
+    private LobbyManager lobbyManager;
 
     private ProfileManager profileManager;
     private ProfileCapture profileCapture;
@@ -68,6 +71,7 @@ public final class MCZJUGameCore extends JavaPlugin {
         gameRoomManager = new GameRoomManager();
         menuFacade = new MenuFacade();
         configManager = new ConfigManager();
+        lobbyManager = new LobbyManager();
         itemManager = new ItemManager();
         playerDataManager = new PlayerDataManager();
         playerDataManager.startAutoSave(20 * 60 * 30L);
@@ -86,7 +90,8 @@ public final class MCZJUGameCore extends JavaPlugin {
                 new MGCCommand(),
                 new MGCOPCommand(),
                 new PartyCommand(),
-                new MenuCommand()
+                new MenuCommand(),
+                new LobbyCommand()
         );
     }
 
@@ -102,6 +107,7 @@ public final class MCZJUGameCore extends JavaPlugin {
         playerDataManager.saveAllPlayerData();
         profileManager.shutdown(); // 保存所有玩家的 profile 数据
         leaderboardManager.shutdown();
+        lobbyManager.save();
     }
 
     public static @NotNull MCZJUGameCore getInstance(){
@@ -147,6 +153,9 @@ public final class MCZJUGameCore extends JavaPlugin {
 
     public static @NotNull ConfigManager getConfigManager(){
         return getInstance().configManager;
+    }
+    public static @NotNull LobbyManager getLobbyManager(){
+        return getInstance().lobbyManager;
     }
 
     public static @NotNull ProfileManager getProfileManager(){

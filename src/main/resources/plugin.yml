@@ -1,7 +1,7 @@
 name: MCZJUGameCore
 version: '${project.version}'
 main: com.github.mczjuops.mczjugamecore.MCZJUGameCore
-api-version: '1.21.7'
+api-version: '26.2'
 softdepend:
   - Multiverse-Core
 commands:
@@ -17,12 +17,18 @@ commands:
   mgcop:
     description: "MCZJUGameCore管理员命令"
     permission: mgc.dev
+  lobby:
+    description: "传送到主大厅或小游戏等待大厅"
+    aliases: [l]
+    permission: mgc.lobby
 
 
 permissions:
   mgc.mgc:
     default: true
   mgc.party:
+    default: true
+  mgc.lobby:
     default: true
   mgc.dev:
     default: op
