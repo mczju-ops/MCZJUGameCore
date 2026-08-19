@@ -274,6 +274,7 @@ public class ProfileManager implements Listener {
         }
 
         if (!ProfileData.LOBBY_PROFILE_ID.equals(profileId)) {
+            player.removePotionEffect(PotionEffectType.SATURATION);
             return;
         }
 
