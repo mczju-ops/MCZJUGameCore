@@ -1,5 +1,7 @@
 debug: true
 main-server: "main"
+# 启用后，为大厅 profile 应用饱和、满血等效果，并发放可打开 /mgc 的菜单钟
+enable-lobby-profile-features: true
 #lobby-spawn: # 大厅出生点
 #  world-key: "minecraft:overworld" # 世界键名（Bukkit world 自 26.1 起为 obsolete）
 #  x: 0.5

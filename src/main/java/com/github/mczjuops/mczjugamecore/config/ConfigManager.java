@@ -14,6 +14,7 @@ public class ConfigManager {
     private boolean debug;
     private String mainServer; // velocity 主服
     private ConfigLocation lobbySpawn; // 大厅出生点
+    private boolean lobbyProfileFeaturesEnabled;
 
     private final ConsoleSender logger = new ConsoleSender("MGC: %s".formatted(getClass().getSimpleName()));
 
@@ -32,6 +33,7 @@ public class ConfigManager {
         var config = plugin.getConfig();
         debug = config.getBoolean("debug", false);
         mainServer = config.getString("main-server", "main");
+        lobbyProfileFeaturesEnabled = config.getBoolean("enable-lobby-profile-features", true);
         lobbySpawn = loadLocation(config);
         if (lobbySpawn == null) logger.warn("config.yml 未正确配置大厅出生点");
     }
@@ -61,6 +63,10 @@ public class ConfigManager {
 
     public String getMainServer() {
         return mainServer;
+    }
+
+    public boolean isLobbyProfileFeaturesEnabled() {
+        return lobbyProfileFeaturesEnabled;
     }
 
     public @Nullable Location getLobbySpawn() {

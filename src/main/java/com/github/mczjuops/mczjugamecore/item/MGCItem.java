@@ -5,6 +5,7 @@ import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -22,7 +23,8 @@ public abstract class MGCItem {
     }
 
     // 判断是否是当前物品
-    public final boolean isThis(ItemStack item) {
+    public final boolean isThis(@Nullable ItemStack item) {
+        if (item == null) return false;
         String id = item.getPersistentDataContainer()
                 .get(MCZJUGameCore.getItemManager().getKey(), PersistentDataType.STRING);
         return Objects.equals(id, getId());

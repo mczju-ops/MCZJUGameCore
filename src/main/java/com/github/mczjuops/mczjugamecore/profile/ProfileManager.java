@@ -1,15 +1,21 @@
 package com.github.mczjuops.mczjugamecore.profile;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.item.MGCMaterial;
+import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.IOException;
@@ -40,6 +46,8 @@ public class ProfileManager implements Listener {
 
         // 应用目标（含 closeInventory）
         MCZJUGameCore.getProfileCapture().apply(player, target);
+
+        applyConfiguredProfileState(player, targetProfileId);
 
         // 更新当前 profile 记录
         data.setCurrentProfileId(targetProfileId);
@@ -99,6 +107,7 @@ public class ProfileManager implements Listener {
                                 player,
                                 data.getProfile(data.currentProfileId())
                         );
+                        applyConfiguredProfileState(player, data.currentProfileId());
                         return;
                     }
 
@@ -118,6 +127,7 @@ public class ProfileManager implements Listener {
                     data.setPlayerName(player.getName());
 
                     playerProfileCache.put(uuid, data);
+                    applyConfiguredProfileState(player, ProfileData.LOBBY_PROFILE_ID);
 
                     Map<String, PlayerSnapshot> profilesSnapshot = data.snapshotForSave();
                     String currentId = data.currentProfileId();
@@ -250,6 +260,39 @@ public class ProfileManager implements Listener {
             autoSaveTask.cancel();
             autoSaveTask = null;
         }
+    }
+
+    /**
+     * 用于给特定的profile在切换时，加上一些效果，比如在lobby状态时给饱和、给钟。
+     * 感觉只有lobby profile会用到，先这样写，后面如果要扩展时，则删了这个函数
+     * @param player 玩家
+     * @param profileId profile id
+     */
+    private void applyConfiguredProfileState(Player player, String profileId) {
+        if (!MCZJUGameCore.getConfigManager().isLobbyProfileFeaturesEnabled()) {
+            return;
+        }
+
+        if (!ProfileData.LOBBY_PROFILE_ID.equals(profileId)) {
+            return;
+        }
+
+        var maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
+        if (maxHealth != null) {
+            player.setHealth(maxHealth.getValue());
+        }
+        player.setFoodLevel(20);
+        player.setSaturation(20.0F);
+        player.setGameMode(GameMode.ADVENTURE);
+        player.addPotionEffect(new PotionEffect(
+                PotionEffectType.SATURATION,
+                PotionEffect.INFINITE_DURATION,
+                0,
+                false,
+                false,
+                true
+        ));
+        new PlayerExt(player).giveItemIfDontHave(MGCMaterial.LOBBY_MENU_CLOCK.toString());
     }
 
     // onDisable() 调用
