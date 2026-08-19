@@ -170,7 +170,7 @@ private void confirmDelete(Player player) {
 ```
 
 管理员执行 `/mgcop lobby`，可以在箱子 GUI 中配置主大厅和所有已注册小游戏的等待大厅位置。
-玩家执行 `/lobby [game_id]` 传送到主大厅或指定小游戏大厅，`/hub` 是它的别名。
+玩家执行 `/lobby [game_id]` 传送到主大厅或指定小游戏大厅，`/l` 是它的别名。
 
 ---
 
