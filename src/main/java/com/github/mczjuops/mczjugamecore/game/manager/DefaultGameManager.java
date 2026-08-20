@@ -104,9 +104,8 @@ public class DefaultGameManager implements AbstractGameManager {
 
     @Override
     public void cancelGame(AbstractGame game) {
-        solveGameEnd(game);
         game.cancelGame();
-
+        solveGameEnd(game);
     }
 
     @Override
