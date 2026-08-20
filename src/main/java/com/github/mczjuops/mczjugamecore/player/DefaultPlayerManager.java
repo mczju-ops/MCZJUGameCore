@@ -3,6 +3,7 @@ package com.github.mczjuops.mczjugamecore.player;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
+import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +43,12 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         }
         playerGameMap.put(player, game);
         player.switchProfile(game.getId());
+        player.player().playerListName(TextParser.parse(
+                "<#DEB12D>%s [<reset>%s<reset><#DEB12D>]".formatted(
+                        player.getName(),
+                        game.getGameMeta().displayName()
+                )
+        ));
     }
 
     @Override
@@ -53,6 +60,9 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         playerGameMap.remove(player);
 
         player.switchProfile(null);
+        if (reason != PlayerQuitReason.DISCONNECT) {
+            player.player().playerListName(null);
+        }
 
         // 如果是加入游戏失败，不做过多处理
         if (reason == PlayerQuitReason.JOIN_FAIL) return;
@@ -77,6 +87,7 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
             if (entry.getValue() == game) {
                 PlayerExt playerExt = entry.getKey();
                 playerExt.switchProfile(null);
+                playerExt.player().playerListName(null);
                 return true;
             }
             return false;
