@@ -55,6 +55,7 @@ public class LeaderboardManager {
             throw new RuntimeException(e);
         }
         leaderboards.put(leaderboardId, leaderboard);
+        displayMap.put(leaderboardId, new LinkedList<>());
         loadTextDisplays(leaderboardId); // 从文件加载该排行榜的所有展示实体（若有）
     }
 
@@ -72,6 +73,9 @@ public class LeaderboardManager {
     public void refresh(String leaderboardId) {
         var leaderboard = leaderboards.get(leaderboardId);
         if (leaderboard == null) return;
+
+        List<TextDisplayRecord> records = displayMap.get(leaderboardId);
+        if (records == null || records.isEmpty()) return;
 
         Component content = buildContent(leaderboard);
         displayMap.get(leaderboardId).forEach(record -> {
