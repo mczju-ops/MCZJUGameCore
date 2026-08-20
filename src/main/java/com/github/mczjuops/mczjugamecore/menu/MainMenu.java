@@ -157,13 +157,13 @@ public class MainMenu extends Menu {
             setSlot(
                     inventory.getSize() - 1,
                     ItemBuilder.of(Material.END_PORTAL_FRAME)
-                            .customName("<gold>返回主服")
+                            .customName("<gold>返回生存世界")
                             .lore(List.of(
-                                    "<yellow>点击返回MCZJU主服"
+                                    "<yellow>点击返回MCZJU生存世界"
                             ))
                             .glint(true)
                             .build(),
-                    (player, _) -> new AlertMenu(player.player(), () -> {
+                    (player, _) -> new AlertMenu(player.player(), "确认返回生存世界？", () -> {
                         player.player().closeInventory();
                         String mainServerName = MCZJUGameCore.getConfigManager().getMainServer();
 

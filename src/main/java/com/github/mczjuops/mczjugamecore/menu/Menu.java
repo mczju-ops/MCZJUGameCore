@@ -9,6 +9,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
 import java.util.HashMap;
@@ -23,12 +24,17 @@ public abstract class Menu implements InventoryHolder {
     protected final Object[] args;
 
     public Menu(Player player, Object... args) {
+        this(player, args, null);
+    }
+
+    /** 创建使用指定标题的菜单，供需要动态标题的子类调用。 */
+    protected Menu(Player player, Object[] args, @Nullable String title) {
         this.args = args;
         this.player = new PlayerExt(player);
         inventory = Bukkit.createInventory(
                 this,
                 getRows() * 9,
-                TextParser.parse(getTitle()));
+                TextParser.parse(title != null ? title : getTitle()));
     }
 
     /** 子类填充菜单 */

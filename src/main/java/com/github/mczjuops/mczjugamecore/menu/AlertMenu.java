@@ -9,7 +9,11 @@ public class AlertMenu extends Menu {
     private final Runnable onConfirm;
 
     public AlertMenu(Player player, Runnable onConfirm) {
-        super(player);
+        this(player, "确认操作", onConfirm);
+    }
+
+    public AlertMenu(Player player, String title, Runnable onConfirm) {
+        super(player, new Object[0], title);
         this.onConfirm = onConfirm;
     }
 

@@ -161,11 +161,10 @@ public void onEnable() {
 
 ```java
 private void confirmDelete(Player player) {
-    var gui = new AlertMenu(player.player(), () -> {
+    new AlertMenu(player.player(), "确认删除？", () -> {
         player.sender().info("<gold>你点击了确认，这下真的删除了！");
         // 执行删除逻辑
-    });
-    gui.open();
+    }).open();
 }
 ```
 
