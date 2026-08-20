@@ -68,7 +68,7 @@ public class ProfileManager implements Listener {
                 logger.error("玩家 %s 的 profile 数据落盘失败：%s".formatted(playerName, e));
             }
         } else {
-            Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), task -> {
+            Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), _ -> {
                 try {
                     MCZJUGameCore.getProfileStorageManager().save(
                             uuid, playerName,
@@ -90,7 +90,7 @@ public class ProfileManager implements Listener {
 
         MCZJUGameCore plugin = MCZJUGameCore.getInstance();
 
-        Bukkit.getAsyncScheduler().runNow(plugin, task -> {
+        Bukkit.getAsyncScheduler().runNow(plugin, _ -> {
             try {
                 Optional<ProfileData> loaded = MCZJUGameCore.getProfileStorageManager().load(uuid);
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -134,7 +134,7 @@ public class ProfileManager implements Listener {
                     String nameForSave = data.playerName();
                     long ts = data.lastModified();
 
-                    Bukkit.getAsyncScheduler().runNow(plugin, saveTask -> {
+                    Bukkit.getAsyncScheduler().runNow(plugin, _ -> {
                         try {
                             MCZJUGameCore.getProfileStorageManager().save(
                                     uuid,
@@ -178,7 +178,7 @@ public class ProfileManager implements Listener {
         long ts = data.lastModified();
 
         // 异步落盘 → 落盘完成后 evict 锁缓存
-        Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), task -> {
+        Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), _ -> {
             try {
                 MCZJUGameCore.getProfileStorageManager().save(uuid, playerName, currentId, profilesSnapshot, ts);
             } catch (IOException e) {
@@ -238,7 +238,7 @@ public class ProfileManager implements Listener {
 
         if (jobs.isEmpty()) return;
 
-        Bukkit.getAsyncScheduler().runNow(plugin, task -> {
+        Bukkit.getAsyncScheduler().runNow(plugin, _ -> {
             for (ProfileSaveJob job : jobs) {
                 try {
                     MCZJUGameCore.getProfileStorageManager().save(
@@ -307,9 +307,9 @@ public class ProfileManager implements Listener {
                 PotionEffectType.SATURATION,
                 PotionEffect.INFINITE_DURATION,
                 0,
+                true,
                 false,
-                false,
-                true
+                false
         ));
     }
 
