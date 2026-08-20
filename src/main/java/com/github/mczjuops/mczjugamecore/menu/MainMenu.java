@@ -33,6 +33,12 @@ public class MainMenu extends Menu {
     }
 
     @Override
+    public void open() {
+        super.open();
+        player.player().playSound(player.player(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
+    }
+
+    @Override
     protected void setup() {
 
         ItemStack background = ItemStack.of(Material.BLACK_STAINED_GLASS_PANE);
@@ -43,12 +49,13 @@ public class MainMenu extends Menu {
 
         setSlot(
                 4,
-                ItemBuilder.of(Material.NETHER_STAR)
-                        .customName("<gold><b>小游戏一览")
+                ItemBuilder.of(Material.CLOCK)
+                        .customName("<#DEB12D>MCZJU<b>小游戏世界")
                         .lore(List.of(
-                                "<yellow>欢迎来到MCZJU小游戏世界",
+                                "<yellow>欢迎来到小游戏世界",
                                 "<yellow>你可以在此菜单浏览、加入小游戏"
                         ))
+                        .glint(true)
                         .build()
         );
 
@@ -105,7 +112,7 @@ public class MainMenu extends Menu {
                         ))
                         .glint(!inGame)
                         .build(),
-                (player, event) -> {
+                (player, _) -> {
                     player.player().closeInventory();
 
                     if (inGame) {
@@ -141,7 +148,7 @@ public class MainMenu extends Menu {
                             ))
                             .glint(true)
                             .build(),
-                    (player, event) -> {
+                    (player, _) -> {
                         player.player().closeInventory();
                         player.player().performCommand("mgc leave");
                     }
@@ -156,14 +163,15 @@ public class MainMenu extends Menu {
                             ))
                             .glint(true)
                             .build(),
-                    (player, event) -> {
-                        String mainServer = MCZJUGameCore.getConfigManager().getMainServer();
+                    (player, _) -> new AlertMenu(player.player(), () -> {
+                        player.player().closeInventory();
+                        String mainServerName = MCZJUGameCore.getConfigManager().getMainServer();
 
                         ByteArrayDataOutput out = ByteStreams.newDataOutput();
                         out.writeUTF("Connect");
-                        out.writeUTF(mainServer);
+                        out.writeUTF(mainServerName);
                         player.player().sendPluginMessage(MCZJUGameCore.getInstance(), "BungeeCord", out.toByteArray());
-                    }
+                    }).open()
             );
         }
     }

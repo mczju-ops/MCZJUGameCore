@@ -1,8 +1,8 @@
 package com.github.mczjuops.mczjugamecore.profile;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.item.LobbyMenuClock;
 import com.github.mczjuops.mczjugamecore.item.MGCMaterial;
-import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import org.bukkit.Bukkit;
@@ -269,6 +269,18 @@ public class ProfileManager implements Listener {
      * @param profileId profile id
      */
     private void applyConfiguredProfileState(Player player, String profileId) {
+        var registeredItem = MCZJUGameCore.getItemManager().get(MGCMaterial.LOBBY_MENU_CLOCK.toString());
+        LobbyMenuClock lobbyMenuClock = registeredItem instanceof LobbyMenuClock clock ? clock : null;
+
+        if (lobbyMenuClock != null) {
+            if (MCZJUGameCore.getConfigManager().isLobbyProfileFeaturesEnabled()
+                    && ProfileData.LOBBY_PROFILE_ID.equals(profileId)) {
+                lobbyMenuClock.ensureInFixedSlot(player);
+            } else {
+                lobbyMenuClock.ensureInFixedSlotIfPresent(player);
+            }
+        }
+
         if (!MCZJUGameCore.getConfigManager().isLobbyProfileFeaturesEnabled()) {
             return;
         }
@@ -293,7 +305,6 @@ public class ProfileManager implements Listener {
                 false,
                 true
         ));
-        new PlayerExt(player).giveItemIfDontHave(MGCMaterial.LOBBY_MENU_CLOCK.toString());
     }
 
     // onDisable() 调用
