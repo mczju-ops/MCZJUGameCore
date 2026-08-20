@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,12 +44,19 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         }
         playerGameMap.put(player, game);
         player.switchProfile(game.getId());
+        var gameMeta = game.getGameMeta();
         player.player().playerListName(TextParser.parse(
                 "<#DEB12D>%s [<reset>%s<reset><#DEB12D>]".formatted(
                         player.getName(),
-                        game.getGameMeta().displayName()
+                        gameMeta.displayName()
                 )
         ));
+
+        Component footer = Component.newline().append(TextParser.parse("<#DEB12D>正在游玩：<reset>")).append(TextParser.parse(gameMeta.displayName()));
+        for (String line : gameMeta.description()) {
+            footer = footer.append(Component.newline()).append(TextParser.parse(line));
+        }
+        player.player().sendPlayerListFooter(footer);
     }
 
     @Override

@@ -272,6 +272,12 @@ public class ProfileManager implements Listener {
         var registeredItem = MCZJUGameCore.getItemManager().get(MGCMaterial.LOBBY_MENU_CLOCK.toString());
         LobbyMenuClock lobbyMenuClock = registeredItem instanceof LobbyMenuClock clock ? clock : null;
 
+        if (ProfileData.LOBBY_PROFILE_ID.equals(profileId)) {
+            player.sendPlayerListFooter(TextParser.parse(
+                    "\n<#DEB12D><b>欢迎来到</b>MCZJU<b>小游戏世界</b>\n<yellow>通过小游戏菜单或大厅NPC加入游戏！"
+            ));
+        }
+
         if (lobbyMenuClock != null) {
             if (MCZJUGameCore.getConfigManager().isLobbyProfileFeaturesEnabled()
                     && ProfileData.LOBBY_PROFILE_ID.equals(profileId)) {
