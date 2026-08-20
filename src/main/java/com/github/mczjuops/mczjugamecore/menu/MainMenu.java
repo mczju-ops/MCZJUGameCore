@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.room.menu.GameRoomSelectMenu;
+import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.ItemBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
@@ -66,11 +67,17 @@ public class MainMenu extends Menu {
             String gameId = arrangedIds.get(entry.getKey());
             GameMeta meta = gameMetas.get(gameId);
             boolean playerSelectable = gameManager.playerSelectable(gameId);
+            boolean hasLobby = MCZJUGameCore.getLobbyManager().hasLobby(gameId);
             List<String> lore = new ArrayList<>(meta.description());
             lore.add("");
             lore.add("<yellow>作者：<white>%s".formatted(meta.author()));
             lore.add("");
-            if (playerSelectable) {
+            if (hasLobby && playerSelectable) {
+                lore.add("<yellow><b>▶ 左键 进入游戏大厅");
+                lore.add("<yellow><b>▶ 右键 选择游戏房间");
+            } else if (hasLobby) {
+                lore.add("<yellow><b>▶ 点击进入游戏大厅");
+            } else if (playerSelectable) {
                 lore.add("<yellow><b>▶ 左键 加入游戏");
                 lore.add("<yellow><b>▶ 右键 选择房间");
             } else {
@@ -86,7 +93,15 @@ public class MainMenu extends Menu {
                             .build(),
                     (player, event) -> {
                         player.player().closeInventory();
-                        if (playerSelectable) {
+                        if (hasLobby && playerSelectable) {
+                            if (event.getClick() == ClickType.LEFT) {
+                                teleportToGameLobby(player, gameId);
+                            } else if (event.getClick() == ClickType.RIGHT) {
+                                new GameRoomSelectMenu(player.player(), gameId, meta).open();
+                            }
+                        } else if (hasLobby) {
+                            teleportToGameLobby(player, gameId);
+                        } else if (playerSelectable) {
                             if (event.getClick() == ClickType.LEFT) {
                                 gameManager.joinGame(player, gameId); // 直接接入游戏
                             } else if (event.getClick() == ClickType.RIGHT) {
@@ -189,6 +204,24 @@ public class MainMenu extends Menu {
     @Override
     protected String getPermission() {
         return "mgc.mgc";
+    }
+
+    private boolean teleportToGameLobby(PlayerExt player, String gameId) {
+        if (player.isInGame()) {
+            player.sender().warn("无法在游戏过程中进行传送");
+            return false;
+        }
+
+        Location lobby = MCZJUGameCore.getLobbyManager().getGameLobby(gameId);
+        if (lobby == null || lobby.getWorld() == null) {
+            player.sender().warn("该小游戏没有大厅");
+            return false;
+        }
+
+        Player bukkitPlayer = player.player();
+        bukkitPlayer.teleport(lobby);
+        bukkitPlayer.playSound(bukkitPlayer, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+        return true;
     }
 
     /**
