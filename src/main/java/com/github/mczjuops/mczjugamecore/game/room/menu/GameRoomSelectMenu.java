@@ -8,7 +8,10 @@ import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.menu.MainMenu;
 import com.github.mczjuops.mczjugamecore.menu.Menu;
 import com.github.mczjuops.mczjugamecore.utils.ItemBuilder;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Range;
@@ -129,9 +132,29 @@ public class GameRoomSelectMenu extends Menu {
                                 .itemModel(roomIcon)
                                 .glint(!gameState.equals("<red>已开始"))
                                 .build(),
-                        (player, event) -> {
+                        (player, _) -> {
                             // 注意玩家打开菜单期间，房间状态可能发生变化
                             player.player().closeInventory();
+
+                            if (MCZJUGameCore.getLobbyManager().hasLobby(gameId)) {
+                                if (player.isInGame()) {
+                                    player.sender().warn("无法在游戏过程中进行传送");
+                                    return;
+                                }
+
+                                Location lobby = MCZJUGameCore.getLobbyManager().getGameLobby(gameId);
+                                if (lobby == null || lobby.getWorld() == null) {
+                                    player.sender().warn("该小游戏没有大厅");
+                                    return;
+                                }
+
+                                Player p = player.player();
+                                p.teleport(lobby);
+                                Bukkit.getScheduler().runTask(MCZJUGameCore.getInstance(), ()
+                                        -> p.playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f)
+                                );
+                            }
+
                             MCZJUGameCore.getGameManager().joinGame(player, gameId, roomName);
                         }
                 );
@@ -143,7 +166,7 @@ public class GameRoomSelectMenu extends Menu {
                 ItemBuilder.of(Material.ARROW)
                         .customName("<yellow>返回主菜单")
                         .build(),
-                (player, event) -> new MainMenu(player.player()).open()
+                (player, _) -> new MainMenu(player.player()).open()
         );
     }
 

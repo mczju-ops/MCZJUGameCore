@@ -399,7 +399,7 @@ public class MGCOPCommand implements BrigadierCommand {
             return 0;
         }
 
-        new AlertMenu(p, () -> {
+        new AlertMenu(p, "确认删除此房间？", () -> {
             boolean success = MCZJUGameCore.getGameRoomManager().deleteGameRoom(gameId, roomName);
             if (success) player.sender().success("已删除游戏%s的房间%s".formatted(gameId, roomName));
             else player.sender().error("出错了，删除失败");
@@ -506,7 +506,7 @@ public class MGCOPCommand implements BrigadierCommand {
             return 0;
         }
 
-        new AlertMenu(p, () -> {
+        new AlertMenu(p, "确认删除此排行榜？", () -> {
             boolean success = MCZJUGameCore.getLeaderboardManager().removeTextDisplay(leaderboardId, displayId);
             if (success) player.sender().success("已删除排行榜%s的展示实体%s".formatted(leaderboardId, displayId));
             else player.sender().error("出错了，删除失败");

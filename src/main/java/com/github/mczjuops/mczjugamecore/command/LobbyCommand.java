@@ -43,7 +43,7 @@ public class LobbyCommand implements BrigadierCommand {
 
         PlayerExt playerExt = new PlayerExt(player);
         if (playerExt.isInGame()) {
-            playerExt.sender().warn("无法在游戏过程中传送到大厅");
+            playerExt.sender().warn("无法在游戏过程中进行传送");
             return 0;
         }
 

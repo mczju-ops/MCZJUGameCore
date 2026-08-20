@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
 import com.github.mczjuops.mczjugamecore.game.room.menu.GameRoomSelectMenu;
+import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.ItemBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
@@ -33,6 +34,12 @@ public class MainMenu extends Menu {
     }
 
     @Override
+    public void open() {
+        super.open();
+        player.player().playSound(player.player(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
+    }
+
+    @Override
     protected void setup() {
 
         ItemStack background = ItemStack.of(Material.BLACK_STAINED_GLASS_PANE);
@@ -43,12 +50,13 @@ public class MainMenu extends Menu {
 
         setSlot(
                 4,
-                ItemBuilder.of(Material.NETHER_STAR)
-                        .customName("<gold><b>小游戏一览")
+                ItemBuilder.of(Material.CLOCK)
+                        .customName("<#DEB12D>MCZJU<b>小游戏世界")
                         .lore(List.of(
-                                "<yellow>欢迎来到MCZJU小游戏世界",
+                                "<yellow>欢迎来到小游戏世界",
                                 "<yellow>你可以在此菜单浏览、加入小游戏"
                         ))
+                        .glint(true)
                         .build()
         );
 
@@ -59,11 +67,17 @@ public class MainMenu extends Menu {
             String gameId = arrangedIds.get(entry.getKey());
             GameMeta meta = gameMetas.get(gameId);
             boolean playerSelectable = gameManager.playerSelectable(gameId);
+            boolean hasLobby = MCZJUGameCore.getLobbyManager().hasLobby(gameId);
             List<String> lore = new ArrayList<>(meta.description());
             lore.add("");
             lore.add("<yellow>作者：<white>%s".formatted(meta.author()));
             lore.add("");
-            if (playerSelectable) {
+            if (hasLobby && playerSelectable) {
+                lore.add("<yellow><b>▶ 左键 进入游戏大厅");
+                lore.add("<yellow><b>▶ 右键 选择游戏房间");
+            } else if (hasLobby) {
+                lore.add("<yellow><b>▶ 点击进入游戏大厅");
+            } else if (playerSelectable) {
                 lore.add("<yellow><b>▶ 左键 加入游戏");
                 lore.add("<yellow><b>▶ 右键 选择房间");
             } else {
@@ -79,7 +93,15 @@ public class MainMenu extends Menu {
                             .build(),
                     (player, event) -> {
                         player.player().closeInventory();
-                        if (playerSelectable) {
+                        if (hasLobby && playerSelectable) {
+                            if (event.getClick() == ClickType.LEFT) {
+                                teleportToGameLobby(player, gameId);
+                            } else if (event.getClick() == ClickType.RIGHT) {
+                                new GameRoomSelectMenu(player.player(), gameId, meta).open();
+                            }
+                        } else if (hasLobby) {
+                            teleportToGameLobby(player, gameId);
+                        } else if (playerSelectable) {
                             if (event.getClick() == ClickType.LEFT) {
                                 gameManager.joinGame(player, gameId); // 直接接入游戏
                             } else if (event.getClick() == ClickType.RIGHT) {
@@ -105,7 +127,7 @@ public class MainMenu extends Menu {
                         ))
                         .glint(!inGame)
                         .build(),
-                (player, event) -> {
+                (player, _) -> {
                     player.player().closeInventory();
 
                     if (inGame) {
@@ -141,7 +163,7 @@ public class MainMenu extends Menu {
                             ))
                             .glint(true)
                             .build(),
-                    (player, event) -> {
+                    (player, _) -> {
                         player.player().closeInventory();
                         player.player().performCommand("mgc leave");
                     }
@@ -150,20 +172,21 @@ public class MainMenu extends Menu {
             setSlot(
                     inventory.getSize() - 1,
                     ItemBuilder.of(Material.END_PORTAL_FRAME)
-                            .customName("<gold>返回主服")
+                            .customName("<gold>返回生存世界")
                             .lore(List.of(
-                                    "<yellow>点击返回MCZJU主服"
+                                    "<yellow>点击返回MCZJU生存世界"
                             ))
                             .glint(true)
                             .build(),
-                    (player, event) -> {
-                        String mainServer = MCZJUGameCore.getConfigManager().getMainServer();
+                    (player, _) -> new AlertMenu(player.player(), "确认返回生存世界？", () -> {
+                        player.player().closeInventory();
+                        String mainServerName = MCZJUGameCore.getConfigManager().getMainServer();
 
                         ByteArrayDataOutput out = ByteStreams.newDataOutput();
                         out.writeUTF("Connect");
-                        out.writeUTF(mainServer);
+                        out.writeUTF(mainServerName);
                         player.player().sendPluginMessage(MCZJUGameCore.getInstance(), "BungeeCord", out.toByteArray());
-                    }
+                    }).open()
             );
         }
     }
@@ -181,6 +204,24 @@ public class MainMenu extends Menu {
     @Override
     protected String getPermission() {
         return "mgc.mgc";
+    }
+
+    private boolean teleportToGameLobby(PlayerExt player, String gameId) {
+        if (player.isInGame()) {
+            player.sender().warn("无法在游戏过程中进行传送");
+            return false;
+        }
+
+        Location lobby = MCZJUGameCore.getLobbyManager().getGameLobby(gameId);
+        if (lobby == null || lobby.getWorld() == null) {
+            player.sender().warn("该小游戏没有大厅");
+            return false;
+        }
+
+        Player bukkitPlayer = player.player();
+        bukkitPlayer.teleport(lobby);
+        bukkitPlayer.playSound(bukkitPlayer, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+        return true;
     }
 
     /**

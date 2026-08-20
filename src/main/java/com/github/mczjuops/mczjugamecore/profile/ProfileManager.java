@@ -1,8 +1,8 @@
 package com.github.mczjuops.mczjugamecore.profile;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.item.LobbyMenuClock;
 import com.github.mczjuops.mczjugamecore.item.MGCMaterial;
-import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import org.bukkit.Bukkit;
@@ -68,7 +68,7 @@ public class ProfileManager implements Listener {
                 logger.error("玩家 %s 的 profile 数据落盘失败：%s".formatted(playerName, e));
             }
         } else {
-            Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), task -> {
+            Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), _ -> {
                 try {
                     MCZJUGameCore.getProfileStorageManager().save(
                             uuid, playerName,
@@ -90,7 +90,7 @@ public class ProfileManager implements Listener {
 
         MCZJUGameCore plugin = MCZJUGameCore.getInstance();
 
-        Bukkit.getAsyncScheduler().runNow(plugin, task -> {
+        Bukkit.getAsyncScheduler().runNow(plugin, _ -> {
             try {
                 Optional<ProfileData> loaded = MCZJUGameCore.getProfileStorageManager().load(uuid);
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -134,7 +134,7 @@ public class ProfileManager implements Listener {
                     String nameForSave = data.playerName();
                     long ts = data.lastModified();
 
-                    Bukkit.getAsyncScheduler().runNow(plugin, saveTask -> {
+                    Bukkit.getAsyncScheduler().runNow(plugin, _ -> {
                         try {
                             MCZJUGameCore.getProfileStorageManager().save(
                                     uuid,
@@ -178,7 +178,7 @@ public class ProfileManager implements Listener {
         long ts = data.lastModified();
 
         // 异步落盘 → 落盘完成后 evict 锁缓存
-        Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), task -> {
+        Bukkit.getAsyncScheduler().runNow(MCZJUGameCore.getInstance(), _ -> {
             try {
                 MCZJUGameCore.getProfileStorageManager().save(uuid, playerName, currentId, profilesSnapshot, ts);
             } catch (IOException e) {
@@ -238,7 +238,7 @@ public class ProfileManager implements Listener {
 
         if (jobs.isEmpty()) return;
 
-        Bukkit.getAsyncScheduler().runNow(plugin, task -> {
+        Bukkit.getAsyncScheduler().runNow(plugin, _ -> {
             for (ProfileSaveJob job : jobs) {
                 try {
                     MCZJUGameCore.getProfileStorageManager().save(
@@ -269,6 +269,24 @@ public class ProfileManager implements Listener {
      * @param profileId profile id
      */
     private void applyConfiguredProfileState(Player player, String profileId) {
+        var registeredItem = MCZJUGameCore.getItemManager().get(MGCMaterial.LOBBY_MENU_CLOCK.toString());
+        LobbyMenuClock lobbyMenuClock = registeredItem instanceof LobbyMenuClock clock ? clock : null;
+
+        if (ProfileData.LOBBY_PROFILE_ID.equals(profileId)) {
+            player.sendPlayerListFooter(TextParser.parse(
+                    "\n<#DEB12D><b>欢迎来到</b>MCZJU<b>小游戏世界</b>\n<yellow>通过小游戏菜单或大厅NPC加入游戏！"
+            ));
+        }
+
+        if (lobbyMenuClock != null) {
+            if (MCZJUGameCore.getConfigManager().isLobbyProfileFeaturesEnabled()
+                    && ProfileData.LOBBY_PROFILE_ID.equals(profileId)) {
+                lobbyMenuClock.ensureInFixedSlot(player);
+            } else {
+                lobbyMenuClock.ensureInFixedSlotIfPresent(player);
+            }
+        }
+
         if (!MCZJUGameCore.getConfigManager().isLobbyProfileFeaturesEnabled()) {
             return;
         }
@@ -289,11 +307,10 @@ public class ProfileManager implements Listener {
                 PotionEffectType.SATURATION,
                 PotionEffect.INFINITE_DURATION,
                 0,
+                true,
                 false,
-                false,
-                true
+                false
         ));
-        new PlayerExt(player).giveItemIfDontHave(MGCMaterial.LOBBY_MENU_CLOCK.toString());
     }
 
     // onDisable() 调用

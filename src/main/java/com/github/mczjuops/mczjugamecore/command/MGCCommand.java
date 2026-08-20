@@ -43,6 +43,8 @@ public class MGCCommand implements BrigadierCommand {
         return Commands.literal(getName())
                 .requires(src -> src.getSender().hasPermission("mgc.mgc"))
                 .executes(this::executeMGC)
+                .then(Commands.literal("help")
+                        .executes(this::showHelp))
                 .then(Commands.literal("join")
                         .executes(ctx -> {
                             ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定要加入的游戏"));
@@ -89,6 +91,22 @@ public class MGCCommand implements BrigadierCommand {
                 .then(Commands.literal("start") // 尝试开始当前玩家所在的游戏
                         .executes(this::executeStart))
                 .build();
+    }
+
+    private int showHelp(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+
+        sender.sendMessage(TextParser.parse("<#DEB12D><b>============= 小游戏功能命令帮助 ============="));
+        sender.sendMessage(TextParser.parse("<#DEB12D><b>命令列表："));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc <gray>-</gray> <aqua>打开小游戏菜单"));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc help <gray>-</gray> <aqua>查看命令帮助"));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc join <游戏> <gray>-</gray> <aqua>加入指定游戏"));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc joinroom <游戏> <房间> <gray>-</gray> <aqua>加入指定游戏房间（部分游戏可用）"));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc leave <gray>-</gray> <aqua>退出当前游戏"));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc start <gray>-</gray> <aqua>尝试开始当前等待中的游戏"));
+        sender.sendMessage(TextParser.parse("<#DEB12D><b>======================================="));
+
+        return Command.SINGLE_SUCCESS;
     }
 
     private int executeMGC(CommandContext<CommandSourceStack> ctx) {
