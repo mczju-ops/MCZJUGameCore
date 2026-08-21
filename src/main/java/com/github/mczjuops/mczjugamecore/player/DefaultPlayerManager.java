@@ -67,11 +67,6 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         AbstractGame game = playerGameMap.get(player);
         playerGameMap.remove(player);
 
-        player.switchProfile(null);
-        if (reason != PlayerQuitReason.DISCONNECT) {
-            player.player().playerListName(null);
-        }
-
         // 如果是加入游戏失败，不做过多处理
         if (reason == PlayerQuitReason.JOIN_FAIL) return;
 
@@ -81,6 +76,11 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         }else{
             // 不在等待阶段。不做游戏结束阶段的判断，游戏结束调用removeAllPlayer方法
             game.getPlayerQuitStrategy().onPlayerQuit(player, reason);
+        }
+
+        player.switchProfile(null);
+        if (reason != PlayerQuitReason.DISCONNECT) {
+            player.player().playerListName(null);
         }
     }
 
