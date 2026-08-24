@@ -98,10 +98,15 @@ public final class MCZJUGameCore extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        // 停止所有游戏
-        for (AbstractGame game : gameManager.getAllGames()) {
-            if (game.getState() == GameState.WAITING) gameManager.cancelGame(game);
-            else gameManager.abortGame(game);
+        // 停止所有游戏。必须遍历快照，因为 cancelGame/abortGame 会从内部游戏列表中移除元素。
+        for (AbstractGame game : List.copyOf(gameManager.getAllGames())) {
+            try {
+                if (game.getState() == GameState.WAITING) gameManager.cancelGame(game);
+                else gameManager.forceAbortGame(game);
+            } catch (Exception e) {
+                getLogger().severe("关服时正常停止游戏 %s 失败，将强制清理并继续停止其余游戏：%s"
+                        .formatted(game.getId(), e));
+            }
         }
         gameRoomManager.saveAllGameRoomDirectly();  // 保存所有游戏房间
         playerDataManager.saveAllPlayerData();
