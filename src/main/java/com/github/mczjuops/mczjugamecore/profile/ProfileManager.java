@@ -273,6 +273,26 @@ public class ProfileManager implements Listener {
         LobbyMenuClock lobbyMenuClock = registeredItem instanceof LobbyMenuClock clock ? clock : null;
 
         if (ProfileData.LOBBY_PROFILE_ID.equals(profileId)) {
+            player.clearActivePotionEffects();
+            var maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
+            if (maxHealth != null) {
+                // 小游戏可能通过基础值、属性修饰器或血量缩放改变显示上限，全部恢复为原版状态。
+                for (var modifier : Set.copyOf(maxHealth.getModifiers())) {
+                    maxHealth.removeModifier(modifier);
+                }
+                maxHealth.setBaseValue(20.0D);
+            }
+            player.setHealthScaled(false);
+            player.setHealth(20.0D);
+            player.setAbsorptionAmount(0.0D);
+            player.setFoodLevel(20);
+            player.setSaturation(20.0F);
+            player.setExhaustion(0.0F);
+            player.setFireTicks(0);
+            player.setFreezeTicks(0);
+            player.setFallDistance(0.0F);
+            player.setRemainingAir(player.getMaximumAir());
+
             player.sendPlayerListFooter(TextParser.parse(
                     "\n<#DEB12D><b>欢迎来到</b>MCZJU<b>小游戏世界</b>\n<yellow>通过小游戏菜单或大厅NPC加入游戏！"
             ));
@@ -296,12 +316,6 @@ public class ProfileManager implements Listener {
             return;
         }
 
-        var maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
-        if (maxHealth != null) {
-            player.setHealth(maxHealth.getValue());
-        }
-        player.setFoodLevel(20);
-        player.setSaturation(20.0F);
         player.setGameMode(GameMode.ADVENTURE);
         player.addPotionEffect(new PotionEffect(
                 PotionEffectType.SATURATION,
