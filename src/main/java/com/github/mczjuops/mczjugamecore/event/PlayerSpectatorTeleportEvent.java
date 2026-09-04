@@ -1,4 +1,4 @@
-package com.github.mczjuops.mczjugamecore.event.player;
+package com.github.mczjuops.mczjugamecore.event;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;

@@ -1,6 +1,6 @@
 package com.github.mczjuops.mczjugamecore.player.listener;
 
-import com.github.mczjuops.mczjugamecore.event.player.PlayerSpectatorTeleportEvent;
+import com.github.mczjuops.mczjugamecore.event.PlayerSpectatorTeleportEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;

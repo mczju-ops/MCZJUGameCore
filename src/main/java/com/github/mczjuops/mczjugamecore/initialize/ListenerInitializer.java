@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerDeathListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerQuitListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerSpectatorTeleportListener;
+import com.github.mczjuops.mczjugamecore.player.listener.SpectatorTeleportRestrictionListener;
 import com.github.mczjuops.mczjugamecore.utils.LocationSelector;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
@@ -15,6 +16,7 @@ public class ListenerInitializer {
         register(new PlayerDeathListener());
         register(new PlayerQuitListener());
         register(new PlayerSpectatorTeleportListener());
+        register(new SpectatorTeleportRestrictionListener());
         register(MCZJUGameCore.getProfileManager());
     }
 
