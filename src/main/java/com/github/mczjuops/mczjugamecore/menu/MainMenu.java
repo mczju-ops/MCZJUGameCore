@@ -9,6 +9,7 @@ import com.github.mczjuops.mczjugamecore.utils.ItemBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -146,6 +147,25 @@ public class MainMenu extends Menu {
                                 () -> p.playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f)
                         );
                     }
+                }
+        );
+
+        // 右下角功能按钮左侧，进入或退出旁观模式
+        boolean spectator = player.player().getGameMode() == GameMode.SPECTATOR;
+        setSlot(
+                inventory.getSize() - 2,
+                ItemBuilder.of(Material.ENDER_EYE)
+                        .customName("<gold>旁观模式")
+                        .lore(List.of(
+                                inGame
+                                        ? "<red>无法在游戏过程中使用该功能"
+                                        : spectator ? "<yellow>点击退出旁观模式" : "<yellow>点击进入旁观模式"
+                        ))
+                        .glint(!inGame && spectator)
+                        .build(),
+                (player, _) -> {
+                    player.player().closeInventory();
+                    player.player().performCommand("mgc spectator");
                 }
         );
 
