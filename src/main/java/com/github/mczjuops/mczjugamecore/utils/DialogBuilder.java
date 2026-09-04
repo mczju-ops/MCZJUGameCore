@@ -57,7 +57,6 @@ import java.util.List;
  * @see DialogBody
  * @see DialogInput
  */
-@SuppressWarnings("UnstableApiUsage")
 public class DialogBuilder {
 
     private final Component title;
