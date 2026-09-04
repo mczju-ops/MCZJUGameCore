@@ -15,6 +15,9 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.Title;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -88,6 +91,8 @@ public class MGCCommand implements BrigadierCommand {
                 )
                 .then(Commands.literal("leave")
                         .executes(this::executeLeave))
+                .then(Commands.literal("spectator")
+                        .executes(this::executeSpectator))
                 .then(Commands.literal("start") // 尝试开始当前玩家所在的游戏
                         .executes(this::executeStart))
                 .build();
@@ -103,6 +108,7 @@ public class MGCCommand implements BrigadierCommand {
         sender.sendMessage(TextParser.parse("<yellow>/mgc join <游戏> <gray>-</gray> <aqua>加入指定游戏"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc joinroom <游戏> <房间> <gray>-</gray> <aqua>加入指定游戏房间（部分游戏可用）"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc leave <gray>-</gray> <aqua>退出当前游戏"));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc spectator <gray>-</gray> <aqua>进入或退出旁观模式"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc start <gray>-</gray> <aqua>尝试开始当前等待中的游戏"));
         sender.sendMessage(TextParser.parse("<#DEB12D><b>======================================="));
 
@@ -184,6 +190,43 @@ public class MGCCommand implements BrigadierCommand {
         }
 
         MCZJUGameCore.getPlayerManager().leaveGame(player, PlayerQuitReason.COMMAND_QUIT);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeSpectator(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Component.text("该命令只能由玩家执行"));
+            return 0;
+        }
+
+        PlayerExt playerExt = new PlayerExt(player);
+        if (playerExt.isInGame()) {
+            playerExt.sender().warn("无法在游戏过程中切换旁观模式");
+            return 0;
+        }
+
+        if (player.getGameMode() != GameMode.SPECTATOR) {
+            player.setGameMode(GameMode.SPECTATOR);
+            player.showTitle(Title.title(
+                    Component.empty(),
+                    TextParser.parse("<yellow>再次输入/mgc spectator退出旁观模式")
+            ));
+            return Command.SINGLE_SUCCESS;
+        }
+
+        Location lobby = MCZJUGameCore.getLobbyManager().getMainLobby();
+        if (lobby == null || lobby.getWorld() == null) {
+            playerExt.sender().warn("主大厅尚未配置，无法退出旁观模式");
+            return 0;
+        }
+
+        if (!player.teleport(lobby)) {
+            playerExt.sender().warn("传送到主大厅失败，无法退出旁观模式");
+            return 0;
+        }
+
+        player.setGameMode(GameMode.ADVENTURE);
         return Command.SINGLE_SUCCESS;
     }
 
