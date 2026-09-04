@@ -473,3 +473,36 @@ if (item instanceof AbstractExampleItem){
 
 > 还有更多的给玩家物品的方法，详见`PlayerExt`
 > 还有更多的比较物品是否是`ExampleItem`的方法，详见`MGCItem`和`ItemManager`
+
+---
+
+## 八、旁观模式传送事件
+
+玩家使用原版旁观模式快捷栏菜单传送时，Paper 提供的 `PlayerTeleportEvent` 不会直接给出目标玩家。
+`MGC` 会根据传送目的地，在 2 格范围内寻找最近的非旁观模式玩家，并广播
+`PlayerSpectatorTeleportEvent`。
+
+`getEstimatedTarget()` 返回估算出的目标玩家。附近没有符合条件的玩家时会返回 `null`，
+因此监听器需要处理无法估算目标的情况。取消该事件会同时取消原版旁观传送。
+
+下面的例子只允许玩家旁观同一局游戏中的玩家，并在无法确认目标时阻止传送：
+
+```java
+@EventHandler
+public void onSpectatorTeleport(PlayerSpectatorTeleportEvent event) {
+    Player target = event.getEstimatedTarget();
+    if (target == null) {
+        event.setCancelled(true);
+        return;
+    }
+
+    AbstractGame spectatorGame = new PlayerExt(event.getPlayer()).getGame();
+    AbstractGame targetGame = new PlayerExt(target).getGame();
+    if (spectatorGame == null || spectatorGame != targetGame) {
+        event.setCancelled(true);
+    }
+}
+```
+
+目标玩家是根据位置估算的结果，并非原版提供的严格目标信息。如果需要判断估算结果的接近程度，
+可以通过 `getEstimatedTargetDistanceSquared()` 获取目标玩家与原生传送目的地之间的距离平方。
