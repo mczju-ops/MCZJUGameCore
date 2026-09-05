@@ -473,3 +473,26 @@ if (item instanceof AbstractExampleItem){
 
 > 还有更多的给玩家物品的方法，详见`PlayerExt`
 > 还有更多的比较物品是否是`ExampleItem`的方法，详见`MGCItem`和`ItemManager`
+
+---
+
+## 八、旁观模式传送事件
+
+玩家使用原版旁观模式快捷栏菜单传送时，Paper 提供的 `PlayerTeleportEvent` 不会直接给出目标玩家。
+`MGC` 会根据传送目的地，在 2 格范围内寻找最近的非旁观模式玩家，并广播
+`PlayerSpectatorTeleportEvent`。
+
+`getEstimatedTarget()` 返回估算出的目标玩家。附近没有符合条件的玩家时会返回 `null`，
+因此监听器需要处理无法估算目标的情况。取消该事件会同时取消原版旁观传送。
+
+`MGC` 默认采用以下限制：
+
+- 未处于任何游戏的玩家可以传送到任意可用目标。
+- 处于游戏中的玩家只能传送到同一局游戏中的玩家。
+- 目标属于其他游戏、未处于游戏，或无法估算目标时，都会阻止传送并向动作栏发送提示。
+
+这里比较的是具体的游戏实例，因此同一种小游戏的不同房间也会相互隔离。具体插件仍然可以监听
+`PlayerSpectatorTeleportEvent`，在默认限制之外添加自己的旁观传送规则。
+
+目标玩家是根据位置估算的结果，并非原版提供的严格目标信息。如果需要判断估算结果的接近程度，
+可以通过 `getEstimatedTargetDistanceSquared()` 获取目标玩家与原生传送目的地之间的距离平方。
