@@ -117,14 +117,14 @@ public class MainMenu extends Menu {
         }
 
         boolean inGame = player.isInGame();
-        // 左下角按钮，传送到大厅出生点
+        // 传送到大厅出生点
         setSlot(
                 inventory.getSize() - 9,
                 ItemBuilder.of(Material.COMPASS)
-                        .customName("<gold>返回出生点")
+                        .customName("<gold>返回大厅出生点")
                         .lore(List.of(
-                                "<gray>传送到小游戏世界的出生点",
-                                inGame ? "<red>无法在游戏过程中使用该功能" : "<yellow>点击传送"
+                                "<gray>/lobby",
+                                inGame ? "<red>无法在游戏过程中使用该功能" : "<yellow>点击传送到小游戏大厅出生点"
                         ))
                         .glint(!inGame)
                         .build(),
@@ -150,18 +150,19 @@ public class MainMenu extends Menu {
                 }
         );
 
-        // 右下角功能按钮左侧，进入或退出旁观模式
+        // 进入或退出旁观模式
         boolean spectator = player.player().getGameMode() == GameMode.SPECTATOR;
         setSlot(
-                inventory.getSize() - 2,
+                inventory.getSize() - 8,
                 ItemBuilder.of(Material.ENDER_EYE)
-                        .customName("<gold>旁观模式")
+                        .customName(spectator ? "<gold>退出旁观模式" : "<gold>进入旁观模式")
                         .lore(List.of(
+                                "<gray>/mgc spectator",
                                 inGame
                                         ? "<red>无法在游戏过程中使用该功能"
                                         : spectator ? "<yellow>点击退出旁观模式" : "<yellow>点击进入旁观模式"
                         ))
-                        .glint(!inGame && spectator)
+                        .glint(true)
                         .build(),
                 (player, _) -> {
                     player.player().closeInventory();
@@ -170,45 +171,50 @@ public class MainMenu extends Menu {
         );
 
         // 右下角，处于游戏内时为退出，处于大厅时为返回主城
+        String description = "<red>当前未处于任何游戏中";
         if (inGame) {
             var game = player.getGame();
             assert game != null;
             String gameName = game.getGameMeta().displayName();
-            setSlot(
-                    inventory.getSize() - 1,
-                    ItemBuilder.of(Material.PALE_OAK_DOOR)
-                            .customName("<gold>退出当前游戏")
-                            .lore(List.of(
-                                    "<yellow>点击退出游戏" + gameName
-                            ))
-                            .glint(true)
-                            .build(),
-                    (player, _) -> {
-                        player.player().closeInventory();
-                        player.player().performCommand("mgc leave");
-                    }
-            );
-        } else {
-            setSlot(
-                    inventory.getSize() - 1,
-                    ItemBuilder.of(Material.END_PORTAL_FRAME)
-                            .customName("<gold>返回生存世界")
-                            .lore(List.of(
-                                    "<yellow>点击返回MCZJU生存世界"
-                            ))
-                            .glint(true)
-                            .build(),
-                    (player, _) -> new AlertMenu(player.player(), "确认返回生存世界？", () -> {
-                        player.player().closeInventory();
-                        String mainServerName = MCZJUGameCore.getConfigManager().getMainServer();
-
-                        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-                        out.writeUTF("Connect");
-                        out.writeUTF(mainServerName);
-                        player.player().sendPluginMessage(MCZJUGameCore.getInstance(), "BungeeCord", out.toByteArray());
-                    }).open()
-            );
+            description = "<yellow>点击退出游戏" + gameName;
         }
+
+        setSlot(
+                inventory.getSize() - 2,
+                ItemBuilder.of(Material.PALE_OAK_DOOR)
+                        .customName("<gold>退出当前游戏")
+                        .lore(List.of(
+                                "<gray>/mgc leave",
+                                description
+                        ))
+                        .glint(true)
+                        .build(),
+                (player, _) -> {
+                    player.player().closeInventory();
+                    player.player().performCommand("mgc leave");
+                }
+        );
+
+        setSlot(
+                inventory.getSize() - 1,
+                ItemBuilder.of(Material.END_PORTAL_FRAME)
+                        .customName("<gold>返回生存世界")
+                        .lore(List.of(
+                                "<gray>/return",
+                                "<yellow>点击返回MCZJU生存世界"
+                        ))
+                        .glint(true)
+                        .build(),
+                (player, _) -> new AlertMenu(player.player(), "确认返回生存世界？", () -> {
+                    player.player().closeInventory();
+                    String mainServerName = MCZJUGameCore.getConfigManager().getMainServer();
+
+                    ByteArrayDataOutput out = ByteStreams.newDataOutput();
+                    out.writeUTF("Connect");
+                    out.writeUTF(mainServerName);
+                    player.player().sendPluginMessage(MCZJUGameCore.getInstance(), "BungeeCord", out.toByteArray());
+                }).open()
+        );
     }
 
     @Override
