@@ -34,7 +34,7 @@
 
   <groupId>com.github.mczju-ops</groupId>
   <artifactId>MCZJUGameCore</artifactId>
-  <version>1.0.7</version>
+  <version>1.0.8</version>
   <packaging>jar</packaging>
 
   <name>MCZJUGameCore</name>
