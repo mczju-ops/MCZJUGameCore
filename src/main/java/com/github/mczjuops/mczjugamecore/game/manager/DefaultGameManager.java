@@ -159,13 +159,7 @@ public class DefaultGameManager implements AbstractGameManager {
                     if (tryJoin(player, game)) return;
                 }else if (game.getState() == GameState.RUNNING && game instanceof MidGameJoinable){
                     // 允许中途加入，且正在运行的游戏
-                    if (((MidGameJoinable) game).onPlayerMidJoin(player)) {
-                        // 先判断是否允许玩家加入，允许时再将player放入playerList
-                        // 和tryJoin的流程相反，后面不合适再改
-                        // 只把这一个玩家拉进去
-                        MCZJUGameCore.getPlayerManager().joinGame(player, game);
-                        return;
-                    }
+                    if (tryMidJoin(player, game)) return;
                 }
             }
         }
@@ -206,10 +200,8 @@ public class DefaultGameManager implements AbstractGameManager {
                 return;
             }
 
-            if (game.getState() == GameState.RUNNING && game instanceof MidGameJoinable joinable) {
-                if (joinable.onPlayerMidJoin(player)) {
-                    MCZJUGameCore.getPlayerManager().joinGame(player, game);
-                } // 无法加入时，不提示
+            if (game.getState() == GameState.RUNNING && game instanceof MidGameJoinable) {
+                tryMidJoin(player, game); // 无法加入时，不提示
             } else {
                 player.sender().warn("游戏已开始，无法中途加入");
             }
@@ -272,6 +264,22 @@ public class DefaultGameManager implements AbstractGameManager {
                 return false;
             }
         }
+    }
+
+    /**
+     * 中途加入同样需要先注册玩家并切换档案，再交给游戏初始化玩家状态。
+     * 若游戏拒绝加入，则回滚这次预加入。
+     *
+     * @return 是否加入成功
+     */
+    private boolean tryMidJoin(PlayerExt player, AbstractGame game) {
+        MCZJUGameCore.getPlayerManager().joinGame(player, game);
+        if (((MidGameJoinable) game).onPlayerMidJoin(player)) {
+            return true;
+        }
+
+        MCZJUGameCore.getPlayerManager().leaveGame(player, PlayerQuitReason.JOIN_FAIL);
+        return false;
     }
 
     @Override
