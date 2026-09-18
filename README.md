@@ -27,6 +27,10 @@ python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github
 
 也可以在 Codex 的 skill 安装器中使用同一个 GitHub 仓库路径安装。skill 的更新会随本项目提交发布；重新执行安装命令前，请先删除本地已有的 `mczju-game-plugin` 目录，因为安装器默认不会覆盖已存在的 skill。
 
+在用skill生成新插件时，建议从[已有插件](https://github.com/mczju-ops/mc-wool-wordle/tree/java-translate)复制模板，在`README.md`中说明新插件的名称、作者和详细的游戏规则，并让codex删去旧插件的代码，将所有名称都换成新插件的。
+
+详细的游戏规则建议按时序写，可以参考[物品过滤流水线小游戏](https://github.com/mczju-ops/mcmp-filter-item)
+
 ---
 
 ## 示例插件
