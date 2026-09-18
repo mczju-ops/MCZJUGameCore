@@ -1,0 +1,4 @@
+interface:
+  display_name: "MCZJU 小游戏插件开发"
+  short_description: "基于 MCZJUGameCore 设计、实现并验证 Minecraft 小游戏插件"
+  default_prompt: "Use $mczju-game-plugin to build a Minecraft minigame plugin with MCZJUGameCore."
