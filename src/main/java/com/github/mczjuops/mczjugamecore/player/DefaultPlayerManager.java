@@ -3,6 +3,7 @@ package com.github.mczjuops.mczjugamecore.player;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
+import com.github.mczjuops.mczjugamecore.player.party.Party;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
@@ -62,6 +63,20 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
     @Override
     public void leaveGame(PlayerExt player, PlayerQuitReason reason) {
         if (!playerGameMap.containsKey(player)) return;
+
+        AbstractGame currentGame = playerGameMap.get(player);
+        // 队长在等待阶段主动退出时，整支正在等待的队伍一起退出。
+        if (reason == PlayerQuitReason.COMMAND_QUIT && currentGame.getState() == GameState.WAITING
+                && player.isPartyLeader()) {
+            Party party = player.getParty();
+            if (party != null) {
+                for (PlayerExt member : party.getAllPlayer()) {
+                    if (!member.equals(player) && playerGameMap.get(member) == currentGame) {
+                        leaveGame(member, reason);
+                    }
+                }
+            }
+        }
 
         // 如果原本在游戏中，则调用game中的退出游戏
         AbstractGame game = playerGameMap.get(player);

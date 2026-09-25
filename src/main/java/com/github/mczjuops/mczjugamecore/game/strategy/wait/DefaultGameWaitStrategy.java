@@ -35,13 +35,20 @@ public class DefaultGameWaitStrategy extends GameWaitStrategy {
 
     @Override
     public boolean onPartyJoin(Party party) {
-        // 这里不发消息，因为即使这个房间无法进人，也可以加其它房间
+        int size = game.getPlayers().size();
+        if (size > playerLimit) {
+            party.sender().warn("该游戏人数超出上限（最多%d人），队伍无法加入".formatted(playerLimit));
+            return false;
+        }
         return onJoin(party.getAllPlayer());
     }
 
     private boolean onJoin(List<PlayerExt> newPlayers){
         int size = game.getPlayers().size();
-        if (size > playerLimit) return false;
+        if (size > playerLimit) {
+            new MultiPlayerSender(newPlayers).warn("该游戏人数超出上限（最多%d人），无法加入".formatted(playerLimit));
+            return false;
+        }
 
         // 加入成功，先发消息
         MultiPlayerSender sender = new MultiPlayerSender(game.getPlayers());
@@ -65,7 +72,12 @@ public class DefaultGameWaitStrategy extends GameWaitStrategy {
 
     @Override
     public void tryStart() {
-        if (game.getPlayers().size() >= minPlayer){
+        int size = game.getPlayers().size();
+        if (size > playerLimit) {
+            game.sender().warn("当前人数超出上限（最多%d人），无法开始游戏".formatted(playerLimit));
+        } else if (size < minPlayer) {
+            game.sender().warn("当前人数不足，至少需要%d人才能开始游戏（当前%d人）".formatted(minPlayer, size));
+        } else {
             startGame();
         }
     }

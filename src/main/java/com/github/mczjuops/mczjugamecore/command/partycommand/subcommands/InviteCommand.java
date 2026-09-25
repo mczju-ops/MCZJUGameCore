@@ -77,6 +77,10 @@ public class InviteCommand extends PartySubCommands {
         }
 
         PlayerExt invitee = new PlayerExt(inviteePlayer);
+        return invite(inviter, invitee);
+    }
+
+    public int invite(PlayerExt inviter, PlayerExt invitee) {
         InviteResult result = MCZJUGameCore.getPartymanager().invite(inviter, invitee);
 
         return switch (result) {

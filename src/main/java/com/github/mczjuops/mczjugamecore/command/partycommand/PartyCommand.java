@@ -63,6 +63,7 @@ public class PartyCommand implements BrigadierCommand {
 
     private void registerSubCommands() {
         subCommands.add(new InviteCommand());
+        subCommands.add(new InviteAllCommand());
         subCommands.add(new AcceptCommand());
         subCommands.add(new ChatCommand());
         subCommands.add(new ListCommand());
