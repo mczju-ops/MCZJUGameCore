@@ -90,7 +90,9 @@ public class MGCCommand implements BrigadierCommand {
                         )
                 )
                 .then(Commands.literal("leave")
-                        .executes(this::executeLeave))
+                        .executes(this::executeLeave)
+                        .then(Commands.literal("notip")
+                                .executes(ctx -> executeLeave(ctx, true))))
                 .then(Commands.literal("spectator")
                         .executes(this::executeSpectator))
                 .then(Commands.literal("start") // 尝试开始当前玩家所在的游戏
@@ -108,6 +110,7 @@ public class MGCCommand implements BrigadierCommand {
         sender.sendMessage(TextParser.parse("<yellow>/mgc join <游戏> <gray>-</gray> <aqua>加入指定游戏"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc joinroom <游戏> <房间> <gray>-</gray> <aqua>加入指定游戏房间（部分游戏可用）"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc leave <gray>-</gray> <aqua>退出当前游戏"));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc leave notip <gray>-</gray> <aqua>退出当前游戏时不提示未在游戏中"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc spectator <gray>-</gray> <aqua>进入或退出旁观模式"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc start <gray>-</gray> <aqua>尝试开始当前等待中的游戏"));
         sender.sendMessage(TextParser.parse("<#DEB12D><b>======================================="));
@@ -178,6 +181,10 @@ public class MGCCommand implements BrigadierCommand {
     }
 
     private int executeLeave(CommandContext<CommandSourceStack> ctx) {
+        return executeLeave(ctx, false);
+    }
+
+    private int executeLeave(CommandContext<CommandSourceStack> ctx, boolean noTip) {
         CommandSender sender = ctx.getSource().getSender();
         if (!(sender instanceof Player p)) {
             sender.sendMessage(Component.text("该命令只能由玩家执行"));
@@ -186,7 +193,9 @@ public class MGCCommand implements BrigadierCommand {
 
         PlayerExt player = new PlayerExt(p);
         if (player.getGame() == null) {
-            player.sender().warn("你没有在游玩任何游戏，或者该游戏不需要退出");
+            if (!noTip) {
+                player.sender().warn("你没有在游玩任何游戏，或者该游戏不需要退出");
+            }
         }
 
         MCZJUGameCore.getPlayerManager().leaveGame(player, PlayerQuitReason.COMMAND_QUIT);
