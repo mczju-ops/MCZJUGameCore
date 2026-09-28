@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.command.partycommand.subcommands;
 
+import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.command.partycommand.PartySubCommands;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
@@ -29,7 +30,11 @@ public class InviteAllCommand extends PartySubCommands {
         PlayerExt inviter = new PlayerExt(player);
         InviteCommand inviteCommand = new InviteCommand();
         for (Player online : Bukkit.getOnlinePlayers()) {
-            inviteCommand.invite(inviter, new PlayerExt(online));
+            PlayerExt invitee = new PlayerExt(online);
+            if (inviter.equals(invitee) || MCZJUGameCore.getPartymanager().isPlayerInParty(invitee)) {
+                continue;
+            }
+            inviteCommand.invite(inviter, invitee);
         }
         return Command.SINGLE_SUCCESS;
     }
