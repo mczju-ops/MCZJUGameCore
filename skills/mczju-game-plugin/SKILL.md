@@ -16,11 +16,12 @@ Treat the target project's resolved MGC dependency and source as authoritative. 
    - Otherwise use `AbstractGame` and explicitly choose wait, death, and quit behavior.
    - Decide whether rooms are selectable, whether mid-game joining is valid, and which data must persist.
 3. Read [references/core-workflow.md](references/core-workflow.md) before creating or changing game lifecycle, room, registration, or shutdown behavior.
-4. Read only the relevant sections of [references/features.md](references/features.md) when implementing PlayerData, menus, leaderboards, items, parties, or utilities.
+4. Read only the relevant sections of [references/features.md](references/features.md) when implementing PlayerData, menus, leaderboards, items, parties, or utilities (including optional voice-chat groups and `/party voice`).
 5. Implement the smallest coherent vertical slice. Keep framework hooks thin; move substantial gameplay logic into focused services/listeners/tasks owned by the child plugin.
 6. Register all required framework components in the child plugin's `onEnable()`. Register Bukkit listeners and commands through the child plugin normally.
 7. Make shutdown and end paths idempotent. Cancel plugin-owned schedulers, remove spawned entities, restore/reset maps as required, and avoid retaining stale `PlayerExt`, `Player`, game, or room references.
-8. Build and run available tests. For behavior that requires a server, state the exact Paper test steps and lifecycle transitions to exercise.
+8. When adding features, update the relevant development documentation, document public classes/functions with comments or Javadoc, and synchronize this project skill and its references.
+9. Build and run available tests. For behavior that requires a server, state the exact Paper test steps and lifecycle transitions to exercise.
 
 ## Non-negotiable constraints
 

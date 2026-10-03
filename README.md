@@ -102,6 +102,8 @@ python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github
 
 工具：
 
+- `VoiceGroupUtil`：可选的 Simple Voice Chat 集成，一行创建玩家语音群组，支持自定义配置与群组清理。
+
 详见[小游戏插件开发进阶指南](./docs/dev-advanced.md)中的说明。
 
 ---

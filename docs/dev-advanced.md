@@ -388,6 +388,16 @@ private void onGameEnd() {
 
 玩家之间可以互相组队，并由队长带领所有人加入某个游戏。队伍支持队内发送信息。
 
+任意队员可执行 `/party voice`（也支持 `/p voice`），将当前队伍的队长与成员加入同一个
+Simple Voice Chat 群组，沿用 `mgc.party` 权限。命令使用 `VoiceGroupUtil` 默认配置，
+名称为 `Party-` 加队长玩家名（可能被语音插件截短）。每次执行都会创建新组并切换当前可用成员。
+离线或未连接语音的成员会跳过，语音插件不可用、没有有效玩家或创建失败时会提示执行者。
+新入队或刚连接语音的成员需再次执行命令；这是执行时的成员快照，离队或解散不会自动退出语音群组，
+可在语音客户端手动退出，非持久群组在空组时自动删除。
+
+手动验证：用队长和普通队员分别执行命令，确认两者均能带全队进入同一个群组；检查 `/party help`
+与 `/p voice`，以及控制台、未组队、语音服务缺失、无有效语音连接和混合连接状态下的提示。
+
 如果你开发的游戏是多人游戏，尤其是需要多人合作完成任务或多个多人队伍之间竞争的队伍，
 你可以直接使用队伍系统来辅助游戏设计。
 
@@ -496,3 +506,66 @@ if (item instanceof AbstractExampleItem){
 
 目标玩家是根据位置估算的结果，并非原版提供的严格目标信息。如果需要判断估算结果的接近程度，
 可以通过 `getEstimatedTargetDistanceSquared()` 获取目标玩家与原生传送目的地之间的距离平方。
+
+## 九、Simple Voice Chat 语音群组
+
+MGC 对 [Simple Voice Chat](https://github.com/henkelmax/simple-voice-chat) 声明 `softdepend: [voicechat]`，
+API 依赖为 `provided`、`optional`，不会打包进 MGC JAR。未安装语音插件时 MGC 仍可正常启用，
+调用者不需要自行依赖语音 API。集成使用官方的
+[BukkitVoicechatService 注册方式](https://modrepo.de/minecraft/voicechat/api/getting_started)。
+
+所有创建、移除操作都在服务器主线程调用。项目没有专门的 `PlayerExtList` 类，接口接受
+`Collection<PlayerExt>`，例如已有的 `List<PlayerExt>`：
+
+```java
+import com.github.mczjuops.mczjugamecore.utils.VoiceGroupUtil;
+
+// playerExtList 是你的 List<PlayerExt>。
+VoiceGroupUtil.createGroup("红队", playerExtList);
+
+// 如果需要在本局结束时清理，请保存返回的 UUID（不要保存 Player 对象）。
+var groupId = VoiceGroupUtil.createGroup("红队", playerExtList,
+        VoiceGroupUtil.Options.defaults()
+                .withPassword("team-password")
+                .withHidden(true)
+                .withPersistent(true)
+                .withType(VoiceGroupUtil.GroupType.ISOLATED));
+
+// 在游戏结束、取消、异常中止等路径中调用，并在清理后清空所保存的 UUID。
+groupId.ifPresent(VoiceGroupUtil::removeGroup);
+```
+
+默认配置：无密码、客户端列表可见、非持久、`NORMAL` 模式，随机生成 UUID。
+每次调用都会创建新群组，同名群组不会复用。自定义配置为不可变对象，`with...` 返回新配置。
+各模式与 [官方群组 API](https://voicechat.modrepo.de/de/maxhenkel/voicechat/api/Group.Type.html) 一致：
+
+| 模式 | 行为 |
+| --- | --- |
+| `NORMAL` | 组员能听到组内语音，也能听到附近未入组玩家 |
+| `OPEN` | 组员能听到附近玩家，附近玩家也能听到组员 |
+| `ISOLATED` | 组员仅能听到组内其他玩家 |
+
+`persistent` 仅表示最后一名成员离开后保留空群组，不表示跨服务器重启保存。
+`hidden` 仅隐藏列表显示，不是访问控制；密码限制手动加入，本工具会直接将指定玩家加入。
+
+`createGroup` 返回 `Optional<UUID>`。语音插件缺失、服务尚未启动、没有在线且已连接语音的玩家时
+返回 `Optional.empty()`，不创建空组。可用性也可通过 `VoiceGroupUtil.isAvailable()` 查询。
+离线或未连接语音的玩家会被跳过，重复玩家只加入一次；工具不会安排重连后自动加入。
+空白名称抛出 `IllegalArgumentException`，集合和成员为 null 时抛出 `NullPointerException`，
+异步操作、语音插件不接受名称，或第三方事件阻止创建/加入时抛出 `IllegalStateException`。语音插件可能处理名称中的空白和特殊字符。
+
+加入会让玩家离开旧语音群组，移除新群组时不会恢复旧群组。非持久组最后一人离开后自动删除。
+`removeGroup(UUID)` 只操作本工具创建的群组，让当前成员（包括后来手动加入者）退出，再删除群组；
+成功或该组已经自动消失时返回 true，不可用、非本工具群组或删除失败时返回 false。
+MGC 停用时会尝试清理所有本工具创建的群组。子插件仍应在自己的游戏结束、取消、异常中止和停用时清理，
+尤其是 `persistent` 群组。若第三方插件在加入过程中抛出异常，工具会尝试删除半创建群组后重新抛出异常，
+已离开的旧群组不会恢复。
+
+手动验证（需兼容 Paper 服务器及已配置的 Simple Voice Chat）：
+
+1. 不安装 voicechat 启动 MGC，确认正常启用，创建返回 empty。
+2. 安装 voicechat，等待语音服务器就绪，用两个已连接语音的玩家创建默认组，确认进入同一组；
+   加入离线、未连接语音或重复玩家，确认跳过和去重；没有有效玩家时确认不创建群组。
+3. 验证密码、隐藏、空组保留以及三种语音模式；同名连续创建应返回不同 UUID。
+4. 游戏结束时移除群组，确认成员退出、群组消失；非持久组已自动删除时清理仍应成功。
+5. 重复退出、取消、异常中止及服务器停用，确认持久空组被清理，其他插件创建的群组不受影响。
