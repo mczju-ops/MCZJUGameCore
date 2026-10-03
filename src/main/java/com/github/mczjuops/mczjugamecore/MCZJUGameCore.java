@@ -26,6 +26,7 @@ import com.github.mczjuops.mczjugamecore.profile.ProfileCapture;
 import com.github.mczjuops.mczjugamecore.profile.ProfileStorageManager;
 import com.github.mczjuops.mczjugamecore.score.leaderboard.LeaderboardManager;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+import com.github.mczjuops.mczjugamecore.utils.VoiceGroupUtil;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -65,6 +66,7 @@ public final class MCZJUGameCore extends JavaPlugin {
 
         saveDefaultConfig();
         INSTANCE = this;
+        VoiceGroupUtil.initialize(this);
         gameManager = new DefaultGameManager();
         partyManager = new PartyManager();
         playerManager = new DefaultPlayerManager();
@@ -108,6 +110,7 @@ public final class MCZJUGameCore extends JavaPlugin {
                         .formatted(game.getId(), e));
             }
         }
+        VoiceGroupUtil.shutdown();
         gameRoomManager.saveAllGameRoomDirectly();  // 保存所有游戏房间
         playerDataManager.saveAllPlayerData();
         profileManager.shutdown(); // 保存所有玩家的 profile 数据

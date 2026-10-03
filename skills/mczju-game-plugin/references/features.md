@@ -8,6 +8,7 @@
 - Leaderboards
 - Items
 - Parties and utilities
+- Optional voice-chat groups
 
 ## PlayerExt and managers
 
@@ -77,3 +78,27 @@ Useful helpers include:
 - `DialogBuilder` for Paper dialogs; verify against the target Paper version.
 
 Inspect utility Javadocs/source before using overloads, because these APIs are more likely to change than the architectural contracts.
+
+## Optional voice-chat groups
+
+MGC soft-depends on Simple Voice Chat (`voicechat`). Use `utils.VoiceGroupUtil` without importing voice-chat API types. All group mutations must run on the server thread:
+
+```java
+var groupId = VoiceGroupUtil.createGroup("example:red", playerExtList);
+var customGroupId = VoiceGroupUtil.createGroup("example:blue", playerExtList,
+        VoiceGroupUtil.Options.defaults()
+                .withPassword("team-password")
+                .withHidden(true)
+                .withPersistent(true)
+                .withType(VoiceGroupUtil.GroupType.ISOLATED));
+groupId.ifPresent(VoiceGroupUtil::removeGroup);
+customGroupId.ifPresent(VoiceGroupUtil::removeGroup);
+```
+
+`playerExtList` is a `Collection<PlayerExt>` (usually `List<PlayerExt>`); there is no dedicated PlayerExtList class. Creation returns `Optional<UUID>`, empty when the integration is unavailable/not ready or no online voice-connected players can join. Offline/unconnected players are skipped, duplicate UUIDs join once, and late connections are not automatically added. Defaults are no password, visible, non-persistent, NORMAL; each invocation creates a fresh UUID even with the same name. Joining replaces the player's old group; cleanup does not restore it. NORMAL hears nearby non-group players, OPEN also lets nearby players hear the group, ISOLATED hears only group members.
+
+`Options` is immutable; use its returned `withPassword`, `withHidden`, `withPersistent`, and `withType` values. Persistent means keeping an empty group, not saving across restarts. Hidden only hides the client list; passwords restrict manual joining, not utility-assigned membership. Blank names throw IllegalArgumentException, null arguments/members throw NullPointerException, off-thread calls, names rejected by voicechat, or creation/join cancellation by another plugin throw IllegalStateException; failed creation attempts cleanup before rethrowing.
+
+Store returned UUIDs and call `removeGroup` on end, cancellation, abort, and child-plugin disable; clear stored IDs afterward. Removal only touches utility-created groups and disconnects their current members, including manual late joiners. It returns true on deletion or prior automatic disappearance, false when unavailable, unowned, or deletion fails. Non-persistent groups disappear when empty; MGC shutdown attempts cleanup of all remaining utility-created groups. Verify absence of voicechat, unavailable connections, group modes/options, replacement of old memberships, and cleanup on a real Paper server. The voicechat API dependency is optional/provided and must not be shaded into MGC or child plugins.
+
+`/party voice` (also `/p voice`, existing `mgc.party` permission) lets any party member move the current leader and members into one new default voice group. Use `Party.getAllPlayer()` because `getMembers()` excludes the leader. The command reports unavailable voice service, no connected players, and creation failures, and broadcasts success to the party. Names use `Party-` plus the leader's Minecraft name. Each invocation creates a new group; offline/unconnected members are skipped. This is a snapshot action: new members/connections need another invocation; leaving/disbanding the party does not automatically leave voice chat. Verify leader/member invocation, help, aliases, console/non-party rejection, and voice-service/connection failures on Paper.
