@@ -389,7 +389,7 @@ private void onGameEnd() {
 玩家之间可以互相组队，并由队长带领所有人加入某个游戏。队伍支持队内发送信息。
 
 任意队员可执行 `/party voice`（也支持 `/p voice`），将当前队伍的队长与成员加入同一个
-Simple Voice Chat 群组，沿用 `mgc.party` 权限。命令使用 `VoiceGroupUtil` 默认配置，
+Simple Voice Chat 群组，沿用 `mgc.party` 权限。命令使用 `VoiceGroupUtil` 默认的开放（`OPEN`）配置，
 名称为 `Party-` 加队长玩家名（可能被语音插件截短）。每次执行都会创建新组并切换当前可用成员。
 离线或未连接语音的成员会跳过，语音插件不可用、没有有效玩家或创建失败时会提示执行者。
 新入队或刚连接语音的成员需再次执行命令；这是执行时的成员快照，离队或解散不会自动退出语音群组，
@@ -535,7 +535,7 @@ var groupId = VoiceGroupUtil.createGroup("红队", playerExtList,
 groupId.ifPresent(VoiceGroupUtil::removeGroup);
 ```
 
-默认配置：无密码、客户端列表可见、非持久、`NORMAL` 模式，随机生成 UUID。
+默认配置：无密码、客户端列表可见、非持久、`OPEN` 模式，随机生成 UUID。
 每次调用都会创建新群组，同名群组不会复用。自定义配置为不可变对象，`with...` 返回新配置。
 各模式与 [官方群组 API](https://voicechat.modrepo.de/de/maxhenkel/voicechat/api/Group.Type.html) 一致：
 
