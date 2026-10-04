@@ -22,7 +22,7 @@ public final class VoiceGroupUtil {
     }
 
     /**
-     * 使用无密码、可见、非持久的 NORMAL 群组配置，将有语音连接的玩家移入新群组。
+     * 使用无密码、可见、非持久的 OPEN 群组配置，将有语音连接的玩家移入新群组。
      * @param groupName 群组名称，特殊字符和空白可能被语音插件处理
      * @param players 玩家集合，可以直接传入 List&lt;PlayerExt&gt;，重复玩家仅加入一次
      * @return 新群组 UUID；语音不可用或没有可加入的玩家时返回 empty
@@ -111,9 +111,9 @@ public final class VoiceGroupUtil {
             Objects.requireNonNull(type, "type");
         }
 
-        /** @return 无密码、非持久、可见的 NORMAL 配置 */
+        /** @return 无密码、非持久、可见的 OPEN 配置 */
         public static Options defaults() {
-            return new Options(null, false, false, GroupType.NORMAL);
+            return new Options(null, false, false, GroupType.OPEN);
         }
 
         /** @return 使用指定密码的新配置，null 表示无密码 */
