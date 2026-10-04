@@ -20,18 +20,36 @@ import org.jetbrains.annotations.Range;
 
 import java.util.*;
 
+/** 游戏入口箱子菜单；多个类别时首页展示类别，类别页展示该类别中的游戏。 */
 public class MainMenu extends Menu {
 
     private final AbstractGameManager gameManager;
+    private final String categoryId;
 
     // 用于决定小游戏的布局
     private static final int COLUMNS = 9;
     private static final int CENTER_COLUMN = 4;
     private static final int[] CONTENT_ROWS = {1, 2, 3};
 
+    /** @param player 打开主菜单的玩家 */
     public MainMenu(Player player) {
-        super(player);
+        this(player, null);
+    }
+
+    /**
+     * 打开指定类别的游戏列表；没有类别或只有一个类别时仍展示全部游戏。
+     * @param player 打开菜单的玩家
+     * @param categoryId 类别 ID；null 表示主菜单
+     */
+    public MainMenu(Player player, String categoryId) {
+        super(player, new Object[0], categoryTitle(categoryId));
         this.gameManager = MCZJUGameCore.getGameManager();
+        this.categoryId = categoryId;
+    }
+
+    private static String categoryTitle(String categoryId) {
+        var category = categoryId == null ? null : MCZJUGameCore.getConfigManager().getGameCategories().get(categoryId);
+        return category == null ? "小游戏世界" : category.name();
     }
 
     @Override
@@ -61,8 +79,36 @@ public class MainMenu extends Menu {
                         .build()
         );
 
+        var config = MCZJUGameCore.getConfigManager();
+        var categories = config.getGameCategories();
+        boolean showCategories = categories.size() > 1 && (categoryId == null || !categories.containsKey(categoryId));
+        if (showCategories) {
+            for (var entry : arrange(categories.keySet()).entrySet()) {
+                String id = entry.getValue();
+                var category = categories.get(id);
+                setSlot(entry.getKey(), ItemBuilder.of(Material.CHEST).itemModel(category.icon())
+                        .customName(category.name()).lore(category.lore()).build(),
+                        (p, event) -> new MainMenu(p.player(), id).open());
+            }
+        } else {
+            setupGames(categories.size() > 1 ? categoryId : null);
+        }
+        if (categories.size() > 1 && !showCategories) {
+            setSlot(inventory.getSize() - 5, ItemBuilder.of(Material.ARROW)
+                    .customName("<yellow>返回游戏类别").build(),
+                    (p, event) -> new MainMenu(p.player()).open());
+        }
+
+        setupUtilities();
+    }
+
+    private void setupGames(String selectedCategory) {
         var gameMetas = gameManager.getGameMetas();
-        Map<Integer, String> arrangedIds = arrange(gameMetas.keySet());
+        var config = MCZJUGameCore.getConfigManager();
+        List<String> gameIds = gameMetas.keySet().stream()
+                .filter(id -> selectedCategory == null || selectedCategory.equals(config.getGameCategory(id)))
+                .toList();
+        Map<Integer, String> arrangedIds = arrange(gameIds);
 
         for (var entry : arrangedIds.entrySet()) {
             String gameId = arrangedIds.get(entry.getKey());
@@ -116,6 +162,9 @@ public class MainMenu extends Menu {
             );
         }
 
+    }
+
+    private void setupUtilities() {
         boolean inGame = player.isInGame();
         // 传送到大厅出生点
         setSlot(

@@ -115,7 +115,7 @@ public final class MCZJUGameCore extends JavaPlugin {
         playerDataManager.saveAllPlayerData();
         profileManager.shutdown(); // 保存所有玩家的 profile 数据
         leaderboardManager.shutdown();
-        lobbyManager.save();
+        // 大厅设置和移除已即时保存，停服时不再用内存快照覆盖磁盘配置。
     }
 
     public static @NotNull MCZJUGameCore getInstance(){
