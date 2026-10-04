@@ -533,7 +533,7 @@ public void onPlayerPunch(EntityDamageByEntityEvent event) {
 
 将你的插件和 `MCZJUGameCore`（注意版本）一起装到测试服。
 
-通过 `/mgc` 命令打开主菜单，如果你能看到你的小游戏的图标，就说明正确注册了。
+通过 `/mgc` 命令打开主菜单；配置了多个游戏类别时，先打开对应类别，再查看小游戏图标。未分类游戏会暂归第一个类别。看到图标即说明正确注册。
 
 先通过 `/mgcop room` 命令来创建房间，并设置房间参数。然后加入游戏，测试你写的功能。
 
@@ -542,3 +542,43 @@ public void onPlayerPunch(EntityDamageByEntityEvent event) {
 ## 五、进阶文档
 
 `MCZJUGameCore` 还为你提供了许多便捷功能，详见[进阶文档](dev-advanced.md)。
+
+## 六、配置游戏类别
+
+在 MCZJUGameCore 的 `config.yml` 中配置类别，键名是稳定的类别 ID，`name` 和逐行 `lore` 支持 MiniMessage。`icon` 使用 Bukkit Material 名称，主菜单、分类管理和类别大厅设置菜单均使用该图标；未配置时默认 `CHEST`，无效、空气或非物品材质会记录警告并回退为 `CHEST`：
+
+```yaml
+game-categories:
+  casual:
+    name: "<green>休闲游戏"
+    icon: GRASS_BLOCK
+    lore:
+      - "<gray>轻松游玩，随时加入"
+  competitive:
+    name: "<gold>竞技游戏"
+    icon: DIAMOND_SWORD
+    lore:
+      - "<gray>与其他玩家一较高下"
+```
+
+没有类别或只有一个类别时，主菜单保持原有行为，直接显示全部游戏。有多个类别时，主菜单只展示类别，点击后打开该类别的游戏箱子菜单，底部可返回类别列表。原有加入游戏、选择房间、进入大厅的点击行为保留。类别和每个类别内的游戏均最多 27 个且不分页；没有启用分类时全部游戏也最多 27 个。
+
+管理员（`mgc.dev` 权限，默认 OP）执行 `/mgcop category`，在箱子菜单中选择游戏，再点击已有类别。所有游戏列表每页 45 个，底部箭头翻页；类别选择不分页。保存成功后显示提示并返回原游戏列表页，保存失败时显示错误且保留原分类。控制台无法打开此菜单；没有配置类别时会提示先配置。
+
+类别分配按游戏 ID 存储在插件数据目录的 `game-categories.yml`，重启后保留。修改配置后执行 `/mgcop reload`，重新打开菜单即可看到新类别。未分配类别、新注册游戏以及原类别已删除的游戏均暂归配置中的第一个类别，因此配置顺序决定默认归属；启用分类前应先分配游戏，保证各类别不超过 27 个。子插件无需修改 `GameMeta` 或注册代码。
+
+可通过 `MCZJUGameCore.getConfigManager()` 使用以下 API：
+
+- `getGameCategories()`：按配置顺序返回只读类别表，值为 `GameCategory(name, lore, icon)`（`icon()` 返回 `Material`；两参数构造仍使用默认箱子图标）。
+- `getGameCategory(gameId)`：返回有效类别 ID，无类别时返回 `null`。
+- `setGameCategory(gameId, categoryId)`：在服务器线程设置并保存，返回是否成功；游戏必须已注册，类别必须存在。
+
+手动验收（需要兼容的 Paper 服务器）：
+
+1. 分别配置 0、1、多个类别，确认 `/mgc` 的全部游戏或类别首页行为及 MiniMessage 名称、描述；检查三个菜单的类别图标，并验证缺省和无效 `icon` 回退为箱子。
+2. 注册超过 45 个游戏，用 `/mgcop category` 翻页并为游戏设置类别，确认成功提示、原页返回以及类别内图标归属。
+3. 在类别页检查加入游戏、右键选房、进入大厅和返回类别按钮。
+4. 重启服务器确认分类保留；删除类别并 reload，确认原游戏归入首类别。
+5. 用无权限玩家和控制台执行命令；打开类别选择后撤销权限或删除类别，确认不能保存且有错误提示。
+
+当前代码构建之外的服务器行为需按以上步骤实测，未启动服务器时不视为已完成手动验收。

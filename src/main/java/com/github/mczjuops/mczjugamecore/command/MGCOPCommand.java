@@ -3,6 +3,7 @@ package com.github.mczjuops.mczjugamecore.command;
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.room.menu.GameRoomSettingMenu;
 import com.github.mczjuops.mczjugamecore.menu.AlertMenu;
+import com.github.mczjuops.mczjugamecore.menu.GameCategorySettingMenu;
 import com.github.mczjuops.mczjugamecore.lobby.LobbySettingMenu;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.score.leaderboard.textdisplay.JsonTextDisplayRecord;
@@ -49,7 +50,7 @@ public class MGCOPCommand implements BrigadierCommand {
         return Commands.literal(getName())
                 .requires(src -> src.getSender().hasPermission("mgc.dev"))
                 .executes(ctx -> {
-                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop reload|lobby|room"));
+                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop reload|lobby|category|room"));
                     return 0;
                 })
                 .then(Commands.literal("reload")
@@ -57,6 +58,9 @@ public class MGCOPCommand implements BrigadierCommand {
                 )
                 .then(Commands.literal("lobby")
                         .executes(this::executeLobbyMenu)
+                )
+                .then(Commands.literal("category")
+                        .executes(this::executeCategoryMenu)
                 )
                 .then(Commands.literal("room")
                         .executes(ctx -> {
@@ -288,6 +292,20 @@ public class MGCOPCommand implements BrigadierCommand {
     private int executeReload(CommandContext<CommandSourceStack> ctx) {
         ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>正在重新加载插件配置"));
         MCZJUGameCore.getConfigManager().reload();
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeCategoryMenu(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(TextParser.parse("<yellow>该命令只能由玩家执行"));
+            return 0;
+        }
+        if (MCZJUGameCore.getConfigManager().getGameCategories().isEmpty()) {
+            sender.sendMessage(TextParser.parse("<yellow>请先在 config.yml 中配置 game-categories"));
+            return 0;
+        }
+        new GameCategorySettingMenu(player).open();
         return Command.SINGLE_SUCCESS;
     }
 

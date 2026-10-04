@@ -9,3 +9,22 @@ enable-lobby-profile-features: true
 #  z: 0.5
 #  yaw: 0
 #  pitch: 0
+
+# 游戏类别：0 或 1 个类别时主菜单直接显示所有游戏；多个类别时先显示类别。
+# 类别和每个类别中的游戏最多 27 个；name 和 lore 均支持 MiniMessage。
+# icon 使用 Bukkit Material 名称（如 GRASS_BLOCK、DIAMOND_SWORD）；未配置或无效时使用 CHEST。
+# 类别 ID 应保持稳定；未分类或类别被删除的游戏暂归第一个类别。
+# 管理员使用 /mgcop category 分配类别，结果自动保存到 game-categories.yml。
+game-categories: {}
+# 示例：去掉以下注释并替换上面的空配置即可启用分类。
+#game-categories:
+#  casual:
+#    name: "<green>休闲游戏"
+#    icon: GRASS_BLOCK
+#    lore:
+#      - "<gray>轻松游玩，随时加入"
+#  competitive:
+#    name: "<gold>竞技游戏"
+#    icon: DIAMOND_SWORD
+#    lore:
+#      - "<gray>与其他玩家一较高下"

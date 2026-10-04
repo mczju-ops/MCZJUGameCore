@@ -19,7 +19,7 @@ commands:
     description: "MCZJUGameCore管理员命令"
     permission: mgc.dev
   lobby:
-    description: "传送到主大厅或小游戏等待大厅"
+    description: "传送到主大厅、小游戏大厅或游戏类别大厅"
     aliases: [l]
     permission: mgc.lobby
 
