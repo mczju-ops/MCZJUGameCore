@@ -60,6 +60,18 @@ Current general hooks and contracts:
 
 Make cleanup shared and idempotent when end and abort remove the same tasks/entities. Do not assume hook/manager cleanup ordering without checking the resolved implementation; for example, a manager may remove players before or after a hook depending on transition type.
 
+## Automatic reconnect after disconnect
+
+Implement `com.github.mczjuops.mczjugamecore.game.AutoReconnect`, which extends `MidGameJoinable`, and implement `onPlayerMidJoin(PlayerExt)` to restore the player's round state. No reconnect-specific quit strategy, reconnect command, or game-manager change is needed. The game retains its existing quit strategy.
+
+The interface does not change quit behavior. Warn child-plugin developers that their quit strategy should not end the round merely because one player leaves; ending when all players have left or another termination condition is met is allowed. `AbstractGame`'s default quit strategy aborts on any leave, so choose or implement an appropriate existing quit strategy for the game rules.
+
+`PlayerReconnectListener` records `PlayerQuitEvent` at LOWEST before normal quit processing. For a running AutoReconnect game, it records only the player's UUID and a weak reference to the original game. Normal membership removal, profile restoration, and the game's quit strategy remain in effect. Command leave and waiting disconnect do not record reconnects. Whether the original round survives is determined by the game's quit strategy.
+
+After successful async profile loading and restoration, `ProfileManager` emits `PlayerProfileLoadedEvent` on the server thread. The reconnect listener consumes the pending record, verifies the exact original instance is still registered and RUNNING, and uses the existing room-specific `joinGame` API. This works without `@PlayerSelectable` and never creates a replacement round. Ended/removed rounds or rejected admission restore the lobby profile and teleport to the main lobby, with feedback if the lobby is unavailable. Failed profile loading preserves the record for a later login. No-record logins are unaffected; records do not survive plugin/server restarts. Restore team, position, and scoring data in the mid-join hook.
+
+Verify interface opt-in with a quit strategy that lets remaining players continue, normal quit-strategy invocation, termination when all players leave or other end conditions are met, repeated reconnects, end while offline, a new round in the same room, multiple rooms, command leave, waiting disconnect, rejected mid-join, unavailable lobby, profile-load failure, and inventory restoration on Paper. Do not report these as server-tested without actually running a server.
+
 ## Rooms
 
 Define one room class for the game type. Each room instance holds map-specific settings; multiple instances allow concurrent rounds.

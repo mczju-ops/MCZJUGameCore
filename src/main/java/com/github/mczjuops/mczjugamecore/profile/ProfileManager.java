@@ -1,6 +1,7 @@
 package com.github.mczjuops.mczjugamecore.profile;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.event.PlayerProfileLoadedEvent;
 import com.github.mczjuops.mczjugamecore.item.LobbyMenuClock;
 import com.github.mczjuops.mczjugamecore.item.MGCMaterial;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
@@ -83,6 +84,10 @@ public class ProfileManager implements Listener {
         logger.info("将玩家 %s 的 profile 切换为 %s".formatted(playerName, currentId));
     }
 
+    /**
+     * 异步读取档案，在服务器线程恢复完成后触发 PlayerProfileLoadedEvent。
+     * @param event 玩家登录事件；加载失败或玩家已离线时不触发档案加载完成事件
+     */
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
@@ -108,6 +113,7 @@ public class ProfileManager implements Listener {
                                 data.getProfile(data.currentProfileId())
                         );
                         applyConfiguredProfileState(player, data.currentProfileId());
+                        Bukkit.getPluginManager().callEvent(new PlayerProfileLoadedEvent(player));
                         return;
                     }
 
@@ -150,6 +156,7 @@ public class ProfileManager implements Listener {
                             );
                         }
                     });
+                    Bukkit.getPluginManager().callEvent(new PlayerProfileLoadedEvent(player));
                 });
 
             } catch (IOException e) {

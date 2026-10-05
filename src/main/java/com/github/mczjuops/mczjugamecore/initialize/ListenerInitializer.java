@@ -3,6 +3,7 @@ package com.github.mczjuops.mczjugamecore.initialize;
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerDeathListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerQuitListener;
+import com.github.mczjuops.mczjugamecore.player.listener.PlayerReconnectListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerSpectatorTeleportListener;
 import com.github.mczjuops.mczjugamecore.player.listener.SpectatorTeleportRestrictionListener;
 import com.github.mczjuops.mczjugamecore.utils.LocationSelector;
@@ -14,6 +15,7 @@ public class ListenerInitializer {
         register(MCZJUGameCore.getMenuFacade());
         register(LocationSelector.getInstance());
         register(new PlayerDeathListener());
+        register(new PlayerReconnectListener());
         register(new PlayerQuitListener());
         register(new PlayerSpectatorTeleportListener());
         register(new SpectatorTeleportRestrictionListener());

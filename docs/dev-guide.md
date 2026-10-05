@@ -39,6 +39,8 @@
 - 准备测试环境：在本地开一个 Paper 测试服，用于测试插件。（记得加 `MGC` 插件）
 - 了解重要参考资料：以 [Paper 文档](https://jd.papermc.io/paper/1.21.7/)为主。
 
+使用项目提供的 Codex skill 时，参见 [skill 的版本检查与更新说明](../skills/mczju-game-plugin/SKILL.md#check-versions-and-update-the-skill)。在 [GitHub Releases](https://github.com/mczju-ops/MCZJUGameCore/releases) 检查是否有版本号更高的正式发布，并分别核对项目实际解析的 MGC 依赖版本、服务器安装版本和 skill 的来源 Release。skill 没有独立版本号；需比较对应 Release 中的完整 `skills/mczju-game-plugin/` 目录，不能仅凭 MGC 版本判断 skill 是否最新。更新 skill 时，从选定 Release 的源码压缩包或 tag 中取得完整目录，备份本地修改后替换实际安装的副本，记录来源 tag/commit，再重新加载 skill 或开启新会话。更新 skill 不会自动更新项目依赖或服务器插件。
+
 ---
 
 ## 二、搭建插件框架
@@ -266,6 +268,30 @@ public class ExampleGame extends AbstractGame implements MidGameJoinable {
     }
 }
 ```
+
+##### e. 掉线后自动重连
+
+让游戏实现 `com.github.mczjuops.mczjugamecore.game.AutoReconnect`（继承 `MidGameJoinable`）即可自动生效，无需新增自动重连专用的退出策略或重连命令。仍需实现 `onPlayerMidJoin(PlayerExt)`，恢复玩家的位置、队伍、计分等状态，并返回是否接受加入。
+
+```java
+public class ReconnectGame extends AbstractGame implements AutoReconnect {
+    // 其他 AbstractGame 方法略
+
+    @Override
+    public boolean onPlayerMidJoin(PlayerExt player) {
+        // 恢复玩家在本局中的状态；档案和成员关系已由框架切换。
+        return true;
+    }
+}
+```
+
+- 使用此接口时需要注意退出策略：不要因单个玩家退出就结束游戏；所有玩家退出或达到其他终止条件时可以结束。`AbstractGame` 默认策略会在任意玩家退出时终止游戏，因此需要按游戏规则选择或实现合适的退出策略。监听器不会覆盖或绕过游戏的退出策略。
+- `PlayerReconnectListener` 在普通退出监听器前记录 `RUNNING` 阶段的掉线，只保存玩家 UUID 和原游戏的弱引用。主动 `/mgc leave` 和等待阶段退出不记录重连，成员关系和档案仍由原退出流程处理。
+- 登录档案成功恢复后，`ProfileManager` 在服务器线程触发 `PlayerProfileLoadedEvent`。监听器消费一次性的重连记录，检查原游戏仍为 `RUNNING` 且管理器中是同一实例，再通过现有 `joinGame(player, gameId, roomName)` API 中途加入。无需修改 GameManager 或配置 `@PlayerSelectable`，不创建新局，也不会误加入同类其他房间。
+- 原局已结束、被移除或拒绝加入时，恢复大厅档案并传送到主大厅；大厅未配置、世界未加载或传送失败时提示玩家。档案加载失败时不触发事件，记录保留供后续成功登录使用；无记录的登录不处理。
+- 原局是否继续运行由游戏退出策略决定。记录不跨服务器或插件重启；框架不会自动恢复业务状态或队伍。
+
+手动验证（兼容的 Paper 服务器）：配置主大厅，让游戏实现 `AutoReconnect` 并使用不会因单个玩家退出而结束原局的退出策略。验证运行中掉线后重进返回原局、离线期间结束原局后返回大厅、同房间新局不误加入、多房间定位、主动退出和等待阶段掉线不重连、拒绝中途加入后回大厅、档案加载失败后重试，以及重复掉线后的重连和背包恢复。确认掉线和主动退出仍调用原退出策略，所有玩家退出或其他终止条件满足时可正常结束原局。
 
 ---
 
