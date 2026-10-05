@@ -39,8 +39,6 @@
 - 准备测试环境：在本地开一个 Paper 测试服，用于测试插件。（记得加 `MGC` 插件）
 - 了解重要参考资料：以 [Paper 文档](https://jd.papermc.io/paper/1.21.7/)为主。
 
-使用项目提供的 Codex skill 时，参见 [skill 的版本检查与更新说明](../skills/mczju-game-plugin/SKILL.md#check-versions-and-update-the-skill)。仅在用户要求更新 MGC 或 skill、检查更新或询问是否最新时，才在 [GitHub Releases](https://github.com/mczju-ops/MCZJUGameCore/releases) 检查是否有版本号更高的正式发布，并分别核对项目实际解析的 MGC 依赖版本、服务器安装版本和 skill 的来源 Release；执行更新前先完成此检查。日常开发和使用 API 示例时，只核对项目实际依赖及源码中的 API，不自动检查发布更新。skill 没有独立版本号；需比较对应 Release 中的完整 `skills/mczju-game-plugin/` 目录，不能仅凭 MGC 版本判断 skill 是否最新。更新 skill 时，从选定 Release 的源码压缩包或 tag 中取得完整目录，备份本地修改后替换实际安装的副本，记录来源 tag/commit，再重新加载 skill 或开启新会话。更新 skill 不会自动更新项目依赖或服务器插件。
-
 ---
 
 ## 二、搭建插件框架
