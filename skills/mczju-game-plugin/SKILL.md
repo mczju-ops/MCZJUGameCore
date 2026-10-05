@@ -9,7 +9,9 @@ Treat the target project's resolved MGC dependency and source as authoritative. 
 
 ## Check versions and update the skill
 
-Use the official [GitHub Releases](https://github.com/mczju-ops/MCZJUGameCore/releases) to check whether a release with a newer version number exists. Check before relying on bundled API examples, and whenever asked whether MGC or this skill is up to date. Report the local version, the compared release tag, and whether an update is available. If GitHub cannot be reached or the local version cannot be identified, report that the check is inconclusive.
+Check for updates only when the user asks to update MGC or this skill, check for updates, or determine whether either is up to date. Ordinary development and use of bundled API examples do not trigger a release check; verify API compatibility against the target project's resolved dependency and source instead.
+
+When requested, use the official [GitHub Releases](https://github.com/mczju-ops/MCZJUGameCore/releases) to check whether a release with a newer version number exists before performing the update. Report the local version, the compared release tag, and whether an update is available. If GitHub cannot be reached or the local version cannot be identified, report that the check is inconclusive.
 
 ### Check whether MGC is current
 
@@ -34,7 +36,7 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
 
 ## Workflow
 
-1. Inspect the target project before editing: read `pom.xml` or other build files, `plugin.yml`, the plugin main class, existing game/room/data classes, and tests. Search for `MCZJUGameCore`, `AbstractGame`, and manager registrations. Follow the version checks above before relying on bundled API examples.
+1. Inspect the target project before editing: read `pom.xml` or other build files, `plugin.yml`, the plugin main class, existing game/room/data classes, and tests. Search for `MCZJUGameCore`, `AbstractGame`, and manager registrations. Verify bundled API examples against the target project's resolved dependency and source; follow the release checks above only when the user requests an update or version check.
 2. Clarify the game model from the request and existing code:
    - Use `SinglePlayerGame` for one-player rounds.
    - Use `OpenSessionGame` for a persistent shared session without round-level ending.
