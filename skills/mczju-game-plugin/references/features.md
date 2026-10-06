@@ -88,6 +88,8 @@ MGC identifies items through persistent data. In interaction listeners, ask `Ite
 
 ## Parties and utilities
 
+`/party warp` (also `/p warp`, existing `mgc.party` permission) is leader-only. Before teleporting anyone, it checks every party player, including the leader: each must have no game or be in `GameState.WAITING`. Any `STATING`, `RUNNING`, or `END` game rejects the whole operation. Members teleport to the leader's captured location; the leader stays in place. This changes position only, preserving game membership and profiles. Offline members or cancelled teleports report failure to the leader, while other members are still attempted; partial failure does not report whole-party success. Verify help/aliases, console/non-party/non-leader rejection, outside/waiting/mixed membership, cross-world teleport, blocked states for both leader and members, and cancelled teleports on Paper.
+
 The default game manager lets a party leader bring the party into a game and attempts rollback if the wait strategy rejects it. Design capacity and team allocation around whole parties. Non-leaders should not initiate a party join.
 
 Useful helpers include:
