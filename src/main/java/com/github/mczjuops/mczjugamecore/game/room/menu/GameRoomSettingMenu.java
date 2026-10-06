@@ -3,294 +3,112 @@ package com.github.mczjuops.mczjugamecore.game.room.menu;
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.menu.Menu;
-import com.github.mczjuops.mczjugamecore.player.PlayerExt;
-import com.github.mczjuops.mczjugamecore.utils.DialogBuilder;
 import com.github.mczjuops.mczjugamecore.utils.ItemBuilder;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.NotNull;
 
-import java.text.DecimalFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
+/** 房间参数编辑菜单，每页展示 36 个参数；支持标量及单层 List 编辑。 */
 public class GameRoomSettingMenu extends Menu {
-
+    private static final int PAGE_SIZE = 36;
     private final AbstractGameRoom gameRoom;
+    private int page;
 
-    private interface FieldHandler {
-        Material getMaterial(); // 在编辑菜单中，用什么图标
-        void handle(PlayerExt player, AbstractGameRoom room, String fieldName);
-    }
-
-    private static final Map<Class<?>, FieldHandler> HANDLERS = new LinkedHashMap<>();
-
-    static {
-        // Boolean
-        HANDLERS.put(Boolean.class, new FieldHandler() {
-            @Override public Material getMaterial() { return Material.LEVER; }
-            @Override public void handle(PlayerExt player, AbstractGameRoom room, String fieldName) {
-                Boolean current = room.getField(fieldName, Boolean.class);
-                boolean currentValue = current != null && current;
-                DialogBuilder.of("<yellow>设置布尔值：%s".formatted(fieldName))
-                        .emptyLine()
-                        .emptyLine()
-                        .toggle("value", "<yellow>启用", currentValue)
-                        .showConfirm(
-                                player.player(), 150,
-                                "确认", (p, r) -> {
-                                    boolean newValue = r.bool("value");
-                                    room.setField(fieldName, newValue);
-                                    room.setModified(true);
-                                    player.sender().success("<green>设置成功：<dark_aqua>%s</dark_aqua> -> <dark_green>%s".formatted(fieldName, newValue));
-                                    reopenLater(player, room.getGameId(), room.getRoomName());
-                                },
-                                "取消", (p, r) -> reopenLater(player, room.getGameId(), room.getRoomName())
-                        );
-            }
-        });
-
-        // Integer
-        HANDLERS.put(Integer.class, new FieldHandler() {
-            @Override public Material getMaterial() { return Material.PAPER; }
-            @Override public void handle(PlayerExt player, AbstractGameRoom room, String fieldName) {
-                openNumberInput(player, room, fieldName, Integer.class, Integer::valueOf);
-            }
-        });
-
-        // Long
-        HANDLERS.put(Long.class, new FieldHandler() {
-            @Override public Material getMaterial() { return Material.MAP; }
-            @Override public void handle(PlayerExt player, AbstractGameRoom room, String fieldName) {
-                openNumberInput(player, room, fieldName, Long.class, Long::valueOf);
-            }
-        });
-
-        // Float
-        HANDLERS.put(Float.class, new FieldHandler() {
-            @Override public Material getMaterial() { return Material.PAINTING; }
-            @Override public void handle(PlayerExt player, AbstractGameRoom room, String fieldName) {
-                openNumberInput(player, room, fieldName, Float.class, Float::valueOf);
-            }
-        });
-
-        // Double
-        HANDLERS.put(Double.class, new FieldHandler() {
-            @Override public Material getMaterial() { return Material.PAINTING; }
-            @Override public void handle(PlayerExt player, AbstractGameRoom room, String fieldName) {
-                openNumberInput(player, room, fieldName, Double.class, Double::valueOf);
-            }
-        });
-
-        // String
-        HANDLERS.put(String.class, new FieldHandler() {
-            @Override public Material getMaterial() { return Material.NAME_TAG; }
-            @Override public void handle(PlayerExt player, AbstractGameRoom room, String fieldName) {
-                DialogBuilder.of("<yellow>设置字符串：%s".formatted(fieldName))
-                        .emptyLine()
-                        .emptyLine()
-                        .textInput("value", "<yellow>请输入字符串")
-                        .showConfirm(
-                                player.player(), 150,
-                                "确认", (p, r) -> {
-                                    String input = r.text("value");
-                                    room.setField(fieldName, input);
-                                    room.setModified(true);
-                                    player.sender().success("<green>设置成功：<dark_aqua>%s</dark_aqua> -> <dark_green>%s".formatted(fieldName, input));
-                                    reopenLater(player, room.getGameId(), room.getRoomName());
-                                },
-                                "取消", (p, r) -> reopenLater(player, room.getGameId(), room.getRoomName())
-                        );
-            }
-        });
-
-        // Location
-        HANDLERS.put(Location.class, new FieldHandler() {
-            @Override public Material getMaterial() { return Material.COMPASS; }
-            @Override public void handle(PlayerExt player, AbstractGameRoom room, String fieldName) {
-                player.player().closeInventory();
-                player.selectLocation(location -> {
-                    room.setField(fieldName, location);
-                    room.setModified(true);
-                    reopenLater(player, room.getGameId(), room.getRoomName());
-                });
-            }
-        });
-    }
-
-    private static <T> void openNumberInput(
-            PlayerExt player, AbstractGameRoom room, String fieldName,
-            Class<T> type, java.util.function.Function<String, T> parser
-    ) {
-        Object current = room.getField(fieldName, type);
-        String hint = current != null ? "<gray>当前值：<white>%s".formatted(current) : "<yellow>请输入数字";
-
-        DialogBuilder.of("<yellow>设置数值：%s".formatted(fieldName))
-                .emptyLine()
-                .emptyLine()
-                .textInput("value", hint)
-                .showConfirm(
-                        player.player(), 150,
-                        "确认", (p, r) -> {
-                            String input = r.text("value").trim();
-                            try {
-                                T parsed = parser.apply(input);
-                                room.setField(fieldName, parsed);
-                                room.setModified(true);
-                                player.sender().success("<green>设置成功：<dark_aqua>%s</dark_aqua> -> <dark_green>%s".formatted(fieldName, parsed));
-                                reopenLater(player, room.getGameId(), room.getRoomName());
-                            } catch (NumberFormatException e) {
-                                player.sender().error("<red>输入格式错误：\"%s\"不是合法的%s".formatted(input, type.getSimpleName()));
-                                // 重新打开让玩家重试
-                                reopenLater(player, room.getGameId(), room.getRoomName());
-                            }
-                        },
-                        "取消", (p, r) -> reopenLater(player, room.getGameId(), room.getRoomName())
-                );
-    }
-
-    private static final Map<Class<?>, Class<?>> PRIMITIVE_TO_BOXED = Map.of(
-            boolean.class, Boolean.class,
-            int.class,     Integer.class,
-            long.class,    Long.class,
-            float.class,   Float.class,
-            double.class,  Double.class
-    );
-
-    private static Class<?> box(Class<?> type) {
-        return PRIMITIVE_TO_BOXED.getOrDefault(type, type);
-    }
-
+    /**
+     * 打开房间参数首页。
+     * @param player 操作玩家，需要 mgc.dev 权限
+     * @param gameRoom 要编辑的房间
+     */
     public GameRoomSettingMenu(Player player, AbstractGameRoom gameRoom) {
+        this(player, gameRoom, 0);
+    }
+
+    /**
+     * 创建指定页的参数菜单。
+     * @param player 操作玩家，需要 mgc.dev 权限
+     * @param gameRoom 要编辑的房间
+     * @param page 从零开始的页码，越界时夹取到有效页
+     */
+    public GameRoomSettingMenu(Player player, AbstractGameRoom gameRoom, int page) {
         super(player);
         this.gameRoom = gameRoom;
+        this.page = Math.max(0, page);
     }
 
-    @Override
-    public String getTitle() {
-        return "编辑房间参数";
-    }
+    /** {@inheritDoc} */
+    @Override public String getTitle() { return "编辑房间参数"; }
+    /** {@inheritDoc} */
+    @Override public int getRows() { return 6; }
+    /** {@inheritDoc} */
+    @Override public String getPermission() { return "mgc.dev"; }
 
-    @Override
-    public int getRows() {
-        return 6;
-    }
-
-    @Override
-    public String getPermission() {
-        return "mgc.dev";
-    }
-
+    /** 填充当前页参数、翻页按钮和保存按钮。 */
     @Override
     public void setup() {
-
         ItemStack background = ItemStack.of(Material.BLACK_STAINED_GLASS_PANE);
-        background.editMeta(itemMeta -> itemMeta.setHideTooltip(true));
-
+        background.editMeta(meta -> meta.setHideTooltip(true));
         for (int i = 0; i < 9; i++) setSlot(i, background);
-        for (int i = inventory.getSize() - 1; i > inventory.getSize() - 10; i--) setSlot(i, background);
+        for (int i = 45; i < 54; i++) setSlot(i, background);
 
-        setSlot(
-                4,
-                ItemBuilder.of(Material.WRITABLE_BOOK)
-                        .customName("<green>编辑房间参数")
-                        .lore(List.of(
-                                "<gray>游戏名：<white>%s".formatted(gameRoom.getGameId()),
-                                "<gray>房间名：<white>%s".formatted(gameRoom.getRoomName())
-                        ))
-                        .glint(true)
-                        .build()
-        );
-
-        setSlot(
-                inventory.getSize() - 1,
-                ItemBuilder.of(Material.CHEST)
-                        .customName("<green>保存数据")
-                        .lore(List.of(
-                                "<yellow>点击将修改后的数据保存到文件",
-                                "",
-                                "<gray>说明：",
-                                "<gray>此操作的意义是将数据保存到文件（持久化数据）",
-                                "<gray>即使不保存到文件，修改结果也会直接生效",
-                                "<gray>服务器关闭时会自动保存，但崩溃等异常可能导致数据丢失"
-                        ))
-                        .build(),
-                (p, r) -> {
+        List<Map.Entry<String, Class<?>>> fields = new ArrayList<>(gameRoom.getAllFields().entrySet());
+        int maxPage = Math.max(0, (fields.size() - 1) / PAGE_SIZE);
+        page = Math.min(page, maxPage);
+        setSlot(4, ItemBuilder.of(Material.WRITABLE_BOOK).customName("<green>编辑房间参数")
+                .lore(List.of("<gray>游戏名：<white>" + gameRoom.getGameId(),
+                        "<gray>房间名：<white>" + gameRoom.getRoomName(),
+                        "<yellow>第 %d/%d 页，共 %d 个参数".formatted(page + 1, maxPage + 1, fields.size())))
+                .glint(true).build());
+        if (page > 0) setSlot(45, ItemBuilder.of(Material.ARROW).customName("<yellow>上一页").build(),
+                (p, event) -> { page--; refresh(); });
+        if (page < maxPage) setSlot(51, ItemBuilder.of(Material.ARROW).customName("<yellow>下一页").build(),
+                (p, event) -> { page++; refresh(); });
+        setSlot(53, ItemBuilder.of(Material.CHEST).customName("<green>保存数据")
+                .lore(List.of("<yellow>点击将修改后的数据保存到文件", "",
+                        "<gray>修改立即生效；保存将数据持久化到文件",
+                        "<gray>服务器关闭时会自动保存，但异常崩溃可能导致数据丢失")).build(),
+                (p, event) -> {
                     MCZJUGameCore.getGameRoomManager().saveGameRoom(gameRoom.getGameId(), gameRoom.getRoomName());
                     player.player().playSound(player.player().getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
                     player.sender().success("<green>成功保存该房间的数据");
-                }
-        );
+                });
 
-        Map<String, Class<?>> allFields = gameRoom.getAllFields();
-
-        int slot = 9; // 从第 10 格开始填充
-
-        for (Map.Entry<String, Class<?>> entry : allFields.entrySet()) {
-            String fieldName = entry.getKey();
-            Class<?> type = box(entry.getValue());
-            String[] description = gameRoom.getFieldDescription(fieldName);
-
-            Object value = gameRoom.getField(fieldName, type);
-            String valueStr = value != null ? format(value) : "<red>未设置</red>";
-
-            FieldHandler handler = HANDLERS.get(type);
+        int from = page * PAGE_SIZE;
+        int to = Math.min(from + PAGE_SIZE, fields.size());
+        for (int i = from; i < to; i++) {
+            var entry = fields.get(i);
+            String name = entry.getKey();
+            Class<?> type = RoomParameterEditor.box(entry.getValue());
+            Object value = gameRoom.getField(name, type);
+            boolean list = List.class.isAssignableFrom(type);
+            Class<?> elementType = list ? GameRoomListSettingMenu.elementType(gameRoom, name) : null;
+            boolean editable = list ? elementType != null : RoomParameterEditor.supports(type);
             List<String> lore = new ArrayList<>(List.of(
-                    "<yellow>类型：<dark_aqua>%s".formatted(type.getSimpleName()),
-                    "<green>值：<dark_green>%s".formatted(valueStr)
-            ));
-            lore.addAll(Arrays.asList(description));
+                    "<yellow>类型：<dark_aqua>" + type.getSimpleName(),
+                    "<green>值：<dark_green>" + (value instanceof List<?> values
+                            ? "共 %d 个元素，点击查看".formatted(values.size()) : RoomParameterEditor.format(value))));
+            lore.addAll(Arrays.asList(gameRoom.getFieldDescription(name)));
             lore.add("");
-            if (handler == null) {
-                lore.add("<red>此类型暂不支持编辑");
-                // 不支持的类型，显示但是说明不可编辑
-                setSlot(
-                        slot,
-                        ItemBuilder.of(Material.BARRIER)
-                                .customName("<yellow>参数名<white>%s".formatted(fieldName))
-                                .lore(lore)
-                                .build()
-                );
-            } else {
-                lore.add("<yellow>点击编辑");
-                setSlot(
-                        slot,
-                        ItemBuilder.of(handler.getMaterial())
-                                .customName("<yellow>参数名：<white>%s".formatted(fieldName))
-                                .lore(lore)
-                                .glint(value != null)
-                                .build(),
-                        (p, r) -> handler.handle(player, gameRoom, fieldName)
-                );
-            }
-
-            slot++;
-            if (slot > inventory.getSize() - 9) break; // 最多 36 个参数，更多的参数直接忽略。应该不至于这么多
+            lore.add(editable ? "<yellow>点击编辑" : list
+                    ? "<red>仅支持明确声明元素类型的单层 List（布尔、数字、字符串、坐标）"
+                    : "<red>此类型暂不支持编辑");
+            ItemStack item = ItemBuilder.of(!editable ? Material.BARRIER : list
+                            ? Material.BOOK : RoomParameterEditor.material(type))
+                    .customName("<yellow>参数名：<white>" + name).lore(lore).glint(value != null).build();
+            if (!editable) setSlot(9 + i - from, item);
+            else setSlot(9 + i - from, item, (p, event) -> {
+                if (list) new GameRoomListSettingMenu(p.player(), gameRoom, name, page).open();
+                else RoomParameterEditor.edit(player, name, type, gameRoom.getField(name, type), newValue -> {
+                    gameRoom.setField(name, newValue);
+                    gameRoom.setModified(true);
+                    player.sender().success("<green>设置成功：" + name);
+                }, () -> new GameRoomSettingMenu(player.player(), gameRoom, page).open());
+            });
         }
-    }
-
-    private String format(Object value) {
-        if (value instanceof Location location) {
-            DecimalFormat df = new DecimalFormat("#.##");
-            return "world: %s, x: %s, y: %s, z: %s, pitch: %s, yaw: %s".formatted(
-                    location.getWorld().getName(),
-                    df.format(location.getX()), df.format(location.getY()), df.format(location.getZ()),
-                    df.format(location.getPitch()), df.format(location.getYaw())
-            );
-        }
-        else return value.toString();
-    }
-
-    private static void reopenLater(PlayerExt player, String gameId, String roomName) {
-        Bukkit.getScheduler().runTask(
-                MCZJUGameCore.getInstance(),
-                () -> {
-                    AbstractGameRoom gameRoom = MCZJUGameCore.getGameRoomManager().getGameRoom(gameId, roomName);
-                    new GameRoomSettingMenu(player.player(), gameRoom).open();
-                }
-        );
     }
 }

@@ -144,3 +144,13 @@ public final class ExampleGame extends AbstractGame {
 ```
 
 Adapt signatures and imports to the target's resolved MGC version rather than forcing this skeleton unchanged.
+
+## Room parameter editor
+
+`/mgcop room edit <gameId> <roomId>` opens a 36-parameter-per-page chest menu. Scalar edits return to the same page. Supported scalar types are Boolean, Integer, Long, Float, Double (and corresponding primitives), String, and Bukkit Location.
+
+For editable single-level lists, declare a concrete supported scalar element type, for example `public List<Location> spawnPoints = new ArrayList<>();` or `public List<String> maps = new ArrayList<>(List.of("forest"));`. List, ArrayList, and LinkedList declarations are supported; raw lists, wildcards, type variables, nested lists, complex elements, and incompatible custom list declarations are read-only in the menu.
+
+Clicking a list opens a separate chest menu with 36 elements per page: hover to inspect values, left-click to edit, right-click to confirm deletion, and use the bottom add button to append. Empty/null lists can receive new elements, and immutable initial lists are replaced with editable copies. Null entries can be edited/deleted. Adding selects the last page, deleting clamps the page, and returning preserves the parent parameter page. Canceling or invalid numeric input leaves data unchanged; stale list edits are rejected and refreshed when another administrator changes the list.
+
+Edits take effect immediately and call `setModified(true)`; use the parent menu's save button for persistence. Verify pagination, list CRUD, cancellation, Location selection, concurrent edits, and save/restart on Paper.
