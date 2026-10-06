@@ -1,6 +1,7 @@
 package com.github.mczjuops.mczjugamecore.command;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.CommandUtils;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
@@ -19,12 +20,13 @@ import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/** 传送到主大厅、小游戏大厅或配置中的游戏类别大厅。 */
+/** 未加入游戏或游戏处于等待状态的玩家可传送到主大厅、小游戏大厅或配置中的游戏类别大厅。 */
 public class LobbyCommand implements BrigadierCommand {
     @Override public String getName() { return "lobby"; }
     @Override public String getDescription() { return "传送到主大厅、小游戏大厅或游戏类别大厅"; }
     @Override public List<String> getAliases() { return List.of("hub"); }
 
+    /** @return 沿用 mgc.lobby 权限、执行时检查游戏状态的大厅命令节点 */
     @Override
     public LiteralCommandNode<CommandSourceStack> getNode() {
         return Commands.literal(getName())
@@ -53,8 +55,9 @@ public class LobbyCommand implements BrigadierCommand {
         }
 
         PlayerExt playerExt = new PlayerExt(player);
-        if (playerExt.isInGame()) {
-            playerExt.sender().warn("无法在游戏过程中进行传送");
+        var game = playerExt.getGame();
+        if (game != null && game.getState() != GameState.WAITING) {
+            playerExt.sender().warn("仅未加入游戏或游戏处于等待状态时可传送到大厅");
             return 0;
         }
 
