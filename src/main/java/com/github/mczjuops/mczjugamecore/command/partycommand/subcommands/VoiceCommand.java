@@ -14,7 +14,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-/** 任意队员可通过 /party voice，将当前队伍中已连接语音的玩家加入同一个新群组。 */
+/** 仅队长可通过 /party voice，将当前队伍中已连接语音的玩家加入同一个新群组。 */
 public class VoiceCommand extends PartySubCommands {
 
     /** @return 子命令名称 */
@@ -32,10 +32,13 @@ public class VoiceCommand extends PartySubCommands {
     /** @return 帮助中的功能说明 */
     @Override
     public String getDescription() {
-        return "让当前队伍成员加入同一个语音群组";
+        return "让当前队伍成员加入同一个语音群组（仅队长）";
     }
 
-    /** 注册无参数的 voice 子命令，沿用 party 根命令的权限。 */
+    /**
+     * 注册无参数的 voice 子命令，沿用 party 根命令的权限；执行时仅允许队长使用。
+     * @param parent 队伍命令的父节点
+     */
     @Override
     public void register(LiteralArgumentBuilder<CommandSourceStack> parent) {
         parent.then(Commands.literal(getName()).executes(this::executeVoice));
@@ -54,6 +57,10 @@ public class VoiceCommand extends PartySubCommands {
             player.sender().warn("未处于队伍中！");
             return 0;
         }
+        if (!party.isLeader(player)) {
+            player.sender().warn("只有队长才能创建队伍语音群组！");
+            return 0;
+        }
         if (!VoiceGroupUtil.isAvailable()) {
             player.sender().warn("语音服务不可用，请确认服务器已安装并启动 Simple Voice Chat。");
             return 0;
@@ -65,7 +72,7 @@ public class VoiceCommand extends PartySubCommands {
                 player.sender().warn("队伍中没有已连接语音的在线玩家，请先连接 Simple Voice Chat。");
                 return 0;
             }
-            party.sender().success("已将在线且已连接语音的队伍成员加入队伍语音群组。未连接语音的成员请连接后再次执行 /party voice。");
+            party.sender().success("已将在线且已连接语音的队伍成员加入队伍语音群组。未连接语音的成员请连接后让队长再次执行 /party voice。");
             return Command.SINGLE_SUCCESS;
         } catch (RuntimeException e) {
             player.sender().error("创建队伍语音群组失败，请稍后重试。");
