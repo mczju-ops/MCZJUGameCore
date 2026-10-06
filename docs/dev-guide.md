@@ -440,7 +440,7 @@ public class WhackAMoleGameRoom extends JsonGameRoom {
 需要注意两点：
 
 - 字段的作用域只能是 `public`。
-- 字段类型只支持基本类型 `Integer`、`Boolean`、`String` 等，以及 bukkit 的 `Location`。
+- 菜单支持 `Integer`、`Long`、`Float`、`Double`、`Boolean`（含对应基本类型）、`String`、Bukkit `Location`，以及以这些类型为元素的单层 `List<T>`。
 
 进入服务器后，你可以通过这个命令来编辑房间数据（当然，需要先完成注册才可以编辑，具体见后面的注册部分）：
 
@@ -452,7 +452,23 @@ public class WhackAMoleGameRoom extends JsonGameRoom {
 你需要通过 `create` 子命令创建。比如如果你想创建三个房间，就可以创建名称分别为 `roomA`、`roomB`、`roomC` 的房间。
 
 创建成功后，`edit` 子命令会为你打开一个菜单。你可以根据提示，为当前这个房间设置参数值。
-具体的操作方式，游戏内已经足够直观，这里不赘述。
+参数菜单每页显示 36 项，底部箭头翻页；修改标量后回到原页。点击单层 `List` 参数会打开独立的箱子菜单，每页展示 36 个元素及其序号和值：左键修改，右键确认删除，底部按钮追加元素；新增后跳到末页，删除末页最后一个元素时自动回到有效页。返回按钮回到原参数页。
+
+例如可在房间类中声明：
+
+```java
+@FieldDescription("玩家出生点列表")
+public List<Location> spawnPoints = new ArrayList<>();
+
+@FieldDescription("可选地图名称")
+public List<String> maps = new ArrayList<>(List.of("forest", "desert"));
+```
+
+`null` 和空 List 均可新增；已有不可变列表（如 `List.of(...)`）通过副本写回。支持声明为 `List<T>`、`ArrayList<T>`、`LinkedList<T>`；原始 `List`、通配符、类型变量、嵌套 List、复杂对象及无法接收副本的自定义列表类型不提供编辑入口。List 中的 `null` 元素可以修改或删除。数值格式错误、取消输入/删除均不修改数据；列表在操作期间被其他管理员修改时拒绝旧操作并刷新。
+
+所有修改立即生效并标记房间已修改；返回参数菜单点击“保存数据”将整个房间写入文件。
+
+手动验证（需兼容 Paper 服务器）：创建超过 36 个参数及超过 36 个列表元素，检查翻页边界、标量修改后的原页返回、List 查看/新增/修改/删除/取消；检查空与 null 列表、不可变初始列表、删除末页唯一元素、非法数字、Location 选择和两位管理员同时编辑；保存并重启后确认列表内容恢复。
 
 你的代码中，需要使用到这些字段时，可以先获取游戏实例（也就是你创建的 `AbstractGame` 的子类的实例。比如可以通过 `PlayerExt#getGame` 获取），
 再通过 `AbstractGame#getGameRoom` 获取房间实例 `room`。然后通过 `room.color` 即可获取你设置的颜色字符串。
