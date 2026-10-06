@@ -170,7 +170,9 @@ private void confirmDelete(Player player) {
 
 管理员执行 `/mgcop lobby`，可以在分页箱子 GUI 中配置主大厅、`config.yml` 中所有游戏类别的大厅及所有已注册小游戏的等待大厅位置。菜单按主大厅、配置顺序的类别、按 ID 排序的游戏排列，每页 45 项。类别物品使用配置中的 `icon` 图标（默认 `CHEST`）、MiniMessage 名称和描述。左键选择位置并保存，右键移除位置，成功后均有提示。类别数为 0 或 1 时也可设置已有类别的大厅。
 
-玩家执行 `/lobby` 传送到主大厅，`/lobby <game_id>` 传送到小游戏大厅，`/lobby <category_id>`（例如 `/lobby casual`）传送到类别大厅。Tab 补全同时提供游戏和类别 ID。游戏与类别同名时优先游戏，使用 `/lobby category:<category_id>` 可明确指定类别（该前缀保留用于类别）。`/l` 是别名，权限仍为 `mgc.lobby`；游戏中禁止传送，未配置位置或世界未加载时提示失败，传送成功后提示成功。
+玩家执行 `/lobby` 传送到主大厅，`/lobby <game_id>` 传送到小游戏大厅，`/lobby <category_id>`（例如 `/lobby casual`）传送到类别大厅。Tab 补全同时提供游戏和类别 ID。游戏与类别同名时优先游戏，使用 `/lobby category:<category_id>` 可明确指定类别（该前缀保留用于类别）。`/l` 是别名，权限仍为 `mgc.lobby`；仅未加入游戏或所处游戏为 `WAITING` 时允许传送，`STATING`、`RUNNING`、`END` 均禁止；等待中的传送不退出游戏或切换档案。未配置位置或世界未加载时提示失败，传送成功后提示成功。
+
+手动验证（需兼容 Paper 服务器）：对 `/lobby` 及带游戏或类别参数的形式，验证未入游戏和等待状态可用、其他状态拒绝，以及等待中的游戏归属和档案保持不变。
 
 主大厅与游戏大厅继续保存在 `lobbies.json`，类别大厅独立保存在 `category-lobbies.json`，同名类别与游戏互不覆盖。重启后恢复位置。删除类别并 `/mgcop reload` 后，该类别不再显示于新打开的菜单、补全或传送目标中；保留其位置记录，同 ID 恢复配置后可继续使用。已打开菜单不会自动刷新，位置选择完成前会重新校验权限和类别是否存在。
 
