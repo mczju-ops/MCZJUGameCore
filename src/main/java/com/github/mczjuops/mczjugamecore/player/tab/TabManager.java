@@ -6,6 +6,7 @@ import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -55,6 +56,20 @@ public final class TabManager implements Listener {
     }
 
     /**
+     * 使用 MiniMessage 字符串设置玩家名前缀，推荐使用此重载；不自动插入空格。
+     * @param game 玩家所属的活动游戏实例
+     * @param player 本局在线玩家
+     * @param prefix 非 null 的 MiniMessage 前缀；空字符串恢复无前缀
+     * @throws NullPointerException prefix 为 null
+     * @throws IllegalArgumentException 玩家不属于本局或游戏已结束
+     * @throws IllegalStateException 不在主线程调用
+     */
+    public void setPrefix(AbstractGame game, PlayerExt player, String prefix) {
+        Objects.requireNonNull(prefix, "prefix");
+        setPrefix(game, player, prefix.isEmpty() ? (Component) null : TextParser.parse(prefix));
+    }
+
+    /**
      * 替换核心默认的游戏名后缀，不自动插入空格。
      * @param game 玩家所属的活动游戏实例
      * @param player 本局在线玩家
@@ -66,6 +81,20 @@ public final class TabManager implements Listener {
         Decoration decoration = decoration(game, player);
         decoration.suffix = suffix;
         refresh();
+    }
+
+    /**
+     * 使用 MiniMessage 字符串替换默认游戏名后缀，推荐使用此重载；不自动插入空格。
+     * @param game 玩家所属的活动游戏实例
+     * @param player 本局在线玩家
+     * @param suffix 非 null 的 MiniMessage 后缀；空字符串恢复默认游戏名后缀
+     * @throws NullPointerException suffix 为 null
+     * @throws IllegalArgumentException 玩家不属于本局或游戏已结束
+     * @throws IllegalStateException 不在主线程调用
+     */
+    public void setSuffix(AbstractGame game, PlayerExt player, String suffix) {
+        Objects.requireNonNull(suffix, "suffix");
+        setSuffix(game, player, suffix.isEmpty() ? (Component) null : TextParser.parse(suffix));
     }
 
     /**
@@ -184,7 +213,10 @@ public final class TabManager implements Listener {
         refresh();
     }
 
-    /** 刷新在线玩家展示，核心加入流程调用；不会触碰页眉或页脚。 */
+    /**
+     * 刷新在线玩家展示，核心加入流程调用；不会触碰页眉或页脚。
+     * 默认游戏名保留 GameMeta 的 MiniMessage 颜色，未指定颜色时为白色，玩家名和括号仍为橙色。
+     */
     @ApiStatus.Internal
     public void refresh() {
         checkThread();
@@ -205,8 +237,11 @@ public final class TabManager implements Listener {
             Component name = game == null ? Component.text(player.getName())
                     : TextParser.parse("<#DEB12D>" + player.getName());
             Component suffix = game == null ? Component.empty()
-                    : TextParser.parse("<#DEB12D> [<reset>%s<reset><#DEB12D>]"
-                            .formatted(game.getGameMeta().displayName()));
+                    : Component.empty()
+                            .append(TextParser.parse("<#DEB12D> ["))
+                            .append(Component.empty().color(NamedTextColor.WHITE)
+                                    .append(TextParser.parse(game.getGameMeta().displayName())))
+                            .append(TextParser.parse("<#DEB12D>]"));
             if (decoration != null) {
                 if (decoration.prefix != null) name = Component.empty().append(decoration.prefix).append(name);
                 if (decoration.suffix != null) suffix = decoration.suffix;

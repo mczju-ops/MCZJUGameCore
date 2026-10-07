@@ -42,7 +42,7 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
    - Use `OpenSessionGame` for a persistent shared session without round-level ending.
    - Otherwise use `AbstractGame` and explicitly choose wait, death, and quit behavior.
    - Decide whether rooms are selectable, whether mid-game joining is valid, and which data must persist.
-   - Decide voice-group usage: team-versus-team games must provide a separate voice group for each team; other games default to no voice groups unless the user requests them.
+   - Decide voice-group usage: only games with explicitly defined two opposing teams default to a separate voice group for each team. Multi-team games, free-for-all games, cooperative games, and games with unclear team structure default to no voice groups unless the user requests them. Always report this decision after implementing the plugin, including when no groups are created.
 3. Read [references/core-workflow.md](references/core-workflow.md) before creating or changing game lifecycle, room, registration, or shutdown behavior.
 4. Read only the relevant sections of [references/features.md](references/features.md) when implementing PlayerData, menus, leaderboards, items, parties, or utilities (including optional voice-chat groups and `/party voice`).
 5. Implement the smallest coherent vertical slice. Keep framework hooks thin; move substantial gameplay logic into focused services/listeners/tasks owned by the child plugin.
@@ -68,10 +68,10 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
 ## Gameplay experience and configuration
 
 - Give players appropriate guidance at every game phase, including waiting, countdown, start, active objectives or phase changes, and end/results. Explain what to do next and communicate relevant timing or outcomes through chat, titles, action bars, boss bars, or other suitable displays.
-- Play suitable sound effects for important player interactions and game events, such as game start, item use, objective completion, and results. Match the sound and recipients to the event, with sensible volume and frequency.
+- Even when the user does not explicitly request audiovisual effects, consider both suitable sound effects and particle effects for game items, abilities, and important interactions or events, such as game start, item use, objective completion, and results. Add effects where they help communicate activation, targets, range, impact, or outcomes. Match sounds and particles to the event and intended recipients, with sensible volume, frequency, particle count, and duration.
 - Put user-requested configurable options in the game's `GameRoom` class wherever practical, using serializable fields, useful defaults, and field descriptions consistent with the existing room settings system.
 - When the game has especially many numerical tuning values, put those values in the child plugin's `config.yml` and provide a reload command. Validate reloaded values and document whether they apply immediately or from the next round; keep room-specific settings in `GameRoom` wherever practical.
-- For team-versus-team games, implement per-team voice groups using `VoiceGroupUtil` and read the voice-chat section of [references/features.md](references/features.md). Keep opposing teams in separate groups, track group IDs, and clean up on all terminal paths. For other games, add voice groups only when requested. Handle unavailable voice service or unconnected players with appropriate feedback.
+- Only for games with explicitly defined two opposing teams, default to implementing per-team voice groups using `VoiceGroupUtil` and read the voice-chat section of [references/features.md](references/features.md). Keep opposing teams in separate groups, track group IDs, and clean up on all terminal paths. For all other games, including multi-team games and unclear team structures, add voice groups only when requested. Handle unavailable voice service or unconnected players with appropriate feedback. After implementing the plugin, always report whether voice groups are created; if not, state that explicitly.
 
 ## Design and review checklist
 
@@ -83,7 +83,7 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
 - Verify scheduled tasks stop when their owning game ends or aborts.
 - Verify persistent fields are serializable by the chosen MGC data/room implementation; keep transient fields private where the JSON reflection convention requires it.
 - Verify MiniMessage strings and permissions, and exercise menu close/click behavior.
-- Verify every game phase provides appropriate player guidance and important interactions have suitable sound effects.
+- Verify every game phase provides appropriate player guidance, and that items, abilities, and important interactions have been considered for both suitable sound effects and particle effects, even when the user did not request them.
 - Verify requested settings are exposed in `GameRoom` where practical; if many numerical values use `config.yml`, verify the reload command and state when changes take effect.
-- Verify team-versus-team games have separate team voice groups and cleanup; other games use none unless requested. Explicitly report voice-group usage and the important implemented features at delivery.
+- Verify explicitly defined two-team opposing games default to separate team voice groups and cleanup; all other games use none unless requested. Always report whether voice groups are created, how players are grouped when used, and the important implemented features at delivery.
 - Report server-only verification separately from compilation/unit tests.
