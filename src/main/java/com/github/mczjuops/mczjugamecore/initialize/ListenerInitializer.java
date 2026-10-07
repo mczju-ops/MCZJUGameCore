@@ -20,6 +20,7 @@ public class ListenerInitializer {
         register(new PlayerSpectatorTeleportListener());
         register(new SpectatorTeleportRestrictionListener());
         register(MCZJUGameCore.getProfileManager());
+        register(MCZJUGameCore.getTabManager());
     }
 
     private static void register(Listener listener){

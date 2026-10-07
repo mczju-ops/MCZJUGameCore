@@ -102,22 +102,43 @@ public class DefaultGameManager implements AbstractGameManager {
         game.gameStart();
     }
 
+    /**
+     * 取消等待中的游戏，结束回调异常时仍清理成员及 Tab 设置。
+     * @param game 要取消的活动实例；回调异常在清理后继续向调用方传播
+     */
     @Override
     public void cancelGame(AbstractGame game) {
-        game.cancelGame();
-        solveGameEnd(game);
+        try {
+            game.cancelGame();
+        } finally {
+            solveGameEnd(game);
+        }
     }
 
+    /**
+     * 终止游戏并清理成员及 Tab 设置，即使终止回调失败。
+     * @param game 要终止的活动实例；回调异常在清理后继续向调用方传播
+     */
     @Override
     public void abortGame(AbstractGame game) {
-        game.abortGame();
-        solveGameEnd(game);
+        try {
+            game.abortGame();
+        } finally {
+            solveGameEnd(game);
+        }
     }
 
+    /**
+     * 正常结束游戏并清理成员及 Tab 设置，即使结算回调失败。
+     * @param game 要结束的活动实例；回调异常在清理后继续向调用方传播
+     */
     @Override
     public void endGame(AbstractGame game) {
-        game.endGame();
-        solveGameEnd(game);
+        try {
+            game.endGame();
+        } finally {
+            solveGameEnd(game);
+        }
     }
 
     public void forceAbortGame(AbstractGame game){

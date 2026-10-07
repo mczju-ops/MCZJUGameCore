@@ -3,6 +3,7 @@ version: '${project.version}'
 main: com.github.mczjuops.mczjugamecore.MCZJUGameCore
 api-version: '26.2'
 softdepend:
+  - packetevents
   - Multiverse-Core
   - voicechat
 commands:

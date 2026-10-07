@@ -1,6 +1,7 @@
 package com.github.mczjuops.mczjugamecore.game.room;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.Nullable;
@@ -137,9 +138,17 @@ public class GameRoomManager {
         return gameRoom;
     }
 
+    /**
+     * 删除房间；被活动游戏占用时先终止该局，清理玩家及该局 Tab 修改。
+     * @param gameId 已注册的游戏 ID
+     * @param roomName 房间名称
+     * @return 是否移除了匹配房间
+     */
     public boolean deleteGameRoom(String gameId, String roomName) {
         return gameRoomMap.get(gameId).removeIf(gameRoom -> {
             if (gameRoom.getRoomName().equals(roomName)) {
+                AbstractGame game = MCZJUGameCore.getGameManager().getGame(gameId, roomName);
+                if (game != null) MCZJUGameCore.getGameManager().forceAbortGame(game);
                 gameRoom.deleteRoom();
                 return true;
             }

@@ -19,6 +19,7 @@ import com.github.mczjuops.mczjugamecore.menu.MenuFacade;
 import com.github.mczjuops.mczjugamecore.lobby.LobbyManager;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
+import com.github.mczjuops.mczjugamecore.player.tab.TabManager;
 import com.github.mczjuops.mczjugamecore.player.data.PlayerDataManager;
 import com.github.mczjuops.mczjugamecore.player.party.PartyManager;
 import com.github.mczjuops.mczjugamecore.profile.ProfileManager;
@@ -43,6 +44,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     private AbstractGameManager gameManager;
 
     private AbstractPlayerManager playerManager;
+    private TabManager tabManager;
 
     private PartyManager partyManager;
     private GameRoomManager gameRoomManager;
@@ -70,6 +72,7 @@ public final class MCZJUGameCore extends JavaPlugin {
         gameManager = new DefaultGameManager();
         partyManager = new PartyManager();
         playerManager = new DefaultPlayerManager();
+        tabManager = new TabManager();
         gameRoomManager = new GameRoomManager();
         menuFacade = new MenuFacade();
         configManager = new ConfigManager();
@@ -87,6 +90,7 @@ public final class MCZJUGameCore extends JavaPlugin {
 
         ListenerInitializer.initialize();
         ItemInitializer.initialize();
+        tabManager.refresh();
 
         registerCommands(
                 new MGCCommand(),
@@ -110,6 +114,7 @@ public final class MCZJUGameCore extends JavaPlugin {
                         .formatted(game.getId(), e));
             }
         }
+        tabManager.shutdown();
         VoiceGroupUtil.shutdown();
         gameRoomManager.saveAllGameRoomDirectly();  // 保存所有游戏房间
         playerDataManager.saveAllPlayerData();
@@ -131,6 +136,14 @@ public final class MCZJUGameCore extends JavaPlugin {
      */
     public static @NotNull AbstractPlayerManager getPlayerManager(){
         return getInstance().playerManager;
+    }
+
+    /**
+     * 获取全服统一的 Tab 管理器，子插件可设置本局玩家前后缀、样式及全服隐藏名单。
+     * @return 管理器；须在核心启动完成后使用，修改操作仅允许服务器主线程调用
+     */
+    public static @NotNull TabManager getTabManager() {
+        return getInstance().tabManager;
     }
 
     /**
