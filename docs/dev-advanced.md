@@ -13,7 +13,7 @@
 
 ## 全服统一的 Tab 展示
 
-使用 `MCZJUGameCore.getTabManager()` 修改玩家前后缀、旁观者样式和全服 Tab 隐藏名单。所有操作在服务器主线程执行，所有观察者使用相同规则，页眉和页脚仍由核心原有逻辑负责。未修改前后缀时仍显示 `玩家名 [游戏名]`，玩家退出后恢复原始玩家名。
+使用 `MCZJUGameCore.getTabManager()` 修改玩家前后缀、旁观者样式和全服 Tab 隐藏名单。所有操作在服务器主线程执行，所有观察者使用相同规则，页眉和页脚仍由核心原有逻辑负责。未修改前后缀时仍显示 `玩家名 [游戏名]`：玩家名和括号使用橙色（`#DEB12D`），游戏名保留 `GameMeta.displayName()` 中的 MiniMessage 颜色，未指定颜色的文字默认为白色。玩家退出后恢复原始玩家名。
 
 安装并启用 PacketEvents 时，**默认所有在线玩家都在 Tab 中显示**，即使子插件调用 Paper 的 `hidePlayer` / `hideEntity` 隐藏实体，也不会自动隐藏对应 Tab 条目。只有本管理器的隐藏 API 控制 Tab 隐藏；Paper 的 `unlistPlayer` 也不作为 Tab 隐藏规则。核心不会调用 `showPlayer`，实体继续保持隐藏。
 
@@ -21,15 +21,13 @@
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.tab.TabManager;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.GameMode;
 
 // this 是由 GameManager 创建的实际游戏实例，player 已加入本局。
 TabManager tab = MCZJUGameCore.getTabManager();
 PlayerExt player = getPlayers().getFirst();
-tab.setPrefix(this, player, Component.text("[红队] ", NamedTextColor.RED));
-tab.setSuffix(this, player, Component.text(" 10分", NamedTextColor.YELLOW));
+tab.setPrefix(this, player, "<red>[红队]</red> ");
+tab.setSuffix(this, player, " <yellow>10分</yellow>");
 
 // 子插件自行设置旁观模式，再取消 Tab 变淡；已有前后缀不会丢失。
 player.player().setGameMode(GameMode.SPECTATOR);
@@ -47,7 +45,7 @@ tab.resetHiddenPlayers(this); // 等价于设置本局空隐藏名单
 tab.resetPlayer(this, player);
 ```
 
-- 前缀和后缀不自动添加空格。前缀 `null` 恢复无前缀；后缀 `null` 恢复核心的 ` [游戏名]`，`Component.empty()` 去掉后缀。仅更改前缀不会覆盖默认后缀。
+- 推荐使用 `setPrefix(AbstractGame, PlayerExt, String)` 和 `setSuffix(AbstractGame, PlayerExt, String)` 传入 MiniMessage，前缀和后缀不自动添加空格。原有 Component 重载保留。MiniMessage 字符串不接受 `null`，使用空字符串 `""` 恢复无前缀或核心的 ` [游戏名]` 后缀，例如 `tab.setSuffix(this, player, "")`。仅更改前缀不会覆盖默认后缀。
 - `setNormalAppearance(..., true)` 仅将客户端的 Tab 旁观者样式改为普通玩家样式，不修改服务器游戏模式、飞行权限、实体可见性或已有前后缀；`false` 恢复原版样式。
 - `setHiddenPlayer(game, player, hidden)` 增加或撤销本局对单个玩家的隐藏请求。`setHiddenPlayers(game, players)` **替换本局完整隐藏名单**，空集合撤销本局全部隐藏。允许其他局和大厅的在线玩家，重复元素合并，不控制排序。
 - 多局隐藏名单取**并集**：任意一局请求隐藏某玩家，该玩家就对全服隐藏。某局取消或结束仅撤销该局的请求，不覆盖其他局；全部请求清除后玩家重新显示，即使实体仍被 Paper 隐藏。新上线玩家默认显示，无需补充显示名单。
@@ -58,7 +56,7 @@ PacketEvents 是**可选依赖**，推荐安装 [PacketEvents 2.14.0 或更新�
 
 手动验证（兼容 Paper 26.2 服务器，安装 PacketEvents，需两个客户端；本次开发环境未执行）：
 
-1. 不调用 Tab API，验证默认游戏名显示；修改前后缀，验证两端一致，用 `null` 和空 Component 验证恢复与清除。页眉、页脚保持不变。
+1. 不调用 Tab API，分别使用无颜色、单色、多色以及含 `<reset>` 的 `GameMeta.displayName()`，验证未指定颜色部分为白色、指定颜色保留、玩家名和括号始终为橙色。用 MiniMessage 字符串修改前后缀，验证两端一致，用空字符串验证前缀清除和默认游戏名后缀恢复。页眉、页脚保持不变。
 2. 先设置前后缀，再由子插件将 B 切为旁观者并调用普通样式接口；确认两端 Tab 不变淡且前后缀保留。反复切换模式、关闭普通样式，确认前后缀不丢失且实际模式/飞行/旁观限制仍正常。
 3. **不设置任何名单**，对 A 执行 `hidePlayer(plugin, B)`；确认 A 看不见 B 的实体但 Tab 保留 B。再隐藏/恢复 Tab，确认实体始终隐藏。验证皮肤、签名聊天、切世界、模式切换及新观察者登录。
 4. 两局分别隐藏不同玩家、同时隐藏同一玩家；确认取并集。撤销/结束一局，另一局的请求仍有效；全部撤销后玩家显示。验证批量替换、空集合和重复玩家。调用 Paper `unlistPlayer` 应仍显示；核心停用后恢复 Paper 的隐藏及列出状态。
