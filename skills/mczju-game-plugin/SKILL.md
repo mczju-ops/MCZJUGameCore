@@ -44,7 +44,7 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
    - Decide whether rooms are selectable, whether mid-game joining is valid, and which data must persist.
    - Decide voice-group usage: only games with explicitly defined two opposing teams default to a separate voice group for each team. Multi-team games, free-for-all games, cooperative games, and games with unclear team structure default to no voice groups unless the user requests them. Always report this decision after implementing the plugin, including when no groups are created.
 3. Read [references/core-workflow.md](references/core-workflow.md) before creating or changing game lifecycle, room, registration, or shutdown behavior.
-4. Read only the relevant sections of [references/features.md](references/features.md) when implementing PlayerData, menus, leaderboards, items, parties, or utilities (including optional voice-chat groups and `/party voice`).
+4. Read only the relevant sections of [references/features.md](references/features.md) when implementing Tab player names, PlayerData, menus, leaderboards, items, parties, or utilities (including optional voice-chat groups and `/party voice`).
 5. Implement the smallest coherent vertical slice. Keep framework hooks thin; move substantial gameplay logic into focused services/listeners/tasks owned by the child plugin.
 6. Register all required framework components in the child plugin's `onEnable()`. Register Bukkit listeners and commands through the child plugin normally.
 7. Make shutdown and end paths idempotent. Cancel plugin-owned schedulers, remove spawned entities, restore/reset maps as required, and avoid retaining stale `PlayerExt`, `Player`, game, or room references.
@@ -59,6 +59,7 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
 - Give every game, menu, item, leaderboard, and data namespace a stable, globally collision-resistant ID. Follow the existing project's naming scheme; prefer plugin-prefixed IDs for new components.
 - Never call lifecycle hooks such as `onGameInit`, `onGameStart`, `onGameCancel`, `onGameAbort`, or `onGameEnd` directly. Request transitions through `MCZJUGameCore.getGameManager()`.
 - Do not mutate game/room states or framework-owned membership collections to force a transition. Use managers.
+- All child-plugin changes to in-game Tab player names, including prefixes and suffixes, **must** go through `MCZJUGameCore.getTabManager()` (`setPrefix`, `setSuffix`, and `resetPlayer` as appropriate). Never bypass it with Paper/Bukkit `playerListName(Component)` or `setPlayerListName(...)`, scoreboard team prefixes/suffixes intended to alter Tab names, or custom display-name packets. The core owns name snapshots, batched refreshes, and lifecycle cleanup; direct writes can be overwritten or conflict with that state. Read the Unified Tab display section in [references/features.md](references/features.md) before implementing these changes.
 - Treat `onGameInit()` as room preparation triggered when a game instance is created, often when the first player begins waiting—not as the start signal.
 - Return `false` from `onGameInit()` when required room settings are missing or preparation fails cleanly.
 - Mark modified persistent player data with `setModified(true)` after changes.
