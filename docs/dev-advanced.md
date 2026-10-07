@@ -13,54 +13,25 @@
 
 ## 全服统一的 Tab 展示
 
-使用 `MCZJUGameCore.getTabManager()` 修改玩家前后缀、旁观者样式和全服 Tab 隐藏名单。所有操作在服务器主线程执行，所有观察者使用相同规则，页眉和页脚仍由核心原有逻辑负责。未修改前后缀时仍显示 `玩家名 [游戏名]`：玩家名和括号使用橙色（`#DEB12D`），游戏名保留 `GameMeta.displayName()` 中的 MiniMessage 颜色，未指定颜色的文字默认为白色。玩家退出后恢复原始玩家名。
+**子插件修改游戏中玩家的 Tab 名称必须使用 `MCZJUGameCore.getTabManager()`，不要直接设置名称或绕过管理器。** 默认显示 `玩家名 [游戏名]`，页眉和页脚由核心负责。
 
-安装并启用 PacketEvents 时，**默认所有在线玩家都在 Tab 中显示**，即使子插件调用 Paper 的 `hidePlayer` / `hideEntity` 隐藏实体，也不会自动隐藏对应 Tab 条目。只有本管理器的隐藏 API 控制 Tab 隐藏；Paper 的 `unlistPlayer` 也不作为 Tab 隐藏规则。核心不会调用 `showPlayer`，实体继续保持隐藏。
+在服务器主线程调用，传入实际运行的游戏实例；修改前后缀和样式的玩家须已加入本局。以下代码放在游戏类中：
 
 ```java
-import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
-import com.github.mczjuops.mczjugamecore.player.PlayerExt;
-import com.github.mczjuops.mczjugamecore.player.tab.TabManager;
-import org.bukkit.GameMode;
-
-// this 是由 GameManager 创建的实际游戏实例，player 已加入本局。
-TabManager tab = MCZJUGameCore.getTabManager();
-PlayerExt player = getPlayers().getFirst();
+var tab = MCZJUGameCore.getTabManager();
+// player 是本局的 PlayerExt。
 tab.setPrefix(this, player, "<red>[红队]</red> ");
 tab.setSuffix(this, player, " <yellow>10分</yellow>");
+tab.setNormalAppearance(this, player, true); // 取消 Tab 旁观者变淡，不改变游戏模式
 
-// 子插件自行设置旁观模式，再取消 Tab 变淡；已有前后缀不会丢失。
-player.player().setGameMode(GameMode.SPECTATOR);
-tab.setNormalAppearance(this, player, true);
-
-// 单个隐藏请求：所有人的 Tab 中隐藏 player，但不影响实体。
-tab.setHiddenPlayer(this, player, true);
-tab.setHiddenPlayer(this, player, false); // 仅撤销本局对此玩家的隐藏
-
-// 批量替换本局隐藏名单；集合调用时复制，不影响其他游戏的名单。
-tab.setHiddenPlayers(this, getPlayers());
-tab.resetHiddenPlayers(this); // 等价于设置本局空隐藏名单
-
-// 清除本局对单个玩家的前后缀、样式及隐藏请求。
-tab.resetPlayer(this, player);
+tab.setHiddenPlayer(this, player, true);  // 从全服 Tab 隐藏，不影响实体
+tab.setHiddenPlayer(this, player, false); // 撤销本局的隐藏请求
+tab.resetPlayer(this, player);            // 清除本局对此玩家的 Tab 设置
 ```
 
-- 推荐使用 `setPrefix(AbstractGame, PlayerExt, String)` 和 `setSuffix(AbstractGame, PlayerExt, String)` 传入 MiniMessage，前缀和后缀不自动添加空格。原有 Component 重载保留。MiniMessage 字符串不接受 `null`，使用空字符串 `""` 恢复无前缀或核心的 ` [游戏名]` 后缀，例如 `tab.setSuffix(this, player, "")`。仅更改前缀不会覆盖默认后缀。
-- `setNormalAppearance(..., true)` 仅将客户端的 Tab 旁观者样式改为普通玩家样式，不修改服务器游戏模式、飞行权限、实体可见性或已有前后缀；`false` 恢复原版样式。
-- `setHiddenPlayer(game, player, hidden)` 增加或撤销本局对单个玩家的隐藏请求。`setHiddenPlayers(game, players)` **替换本局完整隐藏名单**，空集合撤销本局全部隐藏。允许其他局和大厅的在线玩家，重复元素合并，不控制排序。
-- 多局隐藏名单取**并集**：任意一局请求隐藏某玩家，该玩家就对全服隐藏。某局取消或结束仅撤销该局的请求，不覆盖其他局；全部请求清除后玩家重新显示，即使实体仍被 Paper 隐藏。新上线玩家默认显示，无需补充显示名单。
-- 前后缀和样式只能修改本局在线玩家。玩家退出（含加入失败）清除本局对其的修改和隐藏请求；断线清除所有名单中的该玩家，重连需重新设置。结束、取消、强制终止和房间销毁清除本局全部设置，结束回调抛出异常也执行清理。
-- 核心停用时解除数据包监听，恢复 Paper 原有实体隐藏、列出状态和旁观者样式。游戏结束时仍遵循核心的默认规则：实体隐藏不影响 Tab。
+前后缀支持 MiniMessage，空格需自行添加；传入 `""` 分别清除前缀、恢复默认游戏名后缀。同一 tick 的修改在下一 tick 生效，玩家退出或游戏结束时自动清理。
 
-PacketEvents 是**可选依赖**，推荐安装 [PacketEvents 2.14.0 或更新的兼容版本](https://github.com/retrooper/packetevents/releases/tag/v2.14.0)。`plugin.yml` 使用 `softdepend: [packetevents]`，未安装或未启用时核心正常加载，默认游戏名及前后缀仍正常显示；实体隐藏与 Tab 显示沿用 Paper 原有行为，旁观者仍按原版样式显示。调用 `setNormalAppearance`、`setHiddenPlayer`、`setHiddenPlayers` 或 `resetHiddenPlayers` 时，每次调用仅向控制台输出包含 API 名称的“操作未生效”警告，然后直接返回，不修改设置也不抛出缺少依赖的异常。启动、登录和自动刷新不主动提示，聊天中不发送提示。依赖只参与编译，不打入核心 JAR。子插件仍只需 `depend: [MCZJUGameCore]`，无需引用数据包类或增加 PacketEvents 编译依赖。非主线程调用抛出 `IllegalStateException`；非活动游戏、修改其他局玩家的前后缀/样式或隐藏名单含离线玩家时抛出 `IllegalArgumentException`。原 `setVisiblePlayers` / `resetVisiblePlayers` 已移除，改用隐藏 API。
-
-手动验证（兼容 Paper 26.2 服务器，安装 PacketEvents，需两个客户端；本次开发环境未执行）：
-
-1. 不调用 Tab API，分别使用无颜色、单色、多色以及含 `<reset>` 的 `GameMeta.displayName()`，验证未指定颜色部分为白色、指定颜色保留、玩家名和括号始终为橙色。用 MiniMessage 字符串修改前后缀，验证两端一致，用空字符串验证前缀清除和默认游戏名后缀恢复。页眉、页脚保持不变。
-2. 先设置前后缀，再由子插件将 B 切为旁观者并调用普通样式接口；确认两端 Tab 不变淡且前后缀保留。反复切换模式、关闭普通样式，确认前后缀不丢失且实际模式/飞行/旁观限制仍正常。
-3. **不设置任何名单**，对 A 执行 `hidePlayer(plugin, B)`；确认 A 看不见 B 的实体但 Tab 保留 B。再隐藏/恢复 Tab，确认实体始终隐藏。验证皮肤、签名聊天、切世界、模式切换及新观察者登录。
-4. 两局分别隐藏不同玩家、同时隐藏同一玩家；确认取并集。撤销/结束一局，另一局的请求仍有效；全部撤销后玩家显示。验证批量替换、空集合和重复玩家。调用 Paper `unlistPlayer` 应仍显示；核心停用后恢复 Paper 的隐藏及列出状态。
-5. 验证主动退出、加入失败、断线重连、正常结束、取消、强制终止和销毁房间的清理；结束回调主动抛异常时仍清理。缺少 PacketEvents 时核心正常加载，前后缀可修改；调用数据包相关 API 每次在控制台提示未生效，且无依赖异常、无聊天提示，启动/登录/实体隐藏事件不主动提示。
+旁观者样式和 Tab 隐藏需要安装并启用兼容的 PacketEvents 2.14.0+；未安装时前后缀仍可用，其余操作只输出控制台警告。启用后，隐藏实体不会隐藏 Tab 条目；多局隐藏请求取并集，须全部撤销才重新显示。
 
 ## 一、基于虚拟箱子的菜单
 

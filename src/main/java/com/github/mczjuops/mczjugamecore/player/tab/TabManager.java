@@ -22,6 +22,7 @@ import java.util.*;
 /**
  * 全服统一的 Tab 展示管理器，不修改页眉、页脚或实体可见性。
  * 所有方法须在服务器主线程调用；修改按游戏实例归属，退出或结束时自动清理。
+ * 同一 tick 内的修改合并，在下一个 tick 同步最终展示；网络发送由 PacketEvents 处理。
  * 安装 PacketEvents 2.14.0 或更新的兼容版本时，实体隐藏不影响 Tab，仅隐藏 API 控制条目。
  * 未安装时前后缀仍可用，数据包操作不生效并在调用相关 API 时提示控制台。
  */
@@ -214,16 +215,24 @@ public final class TabManager implements Listener {
     }
 
     /**
-     * 刷新在线玩家展示，核心加入流程调用；不会触碰页眉或页脚。
+     * 请求在下一个 tick 刷新在线玩家展示，核心加入流程调用；不会触碰页眉或页脚。
+     * 同一 tick 内重复请求只安排一次任务，届时读取最新前后缀、样式和隐藏名单。
      * 默认游戏名保留 GameMeta 的 MiniMessage 颜色，未指定颜色时为白色，玩家名和括号仍为橙色。
+     * 启用数据包后端时同步托管名称快照，避免实体隐藏期间的后续数据包覆盖名称。
+     * 新名称快照先于 Paper 名称广播发布，连续设置前后缀时不会用旧名称改写新数据包。
      */
     @ApiStatus.Internal
     public void refresh() {
         checkThread();
+        scheduleRefresh();
+    }
+
+    private void refreshNow() {
         if (closed) return;
         List<Player> online = new ArrayList<>(Bukkit.getOnlinePlayers());
         online.removeIf(player -> disconnecting.contains(player.getUniqueId()));
         Set<UUID> normal = new HashSet<>();
+        Map<UUID, Component> displayNames = new HashMap<>();
         for (Player player : online) {
             AbstractGame game = new PlayerExt(player).getGame();
             if (game != null && game.getState() == GameState.END) game = null;
@@ -247,21 +256,32 @@ public final class TabManager implements Listener {
                 if (decoration.suffix != null) suffix = decoration.suffix;
                 if (decoration.normal) normal.add(player.getUniqueId());
             }
-            player.playerListName(name.append(suffix));
+            Component displayName = name.append(suffix);
+            displayNames.put(player.getUniqueId(), displayName);
         }
         Set<UUID> hidden = new HashSet<>();
         hiddenPlayers.values().forEach(hidden::addAll);
-        if (backend != null) backend.refresh(online, Set.copyOf(hidden), Set.copyOf(normal));
+        // 后端先发布本次完整名称并补齐隐藏实体的 Tab，再触发 Paper 的名称广播。
+        // 否则名称广播可能在网络线程使用上一次 refresh 的默认名称或旧前后缀。
+        if (backend != null) backend.refresh(online, Set.copyOf(hidden), Set.copyOf(normal), Map.copyOf(displayNames));
+        for (Player player : online) {
+            Component displayName = displayNames.get(player.getUniqueId());
+            if (displayName != null && !displayName.equals(player.playerListName())) player.playerListName(displayName);
+        }
     }
 
     /** 核心关闭时恢复展示并解除数据包监听。 */
     @ApiStatus.Internal
     public void shutdown() {
         checkThread();
-        if (pendingRefresh != null) pendingRefresh.cancel();
+        if (pendingRefresh != null) {
+            pendingRefresh.cancel();
+            pendingRefresh = null;
+        }
         decorations.clear();
         hiddenPlayers.clear();
-        refresh();
+        // 停用后不能再依赖下一 tick 的任务，立即恢复并解除监听。
+        refreshNow();
         for (UUID id : managedNames) {
             Player player = Bukkit.getPlayer(id);
             if (player != null) player.playerListName(null);
@@ -293,7 +313,6 @@ public final class TabManager implements Listener {
         managedNames.remove(id);
         hiddenPlayers.values().forEach(ids -> ids.remove(id));
         hiddenPlayers.values().removeIf(Set::isEmpty);
-        refresh();
         if (backend != null) backend.forget(id);
         scheduleRefresh();
     }
@@ -325,11 +344,11 @@ public final class TabManager implements Listener {
 
     private void scheduleRefresh() {
         if (closed || pendingRefresh != null) return;
-        pendingRefresh = Bukkit.getScheduler().runTask(MCZJUGameCore.getInstance(), () -> {
+        pendingRefresh = Bukkit.getScheduler().runTaskLater(MCZJUGameCore.getInstance(), () -> {
             pendingRefresh = null;
             disconnecting.removeIf(id -> Bukkit.getPlayer(id) == null);
-            refresh();
-        });
+            refreshNow();
+        }, 1L);
     }
 
     private Decoration decoration(AbstractGame game, PlayerExt player) {
