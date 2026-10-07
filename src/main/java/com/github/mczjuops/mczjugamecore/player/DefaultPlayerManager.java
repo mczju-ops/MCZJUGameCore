@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.player;
 
+import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
@@ -38,6 +39,11 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         return false;
     }
 
+    /**
+     * 注册成员、切换档案并应用核心默认 Tab 名称，页脚沿用游戏介绍。
+     * @param player 要加入的玩家，已有游戏时先退出原局
+     * @param game 新游戏实例；子插件应通过 GameManager 加入游戏
+     */
     @Override
     public void joinGame(PlayerExt player, AbstractGame game) {
         if (playerGameMap.containsKey(player)) {
@@ -46,12 +52,7 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         playerGameMap.put(player, game);
         player.switchProfile(game.getId());
         var gameMeta = game.getGameMeta();
-        player.player().playerListName(TextParser.parse(
-                "<#DEB12D>%s [<reset>%s<reset><#DEB12D>]".formatted(
-                        player.getName(),
-                        gameMeta.displayName()
-                )
-        ));
+        MCZJUGameCore.getTabManager().refresh();
 
         Component footer = Component.newline().append(TextParser.parse("<#DEB12D>正在游玩：<reset>")).append(TextParser.parse(gameMeta.displayName()));
         for (String line : gameMeta.description()) {
@@ -60,6 +61,11 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         player.player().sendPlayerListFooter(footer);
     }
 
+    /**
+     * 移除成员并清理本局 Tab 修改，随后执行原退出策略；加入失败也清理 Tab。
+     * @param player 退出玩家，未入局时不处理
+     * @param reason 退出原因，决定队伍退出及档案恢复行为
+     */
     @Override
     public void leaveGame(PlayerExt player, PlayerQuitReason reason) {
         if (!playerGameMap.containsKey(player)) return;
@@ -81,6 +87,7 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         // 如果原本在游戏中，则调用game中的退出游戏
         AbstractGame game = playerGameMap.get(player);
         playerGameMap.remove(player);
+        MCZJUGameCore.getTabManager().onPlayerLeave(game, player);
 
         // 如果是加入游戏失败，不做过多处理
         if (reason == PlayerQuitReason.JOIN_FAIL) return;
@@ -104,17 +111,20 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         return playerGameMap.get(player);
     }
 
+    /**
+     * 移除整局成员及 Tab 修改，再恢复大厅档案，仅由核心结束流程调用。
+     * @param game 要清理的游戏实例，无成员时仍撤销其隐藏名单
+     */
     @Override
     public void removeAllPlayer(AbstractGame game) {
-        playerGameMap.entrySet().removeIf(entry -> {
-            if (entry.getValue() == game) {
-                PlayerExt playerExt = entry.getKey();
-                playerExt.switchProfile(null);
-                playerExt.player().playerListName(null);
-                return true;
-            }
-            return false;
-        });
+        List<PlayerExt> players = getPlayers(game);
+        players.forEach(playerGameMap::remove);
+        // 先清理整局展示，再恢复档案，避免档案恢复失败遗留 Tab 修改。
+        MCZJUGameCore.getTabManager().onGameEnd(game);
+        for (PlayerExt player : players) {
+            player.switchProfile(null);
+            player.player().playerListName(null);
+        }
     }
 
     @Override

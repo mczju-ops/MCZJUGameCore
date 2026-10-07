@@ -3,6 +3,7 @@
 ## Contents
 
 - PlayerExt and managers
+- Unified Tab display
 - Persistent player data
 - Menus
 - Leaderboards
@@ -15,6 +16,34 @@
 Wrap Bukkit players with `new PlayerExt(player)` when an MGC API expects framework behavior. `PlayerExt` delegates to managers and provides conveniences such as game/party lookup, display name, reset state, data lookup, and safe item giving. Do not treat it as an independent durable player model.
 
 Access framework services through `MCZJUGameCore` getters, including game, player, room, party, item, menu, player-data, profile, and leaderboard managers. Note the historical accessor spelling `getPartymanager()` in the inspected source; verify the target version rather than correcting calls speculatively.
+
+## Unified Tab display
+
+Use `MCZJUGameCore.getTabManager()` on the server thread. All viewers use the same rules; this API does not change the header/footer. Pass the actual active `AbstractGame` instance, not a registration prototype. Prefix/suffix and appearance changes require an online player who already belongs to that game. Unmodified names retain the core `player [game name]` format.
+
+```java
+TabManager tab = MCZJUGameCore.getTabManager();
+tab.setPrefix(game, player, Component.text("[Red] "));
+tab.setSuffix(game, player, Component.text(" 10 points"));
+player.player().setGameMode(GameMode.SPECTATOR);
+tab.setNormalAppearance(game, player, true); // preserves existing prefix/suffix
+
+tab.setHiddenPlayer(game, player, true);
+tab.setHiddenPlayer(game, player, false);
+tab.setHiddenPlayers(game, game.getPlayers()); // replaces this game's blacklist
+```
+
+`TabManager` is in `com.github.mczjuops.mczjugamecore.player.tab`. Prefix/suffix use Adventure Components, with no automatic spacing. A null prefix restores no prefix; a null suffix restores the core game-name suffix; `Component.empty()` removes the suffix. Normal appearance removes spectator dimming without changing actual game mode, entity visibility or existing prefix/suffix. False restores vanilla appearance.
+
+When PacketEvents is enabled, by default **all real online players remain in Tab**, including those hidden through Paper `hidePlayer`/`hideEntity`. Do not set an explicit visible list to retain hidden entities in Tab. Only the core hidden-player API hides entries; Paper `unlistPlayer` is overridden while the core is active. No entity spawn/show or server visibility changes occur.
+
+`setHiddenPlayer(game, player, boolean)` adds/removes one hide request. `setHiddenPlayers(AbstractGame, Collection<PlayerExt>)` copies and replaces that game's entire blacklist; empty clears it. Hidden lists may include online players from other games or the lobby. Multiple games' lists are combined by union: any remaining request keeps that player hidden for all viewers. Removing/ending a game withdraws only its requests. New logins appear by default; ordering is unchanged. The old `setVisiblePlayers`/`resetVisiblePlayers` API is removed.
+
+`resetPlayer(game, player)` clears that game's decorations, normal appearance and hide request for the player. `resetHiddenPlayers(game)` removes that game's entire blacklist. Core cleanup clears the player's owning-game changes on leave (including rejected joins), clears all of a game's settings on end/cancel/abort/room destruction, and removes disconnected players from every blacklist. Reapply desired changes after reconnect. Game cleanup resumes the core default (entity hiding never implies Tab hiding); core shutdown restores Paper's native visibility/listing and spectator appearance. Nothing persists across restarts.
+
+PacketEvents is **optional** via `softdepend: [packetevents]`; use a compatible 2.14.0+ server plugin for packet features. Without it, the core starts normally and names/prefixes/suffixes still work. Entity hiding and spectator appearance follow native Paper behavior. Each call to `setNormalAppearance`, `setHiddenPlayer`, `setHiddenPlayers` or `resetHiddenPlayers` logs a console-only warning identifying the ineffective API, returns without modifying settings, and throws no dependency exception. No warning is sent to player chat or proactively on startup, login, automatic refresh or entity hide events. Child plugins still declare `depend: [MCZJUGameCore]` and need no PacketEvents compile dependency or packet types. Off-thread calls raise IllegalStateException; inactive game instances, prefix/suffix/appearance changes to players outside the owning game, or offline blacklist entries raise IllegalArgumentException. Null API arguments/list elements raise NullPointerException; null prefix/suffix are supported resets.
+
+Validate with two clients: default game suffix, spectator appearance preserving prefixes/suffixes after mode changes, hidden entity retained in Tab **without any list API call**, explicit Tab hiding and restoration while the entity remains hidden, signed chat/skins, new viewers/world changes, overlapping blacklists and partial cleanup, batch replacement/empty lists, and cleanup on leave/reconnect/failed join/every end path. Without PacketEvents, verify normal core loading and prefix/suffix changes, and console-only warnings on every packet API call with no dependency exception. Startup/login/entity hide events should not proactively warn. With it installed, check native Paper listing resumes after core shutdown. See “全服统一的 Tab 展示” in `docs/dev-advanced.md` for the manual checklist.
 
 ## Persistent player data
 

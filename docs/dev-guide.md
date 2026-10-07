@@ -70,13 +70,13 @@
     <dependency>
         <groupId>io.papermc.paper</groupId>
         <artifactId>paper-api</artifactId>
-        <version>1.21.7-R0.1-SNAPSHOT</version>
+        <version>26.2.build.121-stable</version>
         <scope>provided</scope>
     </dependency>
     <dependency>
         <groupId>com.github.mczju-ops</groupId>
         <artifactId>MCZJUGameCore</artifactId>
-        <version>1.0.2</version>
+        <version>1.1.0</version>
         <scope>provided</scope>
     </dependency>
 </dependencies>
