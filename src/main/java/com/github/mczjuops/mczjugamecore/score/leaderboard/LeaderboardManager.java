@@ -91,6 +91,43 @@ public class LeaderboardManager {
     }
 
     /**
+     * 清除指定榜单中玩家的一次成绩。必须在服务器主线程调用。
+     * 成功后刷新本榜，以及读取同一玩家数据类、同一成绩字段的所有榜单。
+     * 展示刷新失败只记录日志，不改变已经保存成功的清除结果。
+     *
+     * @param leaderboardId 已注册的排行榜 ID
+     * @param playerName 玩家的原始名称，不包含显示格式
+     * @return 清除结果；不存在的榜单返回 LEADERBOARD_NOT_FOUND
+     */
+    public ClearRecordResult clearPlayerRecord(String leaderboardId, String playerName) {
+        if (!Bukkit.isPrimaryThread()) throw new IllegalStateException("Clearing records requires the server thread");
+        AbstractLeaderboard leaderboard = leaderboards.get(leaderboardId);
+        if (leaderboard == null) return ClearRecordResult.LEADERBOARD_NOT_FOUND;
+
+        ClearRecordResult result;
+        try {
+            result = Objects.requireNonNull(leaderboard.clearPlayerRecord(playerName), "Clear result must not be null");
+        } catch (RuntimeException e) {
+            logger.error("清除排行榜成绩失败：" + e.getMessage());
+            return ClearRecordResult.FAILED;
+        }
+        if (result == ClearRecordResult.SUCCESS) {
+            leaderboards.forEach((id, candidate) -> {
+                try {
+                    boolean sameSource = leaderboard instanceof PlayerDataLeaderboard source
+                            && candidate instanceof PlayerDataLeaderboard target
+                            && source.getPlayerDataClass().equals(target.getPlayerDataClass())
+                            && source.getFieldName().equals(target.getFieldName());
+                    if (candidate == leaderboard || sameSource) refresh(id);
+                } catch (RuntimeException e) {
+                    logger.error("成绩已清除，但排行榜 %s 刷新失败：%s".formatted(id, e.getMessage()));
+                }
+            });
+        }
+        return result;
+    }
+
+    /**
      * 立即刷新指定类型的排行榜（所有实体）
      *
      * @param leaderboardClass 排行榜类
