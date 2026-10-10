@@ -13,6 +13,17 @@ public abstract class AbstractLeaderboard {
      */
     public abstract List<LeaderboardEntry> fetchEntries();
 
+    /**
+     * 清除玩家的一次成绩，允许之后取得新成绩重新上榜。
+     * 默认不支持；自定义数据源应重写此方法，并在保存成功后返回 SUCCESS。
+     *
+     * @param playerName 玩家的原始名称，不包含显示格式
+     * @return 清除结果；找不到已有成绩时不应创建新数据
+     */
+    public ClearRecordResult clearPlayerRecord(String playerName) {
+        return ClearRecordResult.UNSUPPORTED;
+    }
+
     /** 排序方向，默认降序，即分数越高越好 */
     public SortOrder getSortOrder() {
         return SortOrder.DESCENDING;

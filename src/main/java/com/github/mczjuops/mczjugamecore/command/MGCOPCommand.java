@@ -6,6 +6,7 @@ import com.github.mczjuops.mczjugamecore.menu.AlertMenu;
 import com.github.mczjuops.mczjugamecore.menu.GameCategorySettingMenu;
 import com.github.mczjuops.mczjugamecore.lobby.LobbySettingMenu;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
+import com.github.mczjuops.mczjugamecore.score.leaderboard.ClearRecordResult;
 import com.github.mczjuops.mczjugamecore.score.leaderboard.textdisplay.JsonTextDisplayRecord;
 import com.github.mczjuops.mczjugamecore.score.leaderboard.textdisplay.TextDisplayEditMenu;
 import com.github.mczjuops.mczjugamecore.utils.CommandUtils;
@@ -22,9 +23,12 @@ import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.List;
 import java.util.Set;
 
@@ -146,9 +150,29 @@ public class MGCOPCommand implements BrigadierCommand {
                 )
                 .then(Commands.literal("leaderboard")
                         .executes(ctx -> {
-                            ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop leaderboard list|create|edit|delete <leaderboardId> [entityId]"));
+                            ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop leaderboard list|create|edit|delete|clear-player <leaderboardId> [displayId|playerName]"));
                             return 0;
                         })
+                        .then(Commands.literal("clear-player")
+                                .executes(ctx -> {
+                                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop leaderboard clear-player <leaderboardId> <playerName>"));
+                                    return 0;
+                                })
+                                .then(Commands.argument("leaderboardId", StringArgumentType.string())
+                                        .suggests((ctx, builder) -> CommandUtils.suggestMatching(MCZJUGameCore.getLeaderboardManager().getAllLeaderboardIds(), builder))
+                                        .executes(ctx -> {
+                                            ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定要清除成绩的玩家名"));
+                                            return 0;
+                                        })
+                                        .then(Commands.argument("playerName", StringArgumentType.word())
+                                                .suggests((ctx, builder) -> CommandUtils.suggestMatching(
+                                                        Arrays.stream(Bukkit.getOfflinePlayers())
+                                                                .map(player -> player.getName())
+                                                                .filter(Objects::nonNull).toList(), builder))
+                                                .executes(this::executeLeaderboardClearPlayer)
+                                        )
+                                )
+                        )
                         .then(Commands.literal("list")
                                 .executes(ctx -> {
                                     ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>请指定一个排行榜的ID"));
@@ -500,6 +524,23 @@ public class MGCOPCommand implements BrigadierCommand {
         new TextDisplayEditMenu(p, record).open();
 
         return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeLeaderboardClearPlayer(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+        String leaderboardId = StringArgumentType.getString(ctx, "leaderboardId");
+        String playerName = StringArgumentType.getString(ctx, "playerName");
+        var result = MCZJUGameCore.getLeaderboardManager().clearPlayerRecord(leaderboardId, playerName);
+        String message = switch (result) {
+            case SUCCESS -> "<green>已清除玩家%s在排行榜%s中的成绩，取得新成绩后可重新上榜".formatted(playerName, leaderboardId);
+            case LEADERBOARD_NOT_FOUND -> "<yellow>未注册排行榜%s".formatted(leaderboardId);
+            case NO_RECORD -> "<yellow>玩家%s在排行榜%s中没有可清除的成绩".formatted(playerName, leaderboardId);
+            case UNSUPPORTED -> "<yellow>排行榜%s的数据源尚未实现清除成绩功能".formatted(leaderboardId);
+            case FAILED -> "<red>清除成绩失败，请查看服务器日志";
+        };
+        sender.sendMessage(TextParser.parse(message));
+        return result == ClearRecordResult.SUCCESS
+                ? Command.SINGLE_SUCCESS : 0;
     }
 
     private int executeLeaderboardDelete(CommandContext<CommandSourceStack> ctx) {
