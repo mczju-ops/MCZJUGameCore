@@ -69,7 +69,7 @@ public final class PlayerTargetSelector {
     /** 打开选择菜单；若没有可选目标，直接触发取消回调。 */
     public void open() {
         if (candidates.isEmpty()) {
-            finish(null);
+            cancelFlow();
             return;
         }
         menu.open();
@@ -111,7 +111,19 @@ public final class PlayerTargetSelector {
             Bukkit.getScheduler().runTask(MCZJUGameCore.getInstance(), this::reopen);
             return;
         }
-        finish(null);
+        cancelFlow();
+    }
+
+    /** 点击「跳过/取消」按钮：关闭界面并触发取消回调。 */
+    private void skip() {
+        if (finished) {
+            return;
+        }
+        finished = true;
+        source.player().closeInventory();
+        if (onCancel != null) {
+            onCancel.run();
+        }
     }
 
     private void reopen() {
@@ -119,26 +131,21 @@ public final class PlayerTargetSelector {
             return;
         }
         if (!source.player().isOnline()) {
-            finish(null);
+            cancelFlow();
             return;
         }
         source.sender().warn("<yellow>必须选择一名目标");
         menu.open();
     }
 
-    private void finish(PlayerExt selected) {
+    /** 结束流程并触发取消回调；关闭界面由调用方负责。 */
+    private void cancelFlow() {
         if (finished) {
             return;
         }
         finished = true;
-        if (selected != null) {
-            if (onSelect != null) {
-                onSelect.accept(selected);
-            }
-        } else {
-            if (onCancel != null) {
-                onCancel.run();
-            }
+        if (onCancel != null) {
+            onCancel.run();
         }
     }
 
@@ -176,6 +183,11 @@ public final class PlayerTargetSelector {
         return item;
     }
 
+    /** 跳过按钮的布局：允许跳过时占一个额外槽位，因此行数按「候选数 + 1」计算。 */
+    private static int slotCountFor(int candidateSize, boolean withSkipButton) {
+        return candidateSize + (withSkipButton ? 1 : 0);
+    }
+
     /** 按候选数量计算所需的箱子行数（每行 9 格，最多 6 行）。 */
     static int rowsFor(int size) {
         if (size <= 0) {
@@ -191,7 +203,8 @@ public final class PlayerTargetSelector {
         SelectionMenu(Player player, PlayerTargetSelector selector) {
             // Menu 构造器在 super() 期间就会调用 getRows()，此时 selector 字段尚未赋值，
             // 因此把行数放进 args 传入（Menu 在创建 inventory 之前已经赋值 args）。
-            super(player, new Object[]{rowsFor(selector.candidates.size())}, selector.title);
+            super(player, new Object[]{rowsFor(
+                    slotCountFor(selector.candidates.size(), !selector.requireSelection))}, selector.title);
             this.selector = selector;
         }
 
@@ -202,6 +215,17 @@ public final class PlayerTargetSelector {
                 PlayerExt target = targets.get(i);
                 setSlot(i, head(target), (clicker, event) -> selector.select(target));
             }
+            int skipSlot = getInventory().getSize() - 1;
+            if (!selector.requireSelection && targets.size() <= skipSlot) {
+                setSlot(skipSlot, skipButton(), (clicker, event) -> selector.skip());
+            }
+        }
+
+        private static ItemStack skipButton() {
+            return ItemBuilder.of(Material.BARRIER)
+                    .customName("<red>跳过 / 取消")
+                    .lore(List.of("<gray>放弃本次选择"))
+                    .build();
         }
 
         @Override
