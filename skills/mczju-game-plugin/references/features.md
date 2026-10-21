@@ -191,8 +191,8 @@ PlayerTargetSelector.builder()
 - `requireSelection(true)` makes the choice mandatory: closing the menu reopens it on the next tick instead of cancelling.
 - When skipping is allowed (the default), a barrier item labeled 跳过/取消 is placed in the bottom-right slot; clicking it closes the menu and fires `onCancel`. The layout reserves that extra slot automatically.
 - `timeoutSeconds(n)` (default 0 = off) makes timeout produce a result instead of nothing: the selector randomly picks an online candidate and fires `onSelect`. Games that run their own turn clock can instead call `selectRandom()` directly and keep one timer.
-- Disconnects are handled while the menu is open: if the chooser leaves, the flow ends through `onCancel`; if a candidate leaves, it is removed and the menu refreshes, and the flow ends through `onCancel` once no candidate remains. All terminal paths cancel the timeout task and unregister the quit listener.
 - `open()` with no candidates calls `onCancel` immediately; callback guards prevent double invocation.
+- The selector does not listen for disconnects. Games whose quit strategy clears the room on leave do not need per-selector disconnect handling; a candidate or chooser who is already offline is simply ignored.
 - The menu bypasses `Menu`'s permission gate on purpose: an empty permission string returns false for non-OP players, so a permission-checked menu would only ever open for operators.
 
 ## Optional voice-chat groups
