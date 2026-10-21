@@ -7,12 +7,19 @@ import com.github.mczjuops.mczjugamecore.utils.ItemBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Range;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -20,7 +27,11 @@ import java.util.function.Predicate;
  * GUI 目标选择器：向选择者弹出箱子菜单，列出可选玩家头颅，点击即选中目标。
  *
  * <p>基于 {@link Menu} 与 {@link ItemBuilder} 实现。默认关闭菜单即视为取消；
- * 传入 {@code requireSelection(true)} 后必须做出选择，否则菜单会被重新打开（超时请用 {@link #cancel()} 终止）。
+ * 传入 {@code requireSelection(true)} 后必须做出选择，否则菜单会被重新打开。
+ *
+ * <p>结果一定会有下文：设置 {@code timeoutSeconds(...)} 后，超时不会静默丢弃，
+ * 而是随机选中一名仍在线候选（见 {@link #selectRandom()}）；选择者掉线、或候选全部掉线
+ * 时走取消回调，游戏可据此推进回合。
  *
  * <pre>{@code
  * PlayerTargetSelector.builder()
@@ -29,8 +40,9 @@ import java.util.function.Predicate;
  *     .filter(p -> !p.equals(currentPlayer) && p.player().isOnline())
  *     .title("<gold>选择攻击目标")
  *     .requireSelection(true)    // 可选：关闭界面不算数，必须选一个
- *     .onSelect(target -> { })   // 已选中目标
- *     .onCancel(() -> { })       // 取消选择（仅非强制模式下可能触发）
+ *     .timeoutSeconds(15)        // 可选：超时随机选一个
+ *     .onSelect(target -> { })   // 已选中目标（含超时随机结果）
+ *     .onCancel(() -> { })       // 未选出结果（掉线 / 无候选 / 手动跳过）
  *     .build()
  *     .open();
  * }</pre>
@@ -43,13 +55,16 @@ public final class PlayerTargetSelector {
     private final Runnable onCancel;
     private final String title;
     private final boolean requireSelection;
+    private final int timeoutSeconds;
 
     private final SelectionMenu menu;
     private boolean finished;
+    private BukkitTask timeoutTask;
+    private QuitWatcher quitWatcher;
 
     private PlayerTargetSelector(Builder builder) {
         this.source = builder.source;
-        this.candidates = List.copyOf(filterCandidates(
+        this.candidates = new ArrayList<>(filterCandidates(
                 builder.candidates,
                 candidate -> candidate != null
                         && candidate.player().isOnline()
@@ -59,6 +74,7 @@ public final class PlayerTargetSelector {
         this.onCancel = builder.onCancel;
         this.title = builder.title;
         this.requireSelection = builder.requireSelection;
+        this.timeoutSeconds = builder.timeoutSeconds;
         this.menu = new SelectionMenu(source.player(), this);
     }
 
@@ -68,32 +84,65 @@ public final class PlayerTargetSelector {
 
     /** 打开选择菜单；若没有可选目标，直接触发取消回调。 */
     public void open() {
+        if (finished) {
+            return;
+        }
         if (candidates.isEmpty()) {
             cancelFlow();
             return;
         }
+        watchQuit();
+        startTimeout();
         menu.open();
     }
 
-    /** 取消当前选择流程：关闭菜单且不触发 onCancel（用于超时等外部终止）。 */
+    /** 取消当前选择流程：关闭菜单且不触发 onCancel（用于游戏提前结束等外部终止）。 */
     public void cancel() {
         if (finished) {
             return;
         }
         finished = true;
+        teardown();
         source.player().closeInventory();
+    }
+
+    /**
+     * 随机选中一名仍在线候选并完成本次选择。
+     *
+     * <p>选择者超时未操作时由内置计时器自动调用，也可由游戏自己的回合计时器手动调用，
+     * 以保证「超时也有结果」。没有可用候选时退化为取消回调。
+     */
+    public void selectRandom() {
+        if (finished) {
+            return;
+        }
+        List<PlayerExt> online = onlineCandidates();
+        int index = pickRandomIndex(online.size(), ThreadLocalRandom.current());
+        if (index < 0) {
+            source.player().closeInventory();
+            cancelFlow();
+            return;
+        }
+        PlayerExt target = online.get(index);
+        source.sender().info("<yellow>时间到，随机选择了 <white>%s".formatted(target.getName()));
+        select(target);
     }
 
     /** @return 当前可选目标列表（不可变快照） */
     public List<PlayerExt> getCandidates() {
-        return candidates;
+        return List.copyOf(candidates);
     }
 
     private void select(PlayerExt target) {
         if (finished) {
             return;
         }
+        if (!target.player().isOnline()) {
+            dropCandidate(target, "<yellow>%s 已离开，请重新选择");
+            return;
+        }
         finished = true;
+        teardown();
         // 先关闭菜单再回调：回调里通常会立刻开启下一个界面（如下一回合的选人菜单），
         // 若顺序反过来，新界面会被紧随其后的 closeInventory() 一并关掉。
         source.player().closeInventory();
@@ -106,7 +155,7 @@ public final class PlayerTargetSelector {
         if (finished) {
             return;
         }
-        if (requireSelection && source.player().isOnline()) {
+        if (requireSelection && source.player().isOnline() && !candidates.isEmpty()) {
             // 强制选择模式：关掉界面不算取消，下一 tick 重新打开（不能在关闭事件里直接开）
             Bukkit.getScheduler().runTask(MCZJUGameCore.getInstance(), this::reopen);
             return;
@@ -120,6 +169,7 @@ public final class PlayerTargetSelector {
             return;
         }
         finished = true;
+        teardown();
         source.player().closeInventory();
         if (onCancel != null) {
             onCancel.run();
@@ -130,7 +180,7 @@ public final class PlayerTargetSelector {
         if (finished) {
             return;
         }
-        if (!source.player().isOnline()) {
+        if (!source.player().isOnline() || candidates.isEmpty()) {
             cancelFlow();
             return;
         }
@@ -144,8 +194,99 @@ public final class PlayerTargetSelector {
             return;
         }
         finished = true;
+        teardown();
         if (onCancel != null) {
             onCancel.run();
+        }
+    }
+
+    /** 候选掉线：从列表移除并刷新界面；无人可选时结束为取消。 */
+    private void dropCandidate(PlayerExt target, String message) {
+        candidates.remove(target);
+        if (candidates.isEmpty()) {
+            source.player().closeInventory();
+            cancelFlow();
+            return;
+        }
+        source.sender().warn(message.formatted(target.getName()));
+        menu.refreshFromOwner();
+    }
+
+    private List<PlayerExt> onlineCandidates() {
+        List<PlayerExt> online = new ArrayList<>(candidates.size());
+        for (PlayerExt candidate : candidates) {
+            if (candidate.player().isOnline()) {
+                online.add(candidate);
+            }
+        }
+        return online;
+    }
+
+    /** @return 随机下标；size &lt;= 0 时返回 -1。 */
+    static int pickRandomIndex(int size, Random random) {
+        if (size <= 0) {
+            return -1;
+        }
+        return random.nextInt(size);
+    }
+
+    private void startTimeout() {
+        if (timeoutSeconds <= 0) {
+            return;
+        }
+        timeoutTask = Bukkit.getScheduler().runTaskLater(MCZJUGameCore.getInstance(), () -> {
+            if (!finished) {
+                selectRandom();
+            }
+        }, timeoutSeconds * 20L);
+    }
+
+    private void stopTimeout() {
+        if (timeoutTask != null && !timeoutTask.isCancelled()) {
+            timeoutTask.cancel();
+        }
+        timeoutTask = null;
+    }
+
+    private void watchQuit() {
+        if (quitWatcher != null) {
+            return;
+        }
+        quitWatcher = new QuitWatcher();
+        Bukkit.getPluginManager().registerEvents(quitWatcher, MCZJUGameCore.getInstance());
+    }
+
+    private void unwatchQuit() {
+        if (quitWatcher == null) {
+            return;
+        }
+        HandlerList.unregisterAll(quitWatcher);
+        quitWatcher = null;
+    }
+
+    private void teardown() {
+        stopTimeout();
+        unwatchQuit();
+    }
+
+    /** 监听掉线：选择者离开则结束流程，候选离开则移出列表并刷新界面。 */
+    private final class QuitWatcher implements Listener {
+
+        @EventHandler
+        public void onQuit(PlayerQuitEvent event) {
+            if (finished) {
+                return;
+            }
+            if (event.getPlayer().getUniqueId().equals(source.getUniqueId())) {
+                cancelFlow();
+                return;
+            }
+            for (PlayerExt candidate : List.copyOf(candidates)) {
+                if (candidate.getUniqueId().equals(event.getPlayer().getUniqueId())) {
+                    dropCandidate(candidate, "<yellow>%s 已离开，请重新选择");
+                    return;
+                }
+            }
         }
     }
 
@@ -260,6 +401,11 @@ public final class PlayerTargetSelector {
         public void handleClose() {
             selector.close();
         }
+
+        /** 候选变化后原地刷新内容（不重开界面）。 */
+        void refreshFromOwner() {
+            refresh();
+        }
     }
 
     public static final class Builder {
@@ -269,6 +415,7 @@ public final class PlayerTargetSelector {
         private Predicate<PlayerExt> keep;
         private boolean excludeSource = true;
         private boolean requireSelection;
+        private int timeoutSeconds;
         private String title = "<gold>选择目标玩家";
         private Consumer<PlayerExt> onSelect;
         private Runnable onCancel;
@@ -308,6 +455,22 @@ public final class PlayerTargetSelector {
          */
         public Builder requireSelection(boolean requireSelection) {
             this.requireSelection = requireSelection;
+            return this;
+        }
+
+        /**
+         * 超时秒数，&lt;= 0 表示不启用内置计时器（默认）。
+         *
+         * <p>超时不会丢弃结果，而是随机选中一名仍在线候选并触发 {@code onSelect}；
+         * 若此时没有可用候选，则走 {@code onCancel}。
+         *
+         * @param timeoutSeconds 超时秒数
+         */
+        public Builder timeoutSeconds(int timeoutSeconds) {
+            if (timeoutSeconds < 0) {
+                throw new IllegalArgumentException("timeoutSeconds 不能为负数");
+            }
+            this.timeoutSeconds = timeoutSeconds;
             return this;
         }
 
