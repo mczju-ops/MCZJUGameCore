@@ -47,6 +47,17 @@ public abstract class Menu implements InventoryHolder {
         player.player().openInventory(inventory);
     }
 
+    /**
+     * 打开菜单并跳过权限检查。
+     *
+     * <p>用于游戏内必经的交互流程（选目标、选牌、确认等），这些流程不应受权限控制；
+     * 用 {@link #open()} 时空权限串对普通玩家恒为 false，只有 OP 能通过。
+     */
+    public final void openUnchecked() {
+        setup();
+        player.player().openInventory(inventory);
+    }
+
     /** 提供给子类的注册方法，无回调（此槽位纯展示） */
     protected void setSlot(int slot, ItemStack display) {
         inventory.setItem(slot, display);

@@ -32,6 +32,12 @@ public class DefaultGameManager implements AbstractGameManager {
         try {
             AbstractGame game = gameClass.getDeclaredConstructor().newInstance();
             String gameId = game.getId();
+            if (!isValidGameId(gameId)) {
+                // 游戏 ID 会用作数据目录名（player/{gameId}/...），带路径非法字符会导致读写失败
+                throw new IllegalArgumentException(
+                        "无法注册游戏 %s：游戏 ID 不能为空，且不能包含 \\ / : * ? \" < > | 等文件名非法字符"
+                                .formatted(gameId));
+            }
             if (gameIdMap.containsKey(gameId)){
                 // 有这个游戏了
                 logger.error("无法注册游戏 %s，相同 ID 的游戏已存在".formatted(gameId));
@@ -46,6 +52,15 @@ public class DefaultGameManager implements AbstractGameManager {
             throw new RuntimeException(e);
         }
 
+    }
+
+    /** 游戏 ID 会用作数据目录名，因此必须是非空且不含文件名非法字符的字符串。 */
+    private static boolean isValidGameId(String gameId) {
+        if (gameId == null || gameId.isBlank()) return false;
+        for (char c : gameId.toCharArray()) {
+            if (c < 0x20 || "\\/:*?\"<>|".indexOf(c) >= 0) return false;
+        }
+        return true;
     }
 
     @Override
