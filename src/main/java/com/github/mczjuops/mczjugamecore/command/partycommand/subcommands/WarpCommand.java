@@ -15,7 +15,8 @@ import org.bukkit.entity.Player;
 
 /**
  * 队长通过 /party warp 将队员传送到自己身边。
- * 全体队伍玩家（包括队长）必须未加入游戏或处于 WAITING；只传送位置，不改变游戏归属。
+ * 队长未加入游戏且有队员在游戏中时，全体队员先执行退出命令，确认退出后再传送。
+ * 其他情况下，全体队伍玩家（包括队长）必须未加入游戏或处于 WAITING，不改变游戏归属。
  */
 public class WarpCommand extends PartySubCommands {
 
@@ -34,7 +35,7 @@ public class WarpCommand extends PartySubCommands {
     /** @return 帮助中的功能说明及使用限制 */
     @Override
     public String getDescription() {
-        return "将全队传送到队长身边（仅队长，全员未加入游戏或游戏等待中）";
+        return "将全队传送到队长身边（仅队长，队长未在游戏中时先带队退出，否则全员须在等待中）";
     }
 
     /**
@@ -65,6 +66,19 @@ public class WarpCommand extends PartySubCommands {
         }
 
         var players = party.getAllPlayer();
+        if (player.getGame() == null && players.stream().anyMatch(member -> member.getGame() != null)) {
+            for (PlayerExt member : players) {
+                if (!member.equals(player)) {
+                    member.player().performCommand("mgc leave notip");
+                }
+            }
+            for (PlayerExt member : players) {
+                if (member.getGame() != null) {
+                    player.sender().warn("队伍成员 %s 未能退出游戏，无法传送全队！".formatted(member.getDisplayName()));
+                    return 0;
+                }
+            }
+        }
         for (PlayerExt member : players) {
             var game = member.getGame();
             if (game != null && game.getState() != GameState.WAITING) {
