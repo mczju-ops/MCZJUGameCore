@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.wiki;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.google.gson.*;
+import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import io.papermc.paper.dialog.Dialog;
 import io.papermc.paper.registry.data.dialog.ActionButton;
 import io.papermc.paper.registry.data.dialog.DialogBase;
@@ -139,8 +140,10 @@ public final class GameWikiManager {
         // 延至下一 tick，避免箱子菜单的关闭事件覆盖新打开的对话框。
         Bukkit.getScheduler().runTask(MCZJUGameCore.getInstance(), () -> {
             if (!player.isOnline() || !player.hasPermission("mgc.mgc")) return;
+            var meta = MCZJUGameCore.getGameManager().getGameMetas().get(gameId);
+            if (meta == null) return;
             player.showDialog(Dialog.create(builder -> builder.empty()
-                    .base(DialogBase.builder(Component.text(gameId + " Wiki"))
+                    .base(DialogBase.builder(TextParser.parse(meta.displayName()).append(Component.text(" Wiki")))
                             .canCloseWithEscape(true)
                             .body(List.of(DialogBody.plainMessage(Component.text(url))))
                             .build())
