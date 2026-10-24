@@ -40,7 +40,7 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
     }
 
     /**
-     * 注册成员、切换档案并应用核心默认 Tab 名称，页脚沿用游戏介绍。
+     * 注册成员、切换档案并应用核心默认 Tab 名称，页脚沿用游戏介绍；成功入局后发送可关闭的 Wiki 提醒。
      * @param player 要加入的玩家，已有游戏时先退出原局
      * @param game 新游戏实例；子插件应通过 GameManager 加入游戏
      */
@@ -59,6 +59,12 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
             footer = footer.append(Component.newline()).append(TextParser.parse(line));
         }
         player.player().sendPlayerListFooter(footer);
+        org.bukkit.Bukkit.getScheduler().runTask(MCZJUGameCore.getInstance(), () -> {
+            // 加入策略可能在当前 tick 拒绝入局，只有仍属于同一游戏时才提醒。
+            if (player.player().isOnline() && playerGameMap.get(player) == game) {
+                MCZJUGameCore.getGameWikiManager().remindOnJoin(player.player(), game.getId());
+            }
+        });
     }
 
     /**

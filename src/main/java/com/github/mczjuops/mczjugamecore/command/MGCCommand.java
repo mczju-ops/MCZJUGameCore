@@ -46,6 +46,12 @@ public class MGCCommand implements BrigadierCommand {
         return Commands.literal(getName())
                 .requires(src -> src.getSender().hasPermission("mgc.mgc"))
                 .executes(this::executeMGC)
+                .then(Commands.literal("wiki")
+                        .executes(ctx -> executeWiki(ctx, null))
+                        .then(Commands.argument("game", StringArgumentType.word())
+                                .suggests((ctx, builder) -> CommandUtils.suggestMatching(
+                                        MCZJUGameCore.getGameManager().getRegisteredGameIds(), builder))
+                                .executes(ctx -> executeWiki(ctx, StringArgumentType.getString(ctx, "game")))))
                 .then(Commands.literal("help")
                         .executes(this::showHelp))
                 .then(Commands.literal("join")
@@ -100,12 +106,25 @@ public class MGCCommand implements BrigadierCommand {
                 .build();
     }
 
+    private int executeWiki(CommandContext<CommandSourceStack> ctx, String gameId) {
+        if (!(ctx.getSource().getSender() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage("此命令只能由玩家执行");
+            return 0;
+        }
+        if (gameId == null) {
+            new MainMenu(player, null, true).open();
+            return Command.SINGLE_SUCCESS;
+        }
+        return MCZJUGameCore.getGameWikiManager().sendLink(player, gameId) ? Command.SINGLE_SUCCESS : 0;
+    }
+
     private int showHelp(CommandContext<CommandSourceStack> ctx) {
         CommandSender sender = ctx.getSource().getSender();
 
         sender.sendMessage(TextParser.parse("<#DEB12D><b>============= 小游戏功能命令帮助 ============="));
         sender.sendMessage(TextParser.parse("<#DEB12D><b>命令列表："));
         sender.sendMessage(TextParser.parse("<yellow>/mgc <gray>-</gray> <aqua>打开小游戏菜单"));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc wiki [游戏] <gray>-</gray> <aqua>查看小游戏 Wiki"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc help <gray>-</gray> <aqua>查看命令帮助"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc join <游戏> <gray>-</gray> <aqua>加入指定游戏"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc joinroom <游戏> <房间> <gray>-</gray> <aqua>加入指定游戏房间（部分游戏可用）"));
