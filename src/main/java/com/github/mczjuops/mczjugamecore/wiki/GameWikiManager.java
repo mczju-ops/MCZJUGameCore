@@ -2,6 +2,14 @@ package com.github.mczjuops.mczjugamecore.wiki;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.google.gson.*;
+import io.papermc.paper.dialog.Dialog;
+import io.papermc.paper.registry.data.dialog.ActionButton;
+import io.papermc.paper.registry.data.dialog.DialogBase;
+import io.papermc.paper.registry.data.dialog.action.DialogAction;
+import io.papermc.paper.registry.data.dialog.body.DialogBody;
+import io.papermc.paper.registry.data.dialog.type.DialogType;
+import org.bukkit.Bukkit;
+import java.util.List;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -113,10 +121,10 @@ public final class GameWikiManager {
     }
 
     /**
-     * 向玩家发送使用客户端 OPEN_URL 的可点击链接，保留客户端浏览器确认。
+     * 显示带有客户端 OPEN_URL 按钮的 Wiki 对话框，保留客户端浏览器确认。
      * @param player 接收玩家
      * @param gameId 注册游戏 ID
-     * @return 是否成功提供链接；不存在或未配置时发送提示并返回 false
+     * @return 是否已安排显示对话框；不存在或未配置时发送提示并返回 false
      */
     public boolean sendLink(Player player, String gameId) {
         if (!MCZJUGameCore.getGameManager().getRegisteredGameIds().contains(gameId)) {
@@ -128,8 +136,19 @@ public final class GameWikiManager {
             player.sendMessage(Component.text("该游戏尚未设置 Wiki", NamedTextColor.YELLOW));
             return false;
         }
-        player.sendMessage(Component.text("点击在浏览器中打开 " + gameId + " 的 Wiki：", NamedTextColor.YELLOW)
-                .append(Component.text(url, NamedTextColor.AQUA).clickEvent(ClickEvent.openUrl(url))));
+        // 延至下一 tick，避免箱子菜单的关闭事件覆盖新打开的对话框。
+        Bukkit.getScheduler().runTask(MCZJUGameCore.getInstance(), () -> {
+            if (!player.isOnline() || !player.hasPermission("mgc.mgc")) return;
+            player.showDialog(Dialog.create(builder -> builder.empty()
+                    .base(DialogBase.builder(Component.text(gameId + " Wiki"))
+                            .canCloseWithEscape(true)
+                            .body(List.of(DialogBody.plainMessage(Component.text(url))))
+                            .build())
+                    .type(DialogType.confirmation(
+                            ActionButton.builder(Component.text("打开 Wiki"))
+                                    .action(DialogAction.staticAction(ClickEvent.openUrl(url))).build(),
+                            ActionButton.builder(Component.text("取消")).build()))));
+        });
         return true;
     }
 }
