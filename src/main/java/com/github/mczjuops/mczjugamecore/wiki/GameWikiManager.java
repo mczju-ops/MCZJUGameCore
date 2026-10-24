@@ -13,6 +13,10 @@ import org.bukkit.Bukkit;
 import java.util.List;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.ClickCallback;
+import org.bukkit.NamespacedKey;
+import org.bukkit.persistence.PersistentDataType;
+import java.util.ArrayList;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
@@ -105,6 +109,38 @@ public final class GameWikiManager {
                 catch (IOException e) { MCZJUGameCore.getInstance().getLogger().warning(e.getMessage()); }
             }
         }
+    }
+
+    /**
+     * 加入游戏后发送 Wiki 聊天提醒，玩家可直接打开网页或永久关闭此游戏的提醒。
+     * @param player 已成功加入游戏的玩家，在服务器线程调用
+     * @param gameId 注册游戏 ID；没有 Wiki 或玩家已关闭提醒时不发送
+     */
+    public void remindOnJoin(Player player, String gameId) {
+        String url = getLink(gameId);
+        var meta = MCZJUGameCore.getGameManager().getGameMetas().get(gameId);
+        NamespacedKey key = new NamespacedKey(MCZJUGameCore.getInstance(), "hidden_wiki_reminders");
+        var hidden = player.getPersistentDataContainer().getOrDefault(key, PersistentDataType.LIST.strings(), List.of());
+        if (url == null || meta == null || hidden.contains(gameId)) return;
+        var owner = player.getUniqueId();
+        player.sendMessage(Component.text("了解玩法：", NamedTextColor.YELLOW)
+                .append(TextParser.parse(meta.displayName()))
+                .append(Component.text(" [打开 Wiki]", NamedTextColor.AQUA)
+                        .clickEvent(ClickEvent.openUrl(url)))
+                .append(Component.text(" [下次不再提醒此游戏]", NamedTextColor.GRAY)
+                        .clickEvent(ClickEvent.callback(audience -> {
+                            if (!(audience instanceof Player who) || !who.getUniqueId().equals(owner)) return;
+                            Bukkit.getScheduler().runTask(MCZJUGameCore.getInstance(), () -> {
+                                if (!who.isOnline()) return;
+                                var values = new ArrayList<>(who.getPersistentDataContainer()
+                                        .getOrDefault(key, PersistentDataType.LIST.strings(), List.of()));
+                                if (!values.contains(gameId)) values.add(gameId);
+                                who.getPersistentDataContainer().set(key, PersistentDataType.LIST.strings(), values);
+                                who.sendMessage(Component.text("已关闭此游戏的 Wiki 提醒，下次可用 /mgc wiki 打开 Wiki 菜单。",
+                                                NamedTextColor.YELLOW)
+                                        .clickEvent(ClickEvent.runCommand("/mgc wiki")));
+                            });
+                        }, ClickCallback.Options.builder().uses(1).lifetime(java.time.Duration.ofDays(1)).build()))));
     }
 
     private static String validateUrl(String value) {
