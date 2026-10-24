@@ -4,6 +4,7 @@ import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.room.menu.GameRoomSettingMenu;
 import com.github.mczjuops.mczjugamecore.menu.AlertMenu;
 import com.github.mczjuops.mczjugamecore.menu.GameCategorySettingMenu;
+import com.github.mczjuops.mczjugamecore.menu.GameWikiSettingMenu;
 import com.github.mczjuops.mczjugamecore.lobby.LobbySettingMenu;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.score.leaderboard.ClearRecordResult;
@@ -54,12 +55,21 @@ public class MGCOPCommand implements BrigadierCommand {
         return Commands.literal(getName())
                 .requires(src -> src.getSender().hasPermission("mgc.dev"))
                 .executes(ctx -> {
-                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop reload|lobby|category|room"));
+                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop reload|lobby|wiki|category|room"));
                     return 0;
                 })
                 .then(Commands.literal("reload")
                         .executes(this::executeReload)
                 )
+                .then(Commands.literal("wiki")
+                        .executes(ctx -> {
+                            if (!(ctx.getSource().getSender() instanceof Player player)) {
+                                ctx.getSource().getSender().sendMessage("此命令只能由玩家执行");
+                                return 0;
+                            }
+                            new GameWikiSettingMenu(player).open();
+                            return Command.SINGLE_SUCCESS;
+                        }))
                 .then(Commands.literal("lobby")
                         .executes(this::executeLobbyMenu)
                 )

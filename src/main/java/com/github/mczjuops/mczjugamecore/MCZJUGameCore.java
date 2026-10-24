@@ -17,6 +17,7 @@ import com.github.mczjuops.mczjugamecore.initialize.ListenerInitializer;
 import com.github.mczjuops.mczjugamecore.item.ItemManager;
 import com.github.mczjuops.mczjugamecore.menu.MenuFacade;
 import com.github.mczjuops.mczjugamecore.lobby.LobbyManager;
+import com.github.mczjuops.mczjugamecore.wiki.GameWikiManager;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.tab.TabManager;
@@ -40,6 +41,11 @@ import java.util.List;
 
 public final class MCZJUGameCore extends JavaPlugin {
 
+    /** @return 插件共享的小游戏 Wiki 配置及访问管理器 */
+    public static GameWikiManager getGameWikiManager() {
+        return getInstance().gameWikiManager;
+    }
+
     private static MCZJUGameCore INSTANCE;
     private AbstractGameManager gameManager;
 
@@ -54,6 +60,7 @@ public final class MCZJUGameCore extends JavaPlugin {
 
     private ConfigManager configManager;
     private LobbyManager lobbyManager;
+    private GameWikiManager gameWikiManager;
 
     private ProfileManager profileManager;
     private ProfileCapture profileCapture;
@@ -77,6 +84,7 @@ public final class MCZJUGameCore extends JavaPlugin {
         menuFacade = new MenuFacade();
         configManager = new ConfigManager();
         lobbyManager = new LobbyManager();
+        gameWikiManager = new GameWikiManager();
         itemManager = new ItemManager();
         playerDataManager = new PlayerDataManager();
         playerDataManager.startAutoSave(20 * 60 * 30L);
