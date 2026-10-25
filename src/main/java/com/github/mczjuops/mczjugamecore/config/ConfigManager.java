@@ -41,16 +41,32 @@ public class ConfigManager {
         reload();
     }
 
+    /** 兼容入口：依次重载核心配置和类别分配；任一失败时抛出异常。命令层通过 ReloadManager 隔离失败。 */
     public void reload() {
+        reloadCoreConfig();
+        reloadCategoryAssignments();
+    }
+
+    /**
+     * 只读取 config.yml（核心设置及类别定义），不读取类别分配或大厅文件。
+     * 解析失败保留原配置；菜单重新打开后更新，玩家档案不在此处切换或重新加载。
+     * @throws IllegalStateException 文件读取或 YAML 解析失败
+     */
+    public void reloadCoreConfig() {
         MCZJUGameCore plugin = MCZJUGameCore.getInstance();
+        YamlConfiguration config = new YamlConfiguration();
+        try {
+            config.load(plugin.getDataFolder().toPath().resolve("config.yml").toFile());
+        } catch (Exception e) {
+            throw new IllegalStateException("无法读取 config.yml：" + e.getMessage(), e);
+        }
+        ConfigLocation spawn = loadLocation(config);
+        loadGameCategories(config);
         plugin.reloadConfig();
-        var config = plugin.getConfig();
         debug = config.getBoolean("debug", false);
         mainServer = config.getString("main-server", "main");
         lobbyProfileFeaturesEnabled = config.getBoolean("enable-lobby-profile-features", true);
-        lobbySpawn = loadLocation(config);
-        loadGameCategories(config);
-        loadGameCategoryAssignments();
+        lobbySpawn = spawn;
         if (lobbySpawn == null) logger.warn("config.yml 未正确配置大厅出生点");
     }
 
@@ -78,20 +94,29 @@ public class ConfigManager {
         return MCZJUGameCore.getInstance().getDataFolder().toPath().resolve("game-categories.yml");
     }
 
-    private void loadGameCategoryAssignments() {
+    /**
+     * 只重载 game-categories.yml 中的游戏类别分配，不重读 config.yml。
+     * 缺省文件视为空分配；解析失败保留旧分配；有效类别由当前类别定义动态解析。
+     * @throws IllegalStateException 读取、解析失败或分配值不是字符串
+     */
+    public void reloadCategoryAssignments() {
         Path file = categoryStorageFile();
-        if (!Files.exists(file)) return;
         YamlConfiguration storage = new YamlConfiguration();
         // 游戏 ID 可以含点号，不能将其解释为 YAML 路径。
         storage.options().pathSeparator('\0');
         try {
-            storage.load(file.toFile());
+            if (!Files.notExists(file)) storage.load(file.toFile());
+            Map<String, String> loaded = new LinkedHashMap<>();
+            for (var entry : storage.getValues(false).entrySet()) {
+                if (!(entry.getValue() instanceof String categoryId) || entry.getKey().isBlank()) {
+                    throw new IllegalArgumentException("类别分配必须为游戏 ID 到类别 ID 的字符串映射");
+                }
+                loaded.put(entry.getKey(), categoryId);
+            }
             gameCategoryAssignments.clear();
-            storage.getValues(false).forEach((id, value) -> {
-                if (value instanceof String categoryId) gameCategoryAssignments.put(id, categoryId);
-            });
+            gameCategoryAssignments.putAll(loaded);
         } catch (Exception e) {
-            logger.error("无法加载游戏分类：%s".formatted(e.getMessage()));
+            throw new IllegalStateException("无法加载游戏分类：" + e.getMessage(), e);
         }
     }
 

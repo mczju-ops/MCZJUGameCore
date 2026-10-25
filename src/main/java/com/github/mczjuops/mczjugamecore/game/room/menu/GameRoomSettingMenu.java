@@ -51,6 +51,7 @@ public class GameRoomSettingMenu extends Menu {
     /** 填充当前页参数、翻页按钮和保存按钮。 */
     @Override
     public void setup() {
+        if (!isCurrentRoom()) return;
         ItemStack background = ItemStack.of(Material.BLACK_STAINED_GLASS_PANE);
         background.editMeta(meta -> meta.setHideTooltip(true));
         for (int i = 0; i < 9; i++) setSlot(i, background);
@@ -104,11 +105,26 @@ public class GameRoomSettingMenu extends Menu {
             else setSlot(9 + i - from, item, (p, event) -> {
                 if (list) new GameRoomListSettingMenu(p.player(), gameRoom, name, page).open();
                 else RoomParameterEditor.edit(player, name, type, gameRoom.getField(name, type), newValue -> {
+                    if (!isCurrentRoom()) return;
                     gameRoom.setField(name, newValue);
                     gameRoom.setModified(true);
                     player.sender().success("<green>设置成功：" + name);
                 }, () -> new GameRoomSettingMenu(player.player(), gameRoom, page).open());
             });
         }
+    }
+
+    /** 校验房间快照仍有效，拒绝重载前打开的菜单及延迟编辑回调。 */
+    @Override
+    public void handleClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+        if (isCurrentRoom()) super.handleClick(event);
+    }
+
+    private boolean isCurrentRoom() {
+        if (MCZJUGameCore.getGameRoomManager().getGameRoom(gameRoom.getGameId(), gameRoom.getRoomName()) == gameRoom) {
+            return true;
+        }
+        player.sender().warn("房间配置已重载或删除，请重新打开菜单");
+        return false;
     }
 }

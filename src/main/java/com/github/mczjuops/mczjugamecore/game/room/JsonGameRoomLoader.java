@@ -47,6 +47,43 @@ public class JsonGameRoomLoader implements GameRoomLoader{
         return true;
     }
 
+    /**
+     * 完整读取一个游戏的 JSON 房间快照，不修改管理器或磁盘。
+     * @param gameId 游戏 ID
+     * @param roomClass JSON 房间类型
+     * @return 验证成功的房间列表；目录不存在时为空
+     * @throws IOException 文件读取失败
+     * @throws IllegalArgumentException 类型不支持、JSON 损坏或房间为空
+     */
+    public java.util.List<AbstractGameRoom> readRooms(String gameId, Class<? extends AbstractGameRoom> roomClass)
+            throws IOException {
+        if (!JsonGameRoom.class.isAssignableFrom(roomClass)) {
+            throw new IllegalArgumentException("此房间类型需由子插件注册自定义重载操作");
+        }
+        Path directory = MCZJUGameCore.getInstance().getDataFolder().toPath().resolve("rooms").resolve(gameId);
+        java.util.List<AbstractGameRoom> rooms = new java.util.ArrayList<>();
+        if (Files.notExists(directory)) return rooms;
+        Gson gson = LocationAdapter.getGsonBuilder().newBuilder()
+                .setStrictness(com.google.gson.Strictness.STRICT).create();
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, "*.json")) {
+            for (Path file : files) {
+                try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                    AbstractGameRoom room = gson.fromJson(reader, roomClass);
+                    if (room == null) throw new IllegalArgumentException("房间不能为空：" + file.getFileName());
+                    String name = file.getFileName().toString();
+                    room.setGameId(gameId);
+                    room.setRoomName(name.substring(0, name.length() - 5));
+                    room.setState(GameRoomState.READY);
+                    room.setModified(false);
+                    rooms.add(room);
+                } catch (RuntimeException e) {
+                    throw new IllegalArgumentException("房间 " + file.getFileName() + " 加载失败：" + e.getMessage(), e);
+                }
+            }
+        }
+        return rooms;
+    }
+
     private @Nullable <T extends AbstractGameRoom> T loadGameRoom(
             String gameId,
             String roomName,

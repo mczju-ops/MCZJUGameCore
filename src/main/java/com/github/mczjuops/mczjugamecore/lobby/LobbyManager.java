@@ -169,7 +169,7 @@ public class LobbyManager {
 
     private boolean save(Path file, Map<String, JsonObject> locations) {
         if (unreadableFiles.contains(file)) {
-            logger.error("拒绝覆盖读取失败的大厅配置 %s，请修复文件后重启插件".formatted(file.getFileName()));
+            logger.error("拒绝覆盖读取失败的大厅配置 %s，请修复文件后执行 /mgcop reload lobby".formatted(file.getFileName()));
             return false;
         }
         Path temporary = null;
@@ -211,20 +211,57 @@ public class LobbyManager {
             currentContents = null;
         }
         if (Objects.equals(currentContents, savedContents.get(file))) return true;
-        logger.error("拒绝覆盖已被外部修改的大厅配置 %s，请重启插件以加载磁盘上的配置"
+        logger.error("拒绝覆盖已被外部修改的大厅配置 %s，请执行 /mgcop reload lobby 以加载磁盘上的配置"
                 .formatted(file.toAbsolutePath()));
         return false;
     }
 
-    private void load(Path file, Map<String, JsonObject> locations, boolean normalizeIds) {
-        if (Files.notExists(file)) {
-            savedLocations.put(file, Map.of());
-            logger.info("大厅配置不存在，未创建文件：%s".formatted(file.toAbsolutePath()));
-            return;
+    /**
+     * 重新读取 lobbies.json 和 category-lobbies.json；两份均验证成功后统一替换。
+     * 缺省文件视为空，不执行旧配置迁移；失败保留全部旧位置并禁止写回损坏的文件。
+     * 成功后更新磁盘冲突基准并恢复写入；下一次传送或新打开的菜单生效，不移动在线玩家。
+     * @throws IllegalStateException 任一文件读取、解析或位置验证失败
+     */
+    public void reload() {
+        Map<Path, LoadedLobbies> loaded = new HashMap<>();
+        java.util.List<String> failures = new java.util.ArrayList<>();
+        for (Path file : java.util.List.of(storageFile, categoryStorageFile)) {
+            try {
+                loaded.put(file, read(file, file.equals(storageFile)));
+            } catch (Exception e) {
+                unreadableFiles.add(file);
+                failures.add(file.getFileName() + "：" + e.getMessage());
+            }
         }
+        if (!failures.isEmpty()) throw new IllegalStateException(String.join("；", failures));
+        apply(storageFile, lobbies, loaded.get(storageFile));
+        apply(categoryStorageFile, categoryLobbies, loaded.get(categoryStorageFile));
+    }
+
+    private record LoadedLobbies(String contents, Map<String, JsonObject> locations) {}
+
+    private void load(Path file, Map<String, JsonObject> locations, boolean normalizeIds) {
         try {
-            String contents = Files.readString(file, StandardCharsets.UTF_8);
-            JsonReader jsonReader = gson.newJsonReader(new StringReader(contents));
+            apply(file, locations, read(file, normalizeIds));
+        } catch (Exception e) {
+            unreadableFiles.add(file);
+            logger.error("无法加载大厅配置 %s：%s".formatted(file.getFileName(), e.getMessage()));
+        }
+    }
+
+    private void apply(Path file, Map<String, JsonObject> locations, LoadedLobbies loaded) {
+        locations.clear();
+        locations.putAll(loaded.locations());
+        savedContents.put(file, loaded.contents());
+        savedLocations.put(file, Map.copyOf(loaded.locations()));
+        unreadableFiles.remove(file);
+        logger.info("已加载大厅配置 %s，共 %d 条记录".formatted(file.toAbsolutePath(), locations.size()));
+    }
+
+    private LoadedLobbies read(Path file, boolean normalizeIds) throws IOException {
+        if (Files.notExists(file)) return new LoadedLobbies(null, Map.of());
+        String contents = Files.readString(file, StandardCharsets.UTF_8);
+        try (JsonReader jsonReader = gson.newJsonReader(new StringReader(contents))) {
             if (jsonReader.peek() != JsonToken.BEGIN_OBJECT) {
                 throw new IllegalArgumentException("配置必须是 JSON 对象");
             }
@@ -243,13 +280,7 @@ public class LobbyManager {
                     throw new IllegalArgumentException("大厅 ID 重复：" + id);
                 }
             }
-            locations.putAll(validated);
-            savedContents.put(file, contents);
-            savedLocations.put(file, Map.copyOf(validated));
-            logger.info("已加载大厅配置 %s，共 %d 条记录".formatted(file.toAbsolutePath(), validated.size()));
-        } catch (Exception e) {
-            unreadableFiles.add(file);
-            logger.error("无法加载大厅配置 %s：%s".formatted(file.getFileName(), e.getMessage()));
+            return new LoadedLobbies(contents, validated);
         }
     }
 

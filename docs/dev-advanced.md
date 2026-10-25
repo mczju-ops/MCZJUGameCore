@@ -202,9 +202,9 @@ private void confirmDelete(Player player) {
 
 大厅持久化不依赖启动时世界是否已加载：文件保留世界名称和坐标，每次获取位置时再查找世界。世界未加载时 `getLobby`、`getMainLobby`、`getGameLobby` 和 `getCategoryLobby` 返回 `null`，但记录仍保留；世界加载后无需重启即可获取位置。`hasLobby` 和 `getConfiguredLobbyIds` 反映已配置记录，不代表世界当前可用。
 
-`lobbies.json` 或 `category-lobbies.json` 读取失败（包括空文件、损坏 JSON 或无效位置）时，整个对应文件禁止写入，设置、移除和停服保存都不能覆盖原文件；修复文件后重启插件才能恢复写入。另一份正常文件仍可独立保存。`setLobby` 保持 `void` API，保存失败抛出 `IllegalStateException`；移除大厅或设置类别大厅失败返回 `false`，内存中保留原设置，菜单提示失败。保存先完成同目录临时文件写入，再优先原子替换；文件系统不支持原子移动时退回普通替换。旧 `config.yml` 的 `lobby-spawn` 仅在 `lobbies.json` 不存在时迁移，已有文件（包括 `{}`）不会触发迁移。
+`lobbies.json` 或 `category-lobbies.json` 读取失败（包括空文件、损坏 JSON 或无效位置）时，整个对应文件禁止写入，设置、移除和停服保存都不能覆盖原文件；修复文件后执行 `/mgcop reload lobby` 可恢复写入。另一份正常文件仍可独立保存。`setLobby` 保持 `void` API，保存失败抛出 `IllegalStateException`；移除大厅或设置类别大厅失败返回 `false`，内存中保留原设置，菜单提示失败。保存先完成同目录临时文件写入，再优先原子替换；文件系统不支持原子移动时退回普通替换。旧 `config.yml` 的 `lobby-spawn` 仅在 `lobbies.json` 不存在时迁移，已有文件（包括 `{}`）不会触发迁移。
 
-设置和移除大厅已经即时保存，停服不再写回大厅配置；公开的 `save()` 对未变化的数据也不重复写入。因此，在服务器运行时手动修改文件后重启，不会被旧内存快照覆盖。实际设置或移除前会核对磁盘内容是否仍与上次读取或保存时一致；如果被外部修改、创建或删除，则拒绝写入并提示重启加载新配置。启动日志显示大厅配置的绝对路径和成功加载的记录数量；不存在的文件不会自动生成空配置。
+设置和移除大厅已经即时保存，停服不再写回大厅配置；公开的 `save()` 对未变化的数据也不重复写入。因此，在服务器运行时手动修改文件后重启，不会被旧内存快照覆盖。实际设置或移除前会核对磁盘内容是否仍与上次读取或保存时一致；如果被外部修改、创建或删除，则拒绝写入并提示执行 `/mgcop reload lobby` 加载新配置。启动日志显示大厅配置的绝对路径和成功加载的记录数量；不存在的文件不会自动生成空配置。
 
 补充手动验收：服务器启动后手动写入或修改 `lobbies.json`，直接重启，确认文件保留且加载记录数正确；运行中修改文件后在菜单设置另一个大厅，确认操作失败、文件原文不变；未配置大厅且文件不存在时重启，确认没有生成 `{}`；仅打开菜单或传送后重启，确认大厅文件内容和修改时间不变。
 
@@ -629,10 +629,66 @@ MGC 停用时会尝试清理所有本工具创建的群组。子插件仍应在�
 
 玩家运行 `/mgc wiki` 浏览与 `/mgc` 相同布局和分类导航的 Wiki 菜单，或运行 `/mgc wiki <gameId>`（支持游戏 ID 补全）。点击游戏或指定游戏执行命令后会显示 Wiki 对话框，点击“打开 Wiki”按钮后由客户端确认并打开浏览器，无需打开聊天栏；未设置链接时明确提示。Wiki 入口不加入游戏、不选择房间，也不传送玩家；主菜单的底部通用功能保持原行为。
 
-链接按注册 game ID 唯一保存于插件数据目录的 `game-wikis.json`，与房间无关，缺省允许为空。仅在保存成功后更新内存，配置损坏或检测到磁盘外部修改时拒绝覆盖，请修复文件并重启。`/mgcop reload` 不重新加载此文件。无需修改 `config.yml` 或新增权限：访问沿用 `mgc.mgc`（默认所有玩家），设置沿用 `mgc.dev`（默认 OP）。
+链接按注册 game ID 唯一保存于插件数据目录的 `game-wikis.json`，与房间无关，缺省允许为空。仅在保存成功后更新内存，配置损坏或检测到磁盘外部修改时拒绝覆盖，请修复文件并执行 `/mgcop reload wiki`；无参数 `/mgcop reload` 也会重读此文件。无需修改 `config.yml` 或新增权限：访问沿用 `mgc.mgc`（默认所有玩家），设置沿用 `mgc.dev`（默认 OP）。
 
 公共 API：`MCZJUGameCore.getGameWikiManager().getLink(gameId)` 返回链接或 null；`setLink(gameId, url)` 设置链接，null/空白移除，保存失败返回 false，非法 URL 抛出 `IllegalArgumentException`；`sendLink(player, gameId)` 安排在下一 tick 显示带 OPEN_URL 按钮的 Wiki 对话框。调用方负责管理员授权；管理器操作在服务器线程上调用，配置写入为同步小文件写入。
 
 手动验证步骤：用普通玩家检查命令补全、Wiki 菜单分类与返回、未知游戏及未配置提示；用 OP 设置、修改、取消、移除链接并重启确认持久化；校验非法协议不被保存，失去权限后旧对话框不能保存；确认 Wiki 游戏点击不会加入游戏或传送。启用客户端链接确认并点击 Wiki 对话框中的“打开 Wiki”按钮，确认浏览器打开配置地址。
 
 加入任意游戏（含队伍成员和中途加入）后，核心下一 tick 确认玩家仍在同一游戏，若已配置 Wiki 且该玩家未关闭此游戏的提醒，则在聊天栏显示展示名、直接 OPEN_URL 的“打开 Wiki”和“下次不再提醒此游戏”按钮。关闭仅作用于点击玩家和该游戏，使用玩家 PDC 的 `mczjugamecore:hidden_wiki_reminders` 字符串列表持久保存，跨重连/正常重启保留，与游戏房间和档案无关。关闭后提示使用 `/mgc wiki`，手动 Wiki 访问始终可用。聊天关闭按钮有效期一天且只能使用一次，过期后可在下次加入时点击新提醒。手动验证需覆盖未配置链接、再次加入、不同游戏、队伍及中途加入、加入失败不提醒、关闭后重连/重启和手动 Wiki 访问。
+
+
+## 分项配置重载
+
+管理员或控制台使用 `mgc.dev` 权限执行以下命令，子项及游戏 ID 均提供补全，未知目标会明确失败：
+
+| 命令 | 仅重载的范围 |
+| --- | --- |
+| `/mgcop reload config` | `config.yml` 核心设置及 `game-categories` 类别定义 |
+| `/mgcop reload categories` | `game-categories.yml` 游戏类别分配，不重读类别定义 |
+| `/mgcop reload wiki` | `game-wikis.json` |
+| `/mgcop reload lobby` | `lobbies.json` 和 `category-lobbies.json` |
+| `/mgcop reload game <gameId>` | 所选游戏房间及已登记的子插件 `config.yml`（如有） |
+| `/mgcop reload <module>` | 后续注册的独立配置模块 |
+| `/mgcop reload` | 先按注册顺序执行全部模块，再按注册顺序执行全部游戏 |
+
+每项分别报告成功或失败原因，最后汇总计数；某项失败仍继续其余项。内置模块顺序为 config、categories、wiki、lobby；默认游戏管理器在游戏注册时登记其房间类型。不存在的类别分配、Wiki 或大厅文件视为空配置并清除相应缓存，不创建空文件；config.yml 缺失或 YAML 损坏则失败。解析失败保留上一份有效缓存；Wiki 和大厅还会禁止写回损坏的文件，修复后重新执行对应重载可解除保护并更新磁盘冲突基准。Lobby 的两份文件全部验证成功后一起替换。`ConfigManager.reload()` 保留原先依次重载 config 和 categories 的兼容行为；新代码使用 `reloadCoreConfig()` / `reloadCategoryAssignments()` 或统一注册表明确选择范围。
+
+游戏重载在执行时提示限制：**只允许子插件的 config.yml（如有）及所选游戏的房间**，不隐式加载 Wiki、Lobby、类别、玩家数据、档案或排行榜展示。目标游戏只要还有活动实例（包括 WAITING、倒计时、RUNNING、结束清理），就拒绝重载；房间有未保存修改或仍标记为占用时同样拒绝。其他游戏的活动实例不会阻止此目标。需要自行结束该游戏全部对局、保存房间后重试，不强停对局，也不自动排队。默认支持 `JsonGameRoom`，非 JSON 房间类型明确失败，不替换房间。
+
+核心先完整读取所选游戏的 `rooms/<gameId>/*.json` 快照，验证通过后调用其 config.yml 回调，最后提交房间快照。任一房间读取失败或配置回调抛出异常时，原房间列表保持不变；回调必须自行保证配置失败时保留旧值。删除房间文件或整个目录会在成功重载后移除相应内存房间，不写回旧快照。成功后配置用于后续新建对局；旧房间编辑菜单和延迟对话框/坐标选择回调会校验房间对象是否仍属于管理器，失效后拒绝编辑，请重新打开。
+
+其他界面和状态的生效方式：已打开的核心主菜单、分类菜单、Wiki 设置菜单、大厅菜单不自动刷新，关闭后重新打开显示新配置；新的传送、加入提醒及 Wiki 访问读取当前管理器。已发送的聊天链接和已显示的 Wiki 对话框保留原链接，玩家关闭提醒的 PDC 不变。已打开的 Wiki 编辑对话框或大厅位置选择继续有效，提交时仍校验权限和目标，并以当前管理器保存用户新输入。重载不会移动在线玩家、切换背包、恢复档案、重建 Tab 或重读玩家持久数据；config.yml 中的选项在下一次业务读取时生效。
+
+### 子插件接入
+
+所有注册和执行在服务器线程调用。没有 config.yml 的子插件不需要配置回调，游戏重载仅处理其房间。**有 config.yml 时必须登记回调**，否则命令会明确提示仅重载了房间及未登记回调。回调只负责该子插件 config.yml，不负责房间；核心统一读取房间并控制提交时机。多个游戏共用一份子插件 config.yml 时，回调只更新选定游戏对应的缓存，避免重载其他游戏。
+
+```java
+// 子插件 onEnable：先注册游戏，再登记它的 config.yml 回调。
+MCZJUGameCore.getGameManager().registerGame(MyGame.class, MyGameRoom.class);
+MCZJUGameCore.getReloadManager().registerGameConfig("my_game", () -> {
+    YamlConfiguration loaded = new YamlConfiguration();
+    loaded.load(new File(getDataFolder(), "config.yml")); // 严格读取，失败抛出
+    GameSettings next = GameSettings.parseAndValidate(loaded); // 子插件自定义：完整验证
+    settings = next; // 最后替换游戏缓存，失败时 settings 不变
+});
+// 子插件自己的管理员 reload 命令也应调用同一入口，并展示限制和结果：
+var result = MCZJUGameCore.getReloadManager().reloadGame("my_game");
+sender.sendMessage(result.target() + "：" + result.message());
+```
+
+子插件自己的命令必须在执行前说明上述活动对局、未保存房间修改、失败重试及新局生效限制，并校验管理员权限；不要直接调用配置回调绕过房间和活动实例检查。`GameSettings` 是子插件自行实现的不可变配置示例。仅调用 Bukkit `reloadConfig()` 无法刷新自建缓存，且其解析失败可能回退默认值，因此应先显式加载并验证 YAML，再一次性替换有效设置。没有配置文件时跳过登记，存在配置文件时不能省略接入。
+
+独立模块可通过 `MCZJUGameCore.getReloadManager().register("module_name", action)` 注册，名称使用小写字母开头以及数字、下划线、短横线，`game` 为保留名称，重复名称会拒绝。模块注册后自动加入补全和默认重载。模块回调只处理自己的文件和缓存，先验证再提交；失败抛出异常，注册表记录日志并返回 `ReloadResult(target, success, message)`，不会阻断其他项。不要把子插件的其他数据加载塞入游戏配置回调；独立配置使用独立模块。
+
+### 手动验收步骤（需兼容 Paper 服务器）
+
+1. 检查控制台、OP 和无权限玩家的命令及补全；输入未知模块、未知游戏和缺省 game ID，确认提示清晰。
+2. 同时修改 config.yml 类别定义和 game-categories.yml 分配，分别执行两个子项，确认只更新选中内容；删除分配文件后确认回到默认分类。检查坏 YAML 失败时缓存不变。
+3. 修改 Wiki 和两份大厅文件，分别重载并重新打开菜单、访问 Wiki 或传送；确认互不影响，旧聊天和玩家提醒偏好保留，重载不移动玩家。分别制造坏 JSON 和非法 URL/位置，确认保留旧缓存且拒绝写回，修复重载后可再次编辑；删除文件后重载确认清空且不生成空文件。
+4. 注册两个游戏和各自的 config.yml 回调，仅修改一个并重载，确认新对局使用新参数，其他游戏不受影响。分别在等待、倒计时、运行阶段重载，确认拒绝且原局继续；所有目标对局结束后重试成功。未保存房间时拒绝，保存后重试成功。坏房间或坏子插件 YAML 不替换房间；未登记回调时命令明确说明未重载子插件配置。
+5. 在重载前打开房间标量/List 编辑对话框或坐标选择，重载成功后提交，确认被拒绝；重新打开菜单后正常操作。删除房间文件后重载确认从房间列表移除。
+6. 注册一个主动抛异常的独立模块，执行无参数 reload，确认其他模块及游戏仍执行，逐项提示和最后成功/失败数一致，日志包含失败原因。
+
+以上步骤尚需在运行中的兼容服务器验收；Maven 构建通过不等同于完成服务器交互验证。

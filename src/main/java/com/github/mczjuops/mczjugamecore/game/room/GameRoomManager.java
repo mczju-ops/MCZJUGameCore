@@ -36,6 +36,39 @@ public class GameRoomManager {
     }
 
     /**
+     * 原子替换指定游戏的 JSON 房间；不影响其他游戏，不保存旧快照或重建玩家状态。
+     * @param gameId 已注册的游戏 ID
+     * @param roomClass 注册时的房间类型
+     * @throws Exception 活动对局、未保存修改、占用房间、类型不支持或读取失败；旧房间保持不变
+     */
+    public void reloadGameRooms(String gameId, Class<? extends AbstractGameRoom> roomClass) throws Exception {
+        prepareGameRoomReload(gameId, roomClass).run();
+    }
+
+    /**
+     * 验证并读取房间快照，供统一重载入口在子插件 config.yml 成功后再提交房间。
+     * @param gameId 已注册游戏 ID
+     * @param roomClass 注册的 JSON 房间类型
+     * @return 提交操作；只能在同一次服务器线程调用中执行，不得存储或延迟执行
+     * @throws Exception 活动对局、未保存修改或读取失败；准备阶段不修改房间
+     */
+    public Runnable prepareGameRoomReload(String gameId, Class<? extends AbstractGameRoom> roomClass) throws Exception {
+        if (!Bukkit.isPrimaryThread()) throw new IllegalStateException("房间重载必须在服务器线程执行");
+        if (!MCZJUGameCore.getGameManager().getRegisteredGameIds().contains(gameId)) {
+            throw new IllegalArgumentException("未注册游戏：" + gameId);
+        }
+        if (MCZJUGameCore.getGameManager().getAllGames().stream().anyMatch(game -> gameId.equals(game.getId()))
+                || getGameRooms(gameId).stream().anyMatch(room -> room.getState() == GameRoomState.IN_GAME)) {
+            throw new IllegalStateException("该游戏仍有活动对局，请结束后重试");
+        }
+        if (getGameRooms(gameId).stream().anyMatch(AbstractGameRoom::isModified)) {
+            throw new IllegalStateException("该游戏房间有未保存修改，请先保存后重试");
+        }
+        List<AbstractGameRoom> loaded = new JsonGameRoomLoader().readRooms(gameId, roomClass);
+        return () -> gameRoomMap.put(gameId, loaded);
+    }
+
+    /**
      * 注册游戏地图。创建新游戏或加载老地图后调用此函数。
      * @param gameId 游戏 ID
      * @param gameRoom  游戏房间对象
