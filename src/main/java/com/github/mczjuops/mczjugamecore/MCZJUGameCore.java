@@ -7,7 +7,6 @@ import com.github.mczjuops.mczjugamecore.command.MenuCommand;
 import com.github.mczjuops.mczjugamecore.command.LobbyCommand;
 import com.github.mczjuops.mczjugamecore.command.partycommand.PartyCommand;
 import com.github.mczjuops.mczjugamecore.config.ConfigManager;
-import com.github.mczjuops.mczjugamecore.config.ReloadManager;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
@@ -60,7 +59,6 @@ public final class MCZJUGameCore extends JavaPlugin {
     private MenuFacade menuFacade;
 
     private ConfigManager configManager;
-    private ReloadManager reloadManager;
     private LobbyManager lobbyManager;
     private GameWikiManager gameWikiManager;
 
@@ -87,11 +85,6 @@ public final class MCZJUGameCore extends JavaPlugin {
         configManager = new ConfigManager();
         lobbyManager = new LobbyManager();
         gameWikiManager = new GameWikiManager();
-        reloadManager = new ReloadManager();
-        reloadManager.register("config", configManager::reloadCoreConfig);
-        reloadManager.register("categories", configManager::reloadCategoryAssignments);
-        reloadManager.register("wiki", gameWikiManager::reload);
-        reloadManager.register("lobby", lobbyManager::reload);
         itemManager = new ItemManager();
         playerDataManager = new PlayerDataManager();
         playerDataManager.startAutoSave(20 * 60 * 30L);
@@ -185,11 +178,6 @@ public final class MCZJUGameCore extends JavaPlugin {
     }
     public static @NotNull ItemManager getItemManager(){
         return getInstance().itemManager;
-    }
-
-    /** @return 统一重载注册表；核心启动后在服务器线程注册模块或游戏回调 */
-    public static @NotNull ReloadManager getReloadManager() {
-        return getInstance().reloadManager;
     }
 
     public static @NotNull ConfigManager getConfigManager(){

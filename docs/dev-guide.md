@@ -626,6 +626,6 @@ game-categories:
 
 ## 七、配置重载入口
 
-`/mgcop reload config|categories|wiki|lobby` 分别读取核心配置、游戏类别分配、Wiki、大厅；`/mgcop reload game <gameId>` 仅处理该游戏房间和已登记的子插件 config.yml（如有）。子插件须在注册游戏后用 `getReloadManager().registerGameConfig(gameId, action)` 接入自身 config.yml 的验证和缓存更新，无配置文件时不需要登记。房间由核心统一处理，不要在回调中加载其他模块或玩家数据。
+`/mgcop reload config|categories|wiki|lobby` 分别读取核心配置、游戏类别分配、Wiki、大厅；`/mgcop reload game <gameId>` 仅重载该游戏的房间，不读取子插件 config.yml。子插件无需修改代码或注册回调，原有游戏注册方式即可使用。重载管理器仅供 MGC 内部使用。
 
-游戏仍有活动对局（含等待、倒计时、运行、结束清理）或房间有未保存修改时拒绝重载，处理后手动重试；成功后用于新建对局。执行命令会说明限制。子插件自己的 reload 命令也须说明同样的限制并通过 `reloadGame(gameId)` 执行，不能绕过检查。所有模块有逐项成功/失败提示，无参数执行所有注册项，失败后继续并汇总。配置缓存、旧菜单、玩家状态的边界及接入示例见 [进阶教程：分项配置重载](dev-advanced.md#分项配置重载)。
+游戏仍有活动对局（含等待、倒计时、运行、结束清理）或房间有未保存修改时拒绝重载，处理后手动重试；成功后用于新建对局。执行命令会说明限制。所有模块有逐项成功/失败提示，无参数执行所有核心模块及游戏房间，失败后继续并汇总。配置缓存、旧菜单、玩家状态的边界见 [进阶教程：分项配置重载](dev-advanced.md#分项配置重载)。

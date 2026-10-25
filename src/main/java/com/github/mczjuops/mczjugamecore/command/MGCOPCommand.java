@@ -1,7 +1,7 @@
 package com.github.mczjuops.mczjugamecore.command;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
-import com.github.mczjuops.mczjugamecore.config.ReloadManager.ReloadResult;
+import com.github.mczjuops.mczjugamecore.command.ReloadManager.ReloadResult;
 import com.github.mczjuops.mczjugamecore.game.room.menu.GameRoomSettingMenu;
 import com.github.mczjuops.mczjugamecore.menu.AlertMenu;
 import com.github.mczjuops.mczjugamecore.menu.GameCategorySettingMenu;
@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Set;
 
 public class MGCOPCommand implements BrigadierCommand {
+
+    private final ReloadManager reloadManager = new ReloadManager();
 
     @Override
     public String getName() {
@@ -71,13 +73,13 @@ public class MGCOPCommand implements BrigadierCommand {
                                                 MCZJUGameCore.getGameManager().getRegisteredGameIds(), builder))
                                         .executes(ctx -> {
                                             explainGameReload(ctx);
-                                            return reportReloads(ctx, List.of(MCZJUGameCore.getReloadManager()
+                                            return reportReloads(ctx, List.of(reloadManager
                                                     .reloadGame(StringArgumentType.getString(ctx, "gameId"))));
                                         })))
                         .then(Commands.argument("module", StringArgumentType.word())
                                 .suggests((ctx, builder) -> CommandUtils.suggestMatching(
-                                        MCZJUGameCore.getReloadManager().getModuleIds(), builder))
-                                .executes(ctx -> reportReloads(ctx, List.of(MCZJUGameCore.getReloadManager()
+                                        reloadManager.getModuleIds(), builder))
+                                .executes(ctx -> reportReloads(ctx, List.of(reloadManager
                                         .reload(StringArgumentType.getString(ctx, "module"))))))
                 )
                 .then(Commands.literal("wiki")
@@ -344,12 +346,12 @@ public class MGCOPCommand implements BrigadierCommand {
 
     private int executeReload(CommandContext<CommandSourceStack> ctx) {
         explainGameReload(ctx);
-        return reportReloads(ctx, MCZJUGameCore.getReloadManager().reloadAll());
+        return reportReloads(ctx, reloadManager.reloadAll());
     }
 
     private void explainGameReload(CommandContext<CommandSourceStack> ctx) {
         ctx.getSource().getSender().sendMessage(Component.text(
-                "游戏重载仅处理子插件 config.yml（如有并已登记）及所选游戏房间；有活动对局（含等待）或未保存房间修改时拒绝，需处理后重试，不自动排队。成功后仅用于新建对局，请重新打开房间菜单。",
+                "游戏重载仅处理所选游戏房间，不读取子插件 config.yml；有活动对局（含等待）或未保存房间修改时拒绝，需处理后重试，不自动排队。成功后仅用于新建对局，请重新打开房间菜单。",
                 NamedTextColor.YELLOW));
     }
 

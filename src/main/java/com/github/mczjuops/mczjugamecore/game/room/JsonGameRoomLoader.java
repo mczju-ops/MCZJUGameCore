@@ -58,7 +58,7 @@ public class JsonGameRoomLoader implements GameRoomLoader{
     public java.util.List<AbstractGameRoom> readRooms(String gameId, Class<? extends AbstractGameRoom> roomClass)
             throws IOException {
         if (!JsonGameRoom.class.isAssignableFrom(roomClass)) {
-            throw new IllegalArgumentException("此房间类型需由子插件注册自定义重载操作");
+            throw new IllegalArgumentException("房间重载仅支持 JsonGameRoom，此房间类型不支持");
         }
         Path directory = MCZJUGameCore.getInstance().getDataFolder().toPath().resolve("rooms").resolve(gameId);
         java.util.List<AbstractGameRoom> rooms = new java.util.ArrayList<>();

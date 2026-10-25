@@ -27,11 +27,6 @@ public class DefaultGameManager implements AbstractGameManager {
     private final List<AbstractGame> gameList = new LinkedList<>();
     private final Map<String, GameMeta> gameMetaMap = new HashMap<>(); // 反射创建对象后顺手存了，方便菜单用
 
-    /**
-     * 注册游戏及房间，并为该 ID 注册默认 JSON 房间重载操作。
-     * @param gameClass 具有公共无参构造器的游戏类
-     * @param gameRoomClass 房间类型；默认重载仅支持 JSON 类型
-     */
     @Override
     public void registerGame(Class<? extends AbstractGame> gameClass, Class<? extends AbstractGameRoom> gameRoomClass) {
         try {
@@ -52,7 +47,6 @@ public class DefaultGameManager implements AbstractGameManager {
             gameIdMap.put(gameId, gameClass);
             gameMetaMap.put(gameId, game.getGameMeta());
             MCZJUGameCore.getGameRoomManager().loadGameRoom(gameId, gameRoomClass); // 加载并注册所有该游戏的游戏房间
-            MCZJUGameCore.getReloadManager().registerGame(gameId, gameRoomClass);
         } catch (InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             logger.error("无法注册游戏%s，原因：无法访问无参构造器，无法创建游戏实例".formatted(gameClass));
             throw new RuntimeException(e);
