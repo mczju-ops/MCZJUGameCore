@@ -1,24 +1,33 @@
 package com.github.mczjuops.mczjugamecore.command.partycommand.subcommands;
 
+import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.command.partycommand.PartySubCommands;
-import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
+import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 /**
  * 队长通过 /party warp 将队员传送到自己身边。
- * 队长未加入游戏且有队员在游戏中时，全体队员先执行退出命令，确认退出后再传送。
- * 其他情况下，全体队伍玩家（包括队长）必须未加入游戏或处于 WAITING，不改变游戏归属。
+ * 不限制队长的游戏状态；在游戏中的队员直接通过玩家管理器退出，
+ * 等待 10 tick 后复查队伍、在线状态和队员游戏归属，再传送到队长执行命令时的位置，不自动加入游戏。
  */
 public class WarpCommand extends PartySubCommands {
+
+    private final Set<UUID> pendingWarps = new HashSet<>();
 
     /** @return 子命令名称 */
     @Override
@@ -35,11 +44,11 @@ public class WarpCommand extends PartySubCommands {
     /** @return 帮助中的功能说明及使用限制 */
     @Override
     public String getDescription() {
-        return "将全队传送到队长身边（仅队长，队长未在游戏中时先带队退出，否则全员须在等待中）";
+        return "将队员传送到队长身边（仅队长，队员先退出游戏，10 tick 后传送）";
     }
 
     /**
-     * 注册无参数的 warp 子命令，沿用 party 根命令的权限；执行时检查队长身份和全队游戏状态。
+     * 注册无参数的 warp 子命令，沿用 party 根命令的权限；执行时检查队长身份并退出队员的游戏。
      * @param parent 队伍命令的父节点
      */
     @Override
@@ -64,30 +73,57 @@ public class WarpCommand extends PartySubCommands {
             player.sender().warn("只有队长才能传送队伍成员！");
             return 0;
         }
+        if (pendingWarps.contains(party.getId())) {
+            player.sender().warn("队伍正在退出游戏并等待传送，请稍候！");
+            return 0;
+        }
 
         var players = party.getAllPlayer();
-        if (player.getGame() == null && players.stream().anyMatch(member -> member.getGame() != null)) {
-            for (PlayerExt member : players) {
-                if (!member.equals(player)) {
-                    member.player().performCommand("mgc leave notip");
+        Location destination = p.getLocation();
+        if (players.stream().anyMatch(member -> !member.equals(player) && member.getGame() != null)) {
+            pendingWarps.add(party.getId());
+            try {
+                for (PlayerExt member : players) {
+                    if (!member.equals(player)) {
+                        member.quitGame(PlayerQuitReason.COMMAND_QUIT);
+                    }
                 }
+                Bukkit.getScheduler().runTaskLater(MCZJUGameCore.getInstance(), () -> {
+                    try {
+                        completeDelayedWarp(player, party, players, destination);
+                    } finally {
+                        pendingWarps.remove(party.getId());
+                    }
+                }, 10L);
+            } catch (RuntimeException e) {
+                pendingWarps.remove(party.getId());
+                throw e;
             }
-            for (PlayerExt member : players) {
-                if (member.getGame() != null) {
-                    player.sender().warn("队伍成员 %s 未能退出游戏，无法传送全队！".formatted(member.getDisplayName()));
-                    return 0;
-                }
-            }
+            player.sender().info("已让队员退出游戏，将在 10 tick 后传送全队。");
+            return Command.SINGLE_SUCCESS;
+        }
+        return teleportMembers(player, players, destination);
+    }
+
+    private void completeDelayedWarp(PlayerExt player, Party party, List<PlayerExt> players, Location destination) {
+        if (!player.player().isOnline()) return;
+        var currentPlayers = party.getAllPlayer();
+        if (player.getParty() != party || !party.isLeader(player)
+                || currentPlayers.size() != players.size() || !currentPlayers.containsAll(players)) {
+            player.sender().warn("队伍已发生变化，本次传送已取消，请重新执行 /party warp。");
+            return;
         }
         for (PlayerExt member : players) {
-            var game = member.getGame();
-            if (game != null && game.getState() != GameState.WAITING) {
-                player.sender().warn("队伍成员 %s 所在游戏不处于等待状态，无法传送全队！".formatted(member.getDisplayName()));
-                return 0;
+            if (member.equals(player)) continue;
+            if (!member.player().isOnline() || member.getParty() != party || member.getGame() != null) {
+                player.sender().warn("队伍成员 %s 已离线、离队或仍在游戏中，本次传送已取消。".formatted(member.getDisplayName()));
+                return;
             }
         }
+        teleportMembers(player, players, destination);
+    }
 
-        Location destination = p.getLocation();
+    private int teleportMembers(PlayerExt player, List<PlayerExt> players, Location destination) {
         boolean allTeleported = true;
         for (PlayerExt member : players) {
             if (member.equals(player)) continue;
