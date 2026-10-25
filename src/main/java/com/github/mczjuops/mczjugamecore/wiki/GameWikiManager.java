@@ -32,7 +32,7 @@ import java.util.Objects;
 public final class GameWikiManager {
     private final Path file;
     private final Map<String, String> links = new HashMap<>();
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private final Gson gson = new GsonBuilder().setStrictness(Strictness.STRICT).setPrettyPrinting().create();
     private String savedContents;
     private boolean readable = true;
 
@@ -40,22 +40,40 @@ public final class GameWikiManager {
     public GameWikiManager() {
         file = MCZJUGameCore.getInstance().getDataFolder().toPath().resolve("game-wikis.json");
         try {
-            if (Files.notExists(file)) return;
-            savedContents = Files.readString(file);
-            JsonElement parsed = JsonParser.parseString(savedContents);
-            if (!parsed.isJsonObject()) throw new IllegalArgumentException("配置必须是 JSON 对象");
+            reload();
+        } catch (IllegalStateException e) {
+            MCZJUGameCore.getInstance().getLogger().severe(e.getMessage());
+        }
+    }
+
+    /**
+     * 重读 game-wikis.json 并更新磁盘冲突基准；缺省文件清空链接，不创建文件。
+     * 失败时保留旧链接并禁止写回，修复文件后可再次重载恢复写入。
+     * 新提醒和新打开的 Wiki 使用新链接；已发送的聊天、对话框和玩家关闭提醒的 PDC 保持原样。
+     * @throws IllegalStateException 文件读取、JSON 解析或链接验证失败
+     */
+    public void reload() {
+        try {
+            String contents = Files.notExists(file) ? null : Files.readString(file);
             Map<String, String> loaded = new HashMap<>();
-            for (var entry : parsed.getAsJsonObject().entrySet()) {
-                if (entry.getKey().isBlank() || !entry.getValue().isJsonPrimitive()
-                        || !entry.getValue().getAsJsonPrimitive().isString()) {
-                    throw new IllegalArgumentException("无效的游戏 ID 或 URL");
+            if (contents != null) {
+                JsonElement parsed = gson.fromJson(contents, JsonElement.class);
+                if (parsed == null || !parsed.isJsonObject()) throw new IllegalArgumentException("配置必须是 JSON 对象");
+                for (var entry : parsed.getAsJsonObject().entrySet()) {
+                    if (entry.getKey().isBlank() || !entry.getValue().isJsonPrimitive()
+                            || !entry.getValue().getAsJsonPrimitive().isString()) {
+                        throw new IllegalArgumentException("无效的游戏 ID 或 URL");
+                    }
+                    loaded.put(entry.getKey(), validateUrl(entry.getValue().getAsString()));
                 }
-                loaded.put(entry.getKey(), validateUrl(entry.getValue().getAsString()));
             }
+            links.clear();
             links.putAll(loaded);
+            savedContents = contents;
+            readable = true;
         } catch (IOException | RuntimeException e) {
             readable = false;
-            MCZJUGameCore.getInstance().getLogger().severe("无法加载 Wiki 配置，拒绝覆盖：" + e.getMessage());
+            throw new IllegalStateException("无法加载 Wiki 配置，已保留旧链接并禁止写回：" + e.getMessage(), e);
         }
     }
 
@@ -83,14 +101,14 @@ public final class GameWikiManager {
         Path temporary = null;
         try {
             String current = Files.exists(file) ? Files.readString(file) : null;
-            if (!Objects.equals(current, savedContents)) throw new IOException("配置已被外部修改，请重启后重试");
+            if (!Objects.equals(current, savedContents)) throw new IOException("配置已被外部修改，请执行 /mgcop reload wiki 后重试");
             if (updated.equals(links)) return true;
             Files.createDirectories(file.getParent());
             temporary = Files.createTempFile(file.getParent(), "game-wikis-", ".tmp");
             String contents = gson.toJson(updated);
             Files.writeString(temporary, contents);
             current = Files.exists(file) ? Files.readString(file) : null;
-            if (!Objects.equals(current, savedContents)) throw new IOException("配置已被外部修改，请重启后重试");
+            if (!Objects.equals(current, savedContents)) throw new IOException("配置已被外部修改，请执行 /mgcop reload wiki 后重试");
             try {
                 Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
             } catch (AtomicMoveNotSupportedException e) {

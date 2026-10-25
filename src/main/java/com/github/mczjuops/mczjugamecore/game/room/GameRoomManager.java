@@ -16,6 +16,7 @@ public class GameRoomManager {
     private final List<GameRoomLoader> loaders = new LinkedList<>();
 
     private final Map<String, List<AbstractGameRoom>> gameRoomMap = new HashMap<>();
+    private final Map<String, Class<? extends AbstractGameRoom>> roomTypes = new HashMap<>();
 
     public GameRoomManager() {
         // 传入所有的Loader到责任链中
@@ -23,16 +24,40 @@ public class GameRoomManager {
     }
 
     /**
-     * 加载某个游戏的所有房间。责任链模式
+     * 记录游戏房间类型并加载该游戏的全部房间，供后续命令重载使用；子插件无需额外登记。责任链模式
      * @param gameId 游戏 ID
      * @param gameRoomClass 游戏房间类
      */
     public void loadGameRoom(String gameId, Class<? extends AbstractGameRoom> gameRoomClass) {
+        roomTypes.put(gameId, gameRoomClass);
         for (GameRoomLoader loader : loaders) {
             if (loader.loadAllGameRoom(gameId, gameRoomClass)) {
                 break;
             }
         }
+    }
+
+    /**
+     * 原子替换指定游戏的 JSON 房间；不影响其他游戏，不保存旧快照或重建玩家状态。
+     * @param gameId 已注册的游戏 ID
+     * @throws Exception 活动对局、未保存修改、占用房间、类型不支持或读取失败；旧房间保持不变
+     */
+    public void reloadGameRooms(String gameId) throws Exception {
+        if (!Bukkit.isPrimaryThread()) throw new IllegalStateException("房间重载必须在服务器线程执行");
+        if (!MCZJUGameCore.getGameManager().getRegisteredGameIds().contains(gameId)) {
+            throw new IllegalArgumentException("未注册游戏：" + gameId);
+        }
+        if (MCZJUGameCore.getGameManager().getAllGames().stream().anyMatch(game -> gameId.equals(game.getId()))
+                || getGameRooms(gameId).stream().anyMatch(room -> room.getState() == GameRoomState.IN_GAME)) {
+            throw new IllegalStateException("该游戏仍有活动对局，请结束后重试");
+        }
+        if (getGameRooms(gameId).stream().anyMatch(AbstractGameRoom::isModified)) {
+            throw new IllegalStateException("该游戏房间有未保存修改，请先保存后重试");
+        }
+        Class<? extends AbstractGameRoom> roomClass = roomTypes.get(gameId);
+        if (roomClass == null) throw new IllegalStateException("未找到该游戏注册的房间类型");
+        List<AbstractGameRoom> loaded = new JsonGameRoomLoader().readRooms(gameId, roomClass);
+        gameRoomMap.put(gameId, loaded);
     }
 
     /**

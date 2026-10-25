@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.game.room.menu;
 
+import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.menu.Menu;
 import com.github.mczjuops.mczjugamecore.utils.DialogBuilder;
@@ -69,6 +70,7 @@ public class GameRoomListSettingMenu extends Menu {
     /** 填充当前页元素、增删改入口和返回按钮；不支持的声明不提供编辑入口。 */
     @Override
     protected void setup() {
+        if (!isCurrentRoom()) return;
         ItemStack background = ItemStack.of(Material.BLACK_STAINED_GLASS_PANE);
         background.editMeta(meta -> meta.setHideTooltip(true));
         for (int i = 0; i < 9; i++) setSlot(i, background);
@@ -136,6 +138,7 @@ public class GameRoomListSettingMenu extends Menu {
     }
 
     private boolean apply(List<Object> snapshot, List<Object> updated) {
+        if (!isCurrentRoom()) return false;
         if (!player.player().hasPermission(getPermission())) {
             player.sender().error("<red>没有房间参数编辑权限");
             return false;
@@ -155,5 +158,19 @@ public class GameRoomListSettingMenu extends Menu {
     private void openAgain() {
         clearMenu();
         open();
+    }
+
+    /** 校验房间快照仍有效，拒绝重载前打开的菜单及延迟编辑回调。 */
+    @Override
+    public void handleClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+        if (isCurrentRoom()) super.handleClick(event);
+    }
+
+    private boolean isCurrentRoom() {
+        if (MCZJUGameCore.getGameRoomManager().getGameRoom(gameRoom.getGameId(), gameRoom.getRoomName()) == gameRoom) {
+            return true;
+        }
+        player.sender().warn("房间配置已重载或删除，请重新打开菜单");
+        return false;
     }
 }

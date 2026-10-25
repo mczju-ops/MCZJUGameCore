@@ -63,9 +63,11 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
 - Treat `onGameInit()` as room preparation triggered when a game instance is created, often when the first player begins waiting—not as the start signal.
 - Return `false` from `onGameInit()` when required room settings are missing or preparation fails cleanly.
 - Mark modified persistent player data with `setModified(true)` after changes.
-- Whenever a child plugin stores configuration in its own `config.yml`, it **must** provide its own reload command (for example, `/<plugin-command> reload`) to hot-reload that configuration without restarting the server. This applies regardless of the number or type of settings; MGC's `/mgcop reload` does not reload child-plugin configuration.
+- Whenever a child plugin stores configuration in its own `config.yml`, it **must** provide its own reload command (for example, `/<plugin-command> reload`) to hot-reload that configuration without restarting the server. This applies regardless of the number or type of settings.
 - Use Bukkit/Paper APIs on the server thread unless their API explicitly permits async access. Keep filesystem/database work off-thread, then marshal world/entity/player changes back to the server thread.
 - Do not blindly copy version numbers from this skill. Preserve or verify the target project's Paper and MGC versions.
+
+Explain MGC reload commands only when the user asks how to reload. These are user-facing operations; do not add child-plugin adaptation instructions or proactively include reload guidance in development work.
 
 ## Gameplay experience and configuration
 
