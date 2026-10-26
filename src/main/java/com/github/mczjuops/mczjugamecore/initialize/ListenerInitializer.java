@@ -1,6 +1,7 @@
 package com.github.mczjuops.mczjugamecore.initialize;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.mention.MentionChatListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerDeathListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerQuitListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerReconnectListener;
@@ -21,6 +22,7 @@ public class ListenerInitializer {
         register(new SpectatorTeleportRestrictionListener());
         register(MCZJUGameCore.getProfileManager());
         register(MCZJUGameCore.getTabManager());
+        register(new MentionChatListener(MCZJUGameCore.getMentionManager()));
     }
 
     private static void register(Listener listener){

@@ -638,6 +638,22 @@ MGC 停用时会尝试清理所有本工具创建的群组。子插件仍应在�
 加入任意游戏（含队伍成员和中途加入）后，核心下一 tick 确认玩家仍在同一游戏，若已配置 Wiki 且该玩家未关闭此游戏的提醒，则在聊天栏显示展示名、直接 OPEN_URL 的“打开 Wiki”和“下次不再提醒此游戏”按钮。关闭仅作用于点击玩家和该游戏，使用玩家 PDC 的 `mczjugamecore:hidden_wiki_reminders` 字符串列表持久保存，跨重连/正常重启保留，与游戏房间和档案无关。关闭后提示使用 `/mgc wiki`，手动 Wiki 访问始终可用。聊天关闭按钮有效期一天且只能使用一次，过期后可在下次加入时点击新提醒。手动验证需覆盖未配置链接、再次加入、不同游戏、队伍及中途加入、加入失败不提醒、关闭后重连/重启和手动 Wiki 访问。
 
 
+## 聊天提醒（@ / @@）
+
+在聊天栏输入 `@ 玩家名` 会让该玩家听到提示音并在动作栏看到提示，输入 `@@ 玩家名` 还会在其屏幕中央显示 title 并连响两下；`@ all` / `@@ all`（也可写 `@ everyone`，大小写不敏感）作用于全服玩家，需要 `mgc.mention.all` 权限（默认所有人可用，可在权限插件中按玩家收回，或用 `allow-all: false` 关闭）。该行为移植自 MCDR 插件 [Beep](https://github.com/TISUnion/Beep)。
+
+- **`@` / `@@` 与名字之间必须有空格**：`@ Steve`、`@@ Steve`、`@ all` 有效；`@Steve`、`@@all`、`@all` 一律不触发，避免误伤 `a@b.com`、`a@@b` 这类文本。该规则由 `require-space: true` 控制，不建议关闭。
+- 名字必须是当前在线玩家，**只按空白分词、整词精确匹配**（不区分大小写）：`@@ Steve Alex` 会提醒两人；`@ Steve，来一下` 里的 `Steve，来一下` 是一个词，不会命中，应写成 `@ Steve 来一下`。中文同样按整词处理，所以 `@ 小明 你好` 有效、`@ 小明你好` 无效。
+- 默认 `hide-message: false`：消息照常广播，所有人都能看到内容，提醒只是附加效果；改成 `true` 则回到 Beep 的行为——消息不广播，只给发送者「已提醒：xxx」回执。
+- 被提醒的玩家默认还会在动作栏看到「发送者 提醒了你」（`ping-actionbar`，留空则关闭），不会出现只有声音、屏幕上没有任何提示的情况。
+- 消息以 `@` / `@@` 开头但没有任何在线玩家命中时（例如写成 `@Steve`、提醒了离线玩家），发送者会收到一条私聊提示（`sender-hint`），不会静默失败。
+- 配置位于插件数据目录的 `mention.yml`（首次启动自动写出），包括是否启用、两种提醒的音效、title 文案与淡入/停留/淡出时间、`max-targets`、`cooldown-millis`、动作栏文字、发送者回执与未命中提示。修改后运行 `/mgcop reload mention` 生效，重载失败会保留旧配置。
+- 同一玩家同时被 `@` 与 `@@` 命中时只按 `@@` 处理；`@ all` 与全体提醒同样受 `max-targets` 限制。
+
+公共 API：`MCZJUGameCore.getMentionManager().getSettings()` 返回当前配置快照；`resolveTargets(player, text)` 解析聊天纯文本得到目标及提醒强度（可在异步线程调用），`apply(player, targets)` 施加效果（需在服务器主线程调用）。
+
+手动验证：用普通玩家分别 `@` 和 `@@` 提醒一名玩家，确认对方听到提示音、动作栏出现提示，且只有 `@@` 显示 title；确认 `@Steve`、`@@all` 这类无空格写法完全不触发；确认默认消息照常广播，把 `hide-message` 改为 `true` 后消息不广播且发送者收到回执；验证 `@ all`、`@@ all` 对全服生效，把玩家权限 `mgc.mention.all` 设为 false 后失效；调整冷却和 `max-targets` 后重载生效；把 `mention.yml` 写坏后 `/mgcop reload mention` 报错并继续使用旧配置。
+
 ## 配置重载命令
 
 | 命令 | 用途 |
@@ -647,4 +663,5 @@ MGC 停用时会尝试清理所有本工具创建的群组。子插件仍应在�
 | `/mgcop reload categories` | 重载 `game-categories.yml` 中的游戏类别分配 |
 | `/mgcop reload wiki` | 重载 `game-wikis.json` 中的 Wiki 链接 |
 | `/mgcop reload lobby` | 重载 `lobbies.json` 和 `category-lobbies.json` 中的大厅位置 |
+| `/mgcop reload mention` | 重载 `mention.yml` 中的聊天提醒配置 |
 | `/mgcop reload game <gameId>` | 仅重载指定游戏的房间，不读取子插件 `config.yml` |
