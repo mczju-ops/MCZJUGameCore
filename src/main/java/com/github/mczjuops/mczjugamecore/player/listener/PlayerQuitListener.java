@@ -6,6 +6,7 @@ import com.github.mczjuops.mczjugamecore.player.party.LeaveResult;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -18,6 +19,10 @@ public class PlayerQuitListener implements Listener {
     public void onPlayerInGameQuit(PlayerQuitEvent event){
         // 判断在player manager中进行，不在本处进行
         PlayerExt player = new PlayerExt(event.getPlayer());
+        // 游戏外旁观者离线时回大厅；游戏内玩家继续走原有退出和重连流程。
+        if (!player.isInGame() && event.getPlayer().getGameMode() == GameMode.SPECTATOR) {
+            event.getPlayer().performCommand("lobby");
+        }
         MCZJUGameCore.getPlayerManager().leaveGame(player, PlayerQuitReason.DISCONNECT);
     }
 
