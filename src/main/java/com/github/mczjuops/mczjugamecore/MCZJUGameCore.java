@@ -17,6 +17,7 @@ import com.github.mczjuops.mczjugamecore.initialize.ListenerInitializer;
 import com.github.mczjuops.mczjugamecore.item.ItemManager;
 import com.github.mczjuops.mczjugamecore.menu.MenuFacade;
 import com.github.mczjuops.mczjugamecore.lobby.LobbyManager;
+import com.github.mczjuops.mczjugamecore.mention.MentionManager;
 import com.github.mczjuops.mczjugamecore.wiki.GameWikiManager;
 import com.github.mczjuops.mczjugamecore.player.AbstractPlayerManager;
 import com.github.mczjuops.mczjugamecore.player.DefaultPlayerManager;
@@ -61,6 +62,7 @@ public final class MCZJUGameCore extends JavaPlugin {
     private ConfigManager configManager;
     private LobbyManager lobbyManager;
     private GameWikiManager gameWikiManager;
+    private MentionManager mentionManager;
 
     private ProfileManager profileManager;
     private ProfileCapture profileCapture;
@@ -85,6 +87,7 @@ public final class MCZJUGameCore extends JavaPlugin {
         configManager = new ConfigManager();
         lobbyManager = new LobbyManager();
         gameWikiManager = new GameWikiManager();
+        mentionManager = new MentionManager();
         itemManager = new ItemManager();
         playerDataManager = new PlayerDataManager();
         playerDataManager.startAutoSave(20 * 60 * 30L);
@@ -185,6 +188,14 @@ public final class MCZJUGameCore extends JavaPlugin {
     }
     public static @NotNull LobbyManager getLobbyManager(){
         return getInstance().lobbyManager;
+    }
+
+    /**
+     * 获取聊天提醒管理器，用于读取 @ / @@ 提醒配置。
+     * @return 管理器；须在核心启动完成后使用
+     */
+    public static @NotNull MentionManager getMentionManager(){
+        return getInstance().mentionManager;
     }
 
     public static @NotNull ProfileManager getProfileManager(){

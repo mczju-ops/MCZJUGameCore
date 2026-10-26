@@ -32,6 +32,9 @@ permissions:
     default: true
   mgc.lobby:
     default: true
+  mgc.mention.all:
+    description: "允许在聊天中使用 @ all / @@ all 提醒全服玩家（默认所有人可用，可按玩家收回）"
+    default: true
   mgc.dev:
     default: op
   menu.default:

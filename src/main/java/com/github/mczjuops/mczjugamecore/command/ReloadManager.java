@@ -53,6 +53,7 @@ final class ReloadManager {
         register("categories", MCZJUGameCore.getConfigManager()::reloadCategoryAssignments);
         register("wiki", MCZJUGameCore.getGameWikiManager()::reload);
         register("lobby", MCZJUGameCore.getLobbyManager()::reload);
+        register("mention", MCZJUGameCore.getMentionManager()::reload);
     }
 
     /** @return 按注册顺序排列的只读模块名快照；不包含 game */
