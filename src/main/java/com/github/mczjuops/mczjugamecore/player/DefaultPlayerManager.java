@@ -2,6 +2,7 @@ package com.github.mczjuops.mczjugamecore.player;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.AutoReconnect;
 import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.game.kit.spectator.SpectatorSession;
 import com.github.mczjuops.mczjugamecore.game.kit.team.TeamSession;
@@ -79,10 +80,15 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
      */
     @Override
     public void leaveGame(PlayerExt player, PlayerQuitReason reason) {
+        // 掉线暂停：原局仍在运行且允许自动重连时只停表、保留旁观登记，重连重新入局后由守卫监听器
+        // 用 reapply 恢复淘汰标记、观战锚点与剩余复活倒计时；主动退出、被移除、加入失败回滚
+        // 以及无法再重连的原局都要撤销登记，避免旁观模式被带出本局
+        boolean keepSpectatorState = reason == PlayerQuitReason.DISCONNECT && canReconnect(player);
+
         // 离场先作废旧的在途任务，再撤销 kit 登记的旁观/队伍状态，避免把旁观模式或队友关系带出本局；
         // 最后补一次重生包，防止离局时仍停在死亡界面
         PlayerModeSwitch.invalidate(player.player());
-        SpectatorSession.releaseFor(player);
+        if (!keepSpectatorState) SpectatorSession.releaseFor(player);
         TeamSession.forgetPlayer(player);
         PlayerModeSwitch.forceRespawn(player.player(), null);
 
@@ -127,6 +133,16 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         if (reason != PlayerQuitReason.DISCONNECT) {
             player.player().playerListName(null);
         }
+    }
+
+    /**
+     * 掉线后原局仍在运行、并且游戏实现了 {@link AutoReconnect} 时，旁观登记需要留到重连再用。
+     * @param player 掉线玩家
+     * @return 该玩家的原有对局仍允许他重新加入时为 true
+     */
+    private boolean canReconnect(PlayerExt player) {
+        AbstractGame game = playerGameMap.get(player);
+        return game instanceof AutoReconnect && game.getState() == GameState.RUNNING;
     }
 
     /**

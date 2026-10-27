@@ -113,6 +113,10 @@ public final class PlayerModeSwitch {
                 if (!player.isOnline() || isOnDeathScreen(player)) return;
                 if (player.getGameMode() != mode) player.setGameMode(mode);
             });
+        } else {
+            // 没排任何延迟任务：按代次摘掉本次登记（旧任务已被本次代次作废），
+            // 否则正常成功的切换也会让 hasPending 一直为 true 并留下玩家 UUID
+            GENERATIONS.remove(player.getUniqueId(), token);
         }
         if (after != null) after.run();
     }
@@ -155,7 +159,8 @@ public final class PlayerModeSwitch {
     }
 
     /**
-     * 该玩家当前是否还有待执行的任务。
+     * 该玩家当前是否还有排队中的任务。只有真正排了延迟任务的切换才会登记，
+     * 当场生效且无需重试的切换不会留下条目。
      * @param player 目标玩家，可为 null
      * @return 有排队中的切换任务时为 true
      */

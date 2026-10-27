@@ -64,11 +64,12 @@ Titles, chat/action-bar text and sounds live in `SpectatorNotices`, reachable th
 
 ### Cleanup, leaving the round and auto-reconnect
 
-- The core calls `reset()` from its end/abort/cancel flow (before members are removed) and `SpectatorSession.releaseFor(player)` from its leave-game flow. Both drop the registration, cancel the countdown and queued mode switches, and put the player into `ADVENTURE` so spectator mode never leaks into the lobby. Calling `reset()` again from the game's terminal hooks is idempotent.
+- The core calls `reset()` from its end/abort/cancel flow (before members are removed) and `SpectatorSession.releaseFor(player)` from its leave-game flow (command quit, removal, join-failure rollback). Both drop the registration, cancel the countdown and queued mode switches, and put the player into `ADVENTURE` so spectator mode never leaks into the lobby. Calling `reset()` again from the game's terminal hooks is idempotent.
+- A `DISCONNECT` on a still-running `AutoReconnect` round is the one exception: the core only stops the countdown and keeps the registration (membership is still removed), so the reconnect can restore it.
 - Do not re-apply modes in the game's quit strategy: membership removal already handles it.
 - Spectator state is only valid while the player still belongs to the exact game instance: every countdown tick, revive callback, `reapply` and callback firing re-checks ownership. Leaving mid-countdown (command quit, joining another game) drops the registration and stops the timer instead of switching mode, teleporting back or running the old `onRevived`.
 - `DefaultGameManager.solveGameEnd()` releases both kit sessions (end, abort, cancel, forced stop, plugin disable), catching per-session failures so the remaining core cleanup still runs.
-- **Auto-reconnect is not provided by this kit.** It depends on the game implementing `AutoReconnect` and its quit strategy keeping the player in the round on `DISCONNECT`. Only then does the core re-add the player on profile load and the guard listener restore spectator mode, anchor and remaining countdown through `reapply`. Creating a `SpectatorSession` alone never reconnects anyone.
+- **Auto-reconnect is not provided by this kit.** It depends on the game implementing `AutoReconnect` and its quit strategy not ending the round on `DISCONNECT`. The core removes the membership mapping itself and the reconnect writes it back through the join flow, so the quit strategy only has to keep the round running and allow the player to re-join. Only then does the core re-add the player on profile load and the guard listener restore spectator mode, anchor and remaining countdown through `reapply`. Creating a `SpectatorSession` alone never reconnects anyone.
 
 ### Mode switching safety
 

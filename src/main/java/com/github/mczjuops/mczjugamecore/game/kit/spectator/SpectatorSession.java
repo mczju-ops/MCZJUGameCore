@@ -34,9 +34,9 @@ import java.util.function.Function;
  *
  * <p><b>由死亡策略调用。</b>在游戏的 {@code AbstractPlayerDeathStrategy#onPlayerDeath} 里
  * 调用本会话，不要自己 {@code setGameMode}；退出与结束的清理由核心接管：
- * 玩家离局时核心调用 {@link #releaseFor(PlayerExt)}，
- * 游戏结束/中止/取消时核心调用 {@link #reset()}，子插件不需要自己兜底
- * （仍建议在自己的终局钩子里调用一次，重复调用是幂等的）。
+ * 玩家真正离局（主动退出、被移除、加入失败回滚）时核心调用 {@link #releaseFor(PlayerExt)}，
+ * 掉线且原局仍可重连时核心只停表、保留登记，游戏结束/中止/取消时核心调用 {@link #reset()}，
+ * 子插件不需要自己兜底（仍建议在自己的终局钩子里调用一次，重复调用是幂等的）。
  *
  * <p><b>为什么不会卡住客户端：</b>死亡界面里直接改游戏模式会让服务端与客户端错位
  * （服务端已是旁观，客户端还躺在死亡页面）。本会话统一走 {@link PlayerModeSwitch}：
@@ -52,10 +52,10 @@ import java.util.function.Function;
  * 本类不会清空背包，也不会调用档案、Tab 或玩家数据接口。
  *
  * <p><b>关于自动重连：</b>本会话不负责把掉线玩家拉回游戏。重连由核心的
- * {@code AutoReconnect} 接口与 {@code PlayerReconnectListener} 完成（前提是游戏实现了
- * {@code AutoReconnect}，且退出策略在 {@code DISCONNECT} 时不把玩家移出本局）。
- * 玩家成功重新入局、档案加载完成后，守卫监听器才会调用 {@link #reapply(PlayerExt)}
- * 恢复旁观与剩余倒计时；没有入局就没有恢复。
+ * {@code AutoReconnect} 接口与 {@code PlayerReconnectListener} 完成：成员映射由核心在离局流程中
+ * 移除，掉线时本会话只停掉倒计时、保留登记；玩家重新登录并成功加入原局、档案加载完成后，
+ * 守卫监听器才会调用 {@link #reapply(PlayerExt)} 恢复旁观与剩余倒计时。
+ * 因此游戏只需实现 {@code AutoReconnect}，并保证退出策略不会因单个玩家掉线而结束本局。
  *
  * <p>用法：在 {@code onGameStart()} 创建一个实例，在死亡策略里调用
  * {@link #eliminate(PlayerExt)} 或 {@link #awaitRespawn(PlayerExt, Location)}，
