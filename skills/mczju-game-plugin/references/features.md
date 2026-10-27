@@ -14,3 +14,4 @@ Read only the reference matching the task. This file remains a lightweight index
 | Optional voice groups and /party voice | [voice-chat.md](voice-chat.md) |
 | Wiki links; core reload commands when requested | [wiki-reload.md](wiki-reload.md) |
 | Reusable game.kit mechanisms (MGC 1.4.0+) | [kit.md](kit.md) |
+| Teams and death-to-spectator (permanent or waiting for respawn) | [kit-team-spectator.md](kit-team-spectator.md) |

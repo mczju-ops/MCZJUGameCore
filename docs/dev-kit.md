@@ -207,7 +207,124 @@ Hand<Tile> hand = new Hand<>(codec, layout, Comparator.comparing(Tile::kind));  
 
 ---
 
-## 8. 典型接线
+## 8. `team` 队伍
+
+`team` 只解决「谁在哪一支队」和队伍相关的通用表现，**不替你分队**：没有自动平衡、没有选队菜单，
+也不假设「红蓝两队」。谁进哪支队由游戏规则或管理员指令决定。
+
+**与 `Party` 的区别：** `Party` 是跨局的玩家组队（大厅组队、`splitParty()` 会真的把它拆散），
+`GameTeam` / `TeamSession` 是**局内阵营**，只在本局有效、结束后消失，也不影响 `Party`。
+所以不能拿 `splitParty()` 当局内分队用，两者可以同时存在（同一 `Party` 的人被分到不同阵营）。
+
+```java
+public static final GameTeam RED  = new GameTeam("red",  "<red>红队",  NamedTextColor.RED,  Material.RED_GLAZED_TERRACOTTA);
+public static final GameTeam BLUE = new GameTeam("blue", "<blue>蓝队", NamedTextColor.BLUE, Material.BLUE_GLAZED_TERRACOTTA);
+
+// onGameStart()
+TeamSession teams = new TeamSession(this, List.of(RED, BLUE));
+teams.friendlyFire(true).tabPrefixes(true).voiceGroups(true);
+teams.assign(player, RED);                    // 单个玩家手动分配
+teams.assignAll(getPlayers(), BLUE);          // 批量分配
+teams.syncVoiceGroups();                      // 成员变化后重建语音组
+```
+
+| 能力 | 默认 | 说明 |
+|---|---|---|
+| 同队免伤 | 开启 | 核心监听器取消同队之间的近战、弹射物、点燃的 TNT 与区域效果云伤害 |
+| Tab 队伍前缀 | 开启 | 走核心 `TabManager`，离线 / 结束自动清理 |
+| 队伍语音组 | 开启 | 每队一个 Simple Voice Chat 群组，组名为队伍显示名（多房间时带房间名） |
+
+查询：`teamOf(player)` / `isTeammate(a, b)` / `membersOf(team)` / `onlineMembersOf(team)` / `hasTeam(uuid)`，
+换队直接再 `assign` 一次即可。`unassign` 与 `tabPrefixes(false)` **只撤销本会话设置的前缀**
+（内部走 `TabManager.setPrefix(game, player, null)`），不会动游戏自己设置的后缀、隐藏名单与旁观样式；
+整局 Tab 清理由核心在退出/结束时完成。**会话清理由核心接管**：游戏结束/中止/取消时核心会自动 `reset()`
+（撤销 Tab 前缀、移除语音组、注销会话），玩家离局时核心会清除其登记；
+在自己的终局钩子里再调一次是安全的（幂等）。
+
+**边界：** 队友关系只认本局登记，未登记的玩家（裁判、旁观者）保持原版伤害规则；
+队伍显示名同时用作语音组名，同一房间不能出现同名队伍。
+
+---
+
+## 9. `spectator` 旁观
+
+同一套流程支持两种常见规则，由游戏自己选：
+
+| 规则 | 调用 | 典型游戏 |
+|---|---|---|
+| 永久旁观（淘汰） | `eliminate(player)` | 饥饿游戏 |
+| 等复活 | `awaitRespawn(player, watchLocation)` | 核心战争 |
+
+```java
+private SpectatorSession spectators;
+
+// onGameStart()
+spectators = new SpectatorSession(this)
+        .respawnSeconds(5)
+        .reviveInvulnerableTicks(40)
+        .defaultAnchor(room.getSpectatorSpawn())
+        .onSpectate(t -> { /* 游戏自己的淘汰播报、侧边栏刷新 */ })
+        .onRevive(t -> { /* 游戏自己的复活播报、发装备 */ });
+
+// 死亡策略里（此时服务端还没发重生包）
+@Override
+public void onPlayerDeath(PlayerExt player, PlayerDeathEvent event) {
+    spectators.awaitRespawn(player, null);   // 5 秒后回到观战锚点复活
+}
+```
+
+- `eliminate(player, anchor, message)`：永久旁观，可指定观战锚点与淘汰文案；
+- `awaitRespawn(player, seconds, watch, respawnLocation, onRevived)`：倒计时期间旁观，到点复活；
+  `respawnLocation` 是 `Function<Player, Location>`，返回 null 时用观战位置；`onRevived` 在玩家已复活后执行；
+- `revive(player)` 立即复活；`cancelAwaitRespawn(player)` 取消倒计时（人仍留在旁观）；
+- 查询：`isSpectating` / `isWaitingRespawn` / `isEliminated` / `anchorFor` / `secondsLeft` / `spectators()` / `waitingRespawn()`。
+
+### 展示与机制分开
+
+标题、聊天、动作栏倒计时与音效都在 `notices()` 里配置，默认给一套通用展示：
+
+```java
+spectators.notices().sounds(false);                                  // 只要机制、不要音效
+spectators.notices().chat(false).titles(false);                       // 完全交给游戏自己播报
+spectators.notices(SpectatorNotices.silent());                        // 关闭全部内置展示
+spectators.notices().eliminateText("<red>你出局了", "<red>出局", "<gray>观战中");
+spectators.notices().respawnText("<yellow>%d 秒后复活", "<yellow>%d 秒");
+```
+
+含 `%d` 的文案会用剩余秒数填充；`eliminate(player, anchor, message)` 显式传入的文案会无视 `chat()` 开关强制发送。
+需要完全自定义时关掉内置展示，改用 `onSpectate` / `onRevive` 回调渲染。
+
+### 清理、离局与自动重连
+
+- **结束/中止/取消**：核心的结束流程会自动调用 `reset()`，把仍在本局的旁观者从旁观模式里放出来
+  （切到与大厅一致的冒险模式），不会把旁观模式带回大厅。子插件在自己的终局钩子里再调一次是幂等的。
+- **离局**（`/quit`、被移出、加入失败回滚）：核心在离局流程中会撤销该玩家的登记、停掉倒计时与在途的
+  延迟任务，并把玩家从旁观切到冒险模式。所以不要在退出策略里再手动切模式。
+- **掉线**：原局仍在运行且游戏实现了 `AutoReconnect` 时，核心只停掉倒计时、保留旁观登记
+  （成员映射照常由核心移除），等重连重新入局后再恢复；无法重连的原局按离局处理。
+- **延迟任务失效**：所有模式切换排队时都会领一个代次标记，玩家离局、游戏结束或被新的切换操作取代后，
+  旧任务自动作废，不会在玩家已经回到大厅或进入别的房间之后又把模式改回去。只有当场被其它插件否决的切换
+  才补一次；死亡界面里只发重生包，重生后不再强改模式，最终模式由大厅档案恢复决定。
+- **归属校验**：倒计时每 tick、复活回调、重连恢复与旁观回传前都会确认玩家仍属于本局（比较具体游戏实例）。
+  等待复活期间主动退出或加入别的游戏时，旧倒计时只摘登记并停表，不会再切生存、传回旧地图或执行旧 `onRevived`。
+- **自动重连不由本 kit 提供**：重连依赖核心的 `AutoReconnect` 接口与 `PlayerReconnectListener`。
+  前提是游戏实例实现 `AutoReconnect`，且退出策略不因单个玩家掉线而结束本局：成员映射由核心在离局流程中
+  直接移除，重连时通过加入流程重新写回，所以退出策略只需保证原局继续运行并允许该玩家重新加入；
+  满足后核心会在档案加载完成时把玩家重新加入原局，守卫监听器随后调用 `reapply` 恢复旁观与剩余倒计时。
+  仅创建一个 `SpectatorSession` 不会让掉线玩家自动回到游戏。
+
+**不要自己 `player.setGameMode(...)`。** 死亡界面里只改模式不发重生包，会让服务端已是旁观、客户端还躺在死亡页面；
+从旁观切回生存不解除旁观相机，画面会黏在上一个目标身上。kit 统一走 `PlayerModeSwitch`：
+先让模式在服务端生效、下一 tick 发重生包、重生点钉在观战锚点、再补切一次。
+
+守卫监听器由核心自动注册，负责：重生点修正、旁观者被强杀时拉出死亡界面、掉线时保留登记（重连后接着倒计时）、
+重连后重新施加旁观。因此掉线重连的旁观者不需要游戏额外处理。
+
+**边界：** kit 不管背包、掉落物、淘汰广播和胜负判定，这些仍写在你的死亡策略里。
+
+---
+
+## 10. 典型接线
 
 ```java
 public final class MyPlugin extends JavaPlugin {
@@ -231,9 +348,11 @@ thread.start(() -> game.play());
 
 ---
 
-## 9. 不该放进 kit 的东西
+## 11. 不该放进 kit 的东西
 
 - 牌型 / 胜负 / 算分（SoulCard 的元老判定、日麻的番符点数）
 - 「这里的取消意味着什么」（SoulCard 取消出牌要退牌，日麻取消只是「过」）
 - Bot 的估值逻辑
+- 怎么分队、什么时候换队、胜负是否按队伍算
+- 淘汰后能不能复活、复活在哪、复活给什么
 - 任何**只对一款游戏成立**的布局或流程

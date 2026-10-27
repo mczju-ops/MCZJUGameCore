@@ -2,9 +2,13 @@ package com.github.mczjuops.mczjugamecore.player;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
+import com.github.mczjuops.mczjugamecore.game.AutoReconnect;
 import com.github.mczjuops.mczjugamecore.game.GameState;
+import com.github.mczjuops.mczjugamecore.game.kit.spectator.SpectatorSession;
+import com.github.mczjuops.mczjugamecore.game.kit.team.TeamSession;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
+import com.github.mczjuops.mczjugamecore.utils.PlayerModeSwitch;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
@@ -58,10 +62,12 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         for (String line : gameMeta.description()) {
             footer = footer.append(Component.newline()).append(TextParser.parse(line));
         }
-        player.player().sendPlayerListFooter(footer);
+        Component joinFooter = footer;
+        // 页脚等确认仍在本局后再发，避免被拒绝的预加入也显示“正在游玩”
         org.bukkit.Bukkit.getScheduler().runTask(MCZJUGameCore.getInstance(), () -> {
-            // 加入策略可能在当前 tick 拒绝入局，只有仍属于同一游戏时才提醒。
+            // 加入策略可能在当前 tick 拒绝入局（例如超出人数上限），只有仍属于同一游戏时才提醒
             if (player.player().isOnline() && playerGameMap.get(player) == game) {
+                player.player().sendPlayerListFooter(joinFooter);
                 MCZJUGameCore.getGameWikiManager().remindOnJoin(player.player(), game.getId());
             }
         });
@@ -74,6 +80,18 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
      */
     @Override
     public void leaveGame(PlayerExt player, PlayerQuitReason reason) {
+        // 掉线暂停：原局仍在运行且允许自动重连时只停表、保留旁观登记，重连重新入局后由守卫监听器
+        // 用 reapply 恢复淘汰标记、观战锚点与剩余复活倒计时；主动退出、被移除、加入失败回滚
+        // 以及无法再重连的原局都要撤销登记，避免旁观模式被带出本局
+        boolean keepSpectatorState = reason == PlayerQuitReason.DISCONNECT && canReconnect(player);
+
+        // 离场先作废旧的在途任务，再撤销 kit 登记的旁观/队伍状态，避免把旁观模式或队友关系带出本局；
+        // 最后补一次重生包，防止离局时仍停在死亡界面
+        PlayerModeSwitch.invalidate(player.player());
+        if (!keepSpectatorState) SpectatorSession.releaseFor(player);
+        TeamSession.forgetPlayer(player);
+        PlayerModeSwitch.forceRespawn(player.player(), null);
+
         if (!playerGameMap.containsKey(player)) return;
 
         AbstractGame currentGame = playerGameMap.get(player);
@@ -95,8 +113,13 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         playerGameMap.remove(player);
         MCZJUGameCore.getTabManager().onPlayerLeave(game, player);
 
-        // 如果是加入游戏失败，不做过多处理
-        if (reason == PlayerQuitReason.JOIN_FAIL) return;
+        // 加入失败只是回滚预加入：不通知等待/退出策略，但档案与 Tab 展示必须恢复，
+        // 否则玩家没进游戏，却留着游戏档案和“正在游玩：xxx”的页脚
+        if (reason == PlayerQuitReason.JOIN_FAIL) {
+            restoreLobbyState(player);
+            player.player().playerListName(null);
+            return;
+        }
 
         if (game.getState() == GameState.WAITING){
             // 如果是在等待阶段
@@ -106,10 +129,34 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
             game.getPlayerQuitStrategy().onPlayerQuit(player, reason);
         }
 
-        player.switchProfile(null);
+        restoreLobbyState(player);
         if (reason != PlayerQuitReason.DISCONNECT) {
             player.player().playerListName(null);
         }
+    }
+
+    /**
+     * 掉线后原局仍在运行、并且游戏实现了 {@link AutoReconnect} 时，旁观登记需要留到重连再用。
+     * @param player 掉线玩家
+     * @return 该玩家的原有对局仍允许他重新加入时为 true
+     */
+    private boolean canReconnect(PlayerExt player) {
+        AbstractGame game = playerGameMap.get(player);
+        return game instanceof AutoReconnect && game.getState() == GameState.RUNNING;
+    }
+
+    /**
+     * 恢复大厅档案：先作废在途的模式切换（死亡界面中的重生任务除外），再切回大厅档案，
+     * 由档案恢复一并带回背包、模式与 Tab 页脚。
+     *
+     * <p>档案恢复是离场后最终模式的来源，所以不能留给延迟任务去改。
+     * @param player 离场或被回滚的玩家
+     */
+    private void restoreLobbyState(PlayerExt player) {
+        if (!PlayerModeSwitch.isOnDeathScreen(player.player())) {
+            PlayerModeSwitch.invalidate(player.player());
+        }
+        player.switchProfile(null);
     }
 
     @Override
@@ -128,7 +175,8 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         // 先清理整局展示，再恢复档案，避免档案恢复失败遗留 Tab 修改。
         MCZJUGameCore.getTabManager().onGameEnd(game);
         for (PlayerExt player : players) {
-            player.switchProfile(null);
+            // 同理：档案恢复决定最终模式，但死亡界面里的重生包仍要发出
+            restoreLobbyState(player);
             player.player().playerListName(null);
         }
     }
