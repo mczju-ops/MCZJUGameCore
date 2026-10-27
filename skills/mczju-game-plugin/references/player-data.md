@@ -4,7 +4,7 @@
 
 Wrap Bukkit players with `new PlayerExt(player)` when an MGC API expects framework behavior. `PlayerExt` delegates to managers and provides conveniences such as game/party lookup, display name, reset state, data lookup, and safe item giving. Do not treat it as an independent durable player model.
 
-Access framework services through `MCZJUGameCore` getters, including game, player, room, party, item, menu, player-data, profile, and leaderboard managers. Note the historical accessor spelling `getPartymanager()` in the inspected source; verify the target version rather than correcting calls speculatively.
+Access framework services through `MCZJUGameCore` getters, including game, player, room, party, item, menu, player-data, and leaderboard managers. Profile internals belong exclusively to the core; read [profiles.md](profiles.md) for automatic inventory isolation and safe item timing, not profile API usage. Note the historical accessor spelling `getPartymanager()` in the inspected source; verify the target version rather than correcting calls speculatively.
 
 ## Persistent player data
 

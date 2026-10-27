@@ -1,6 +1,6 @@
 ---
 name: mczju-game-plugin
-description: Design, implement, review, debug, and test Minecraft Paper minigame plugins built on MCZJUGameCore (MGC). Use when working on an MGC child plugin involving game lifecycle, game/room classes, wait/death/quit strategies, mid-game joining, registration, PlayerExt, persistent PlayerData, menus, leaderboards, parties, MGCItem, reusable game.kit mechanisms, or related MGC managers and utilities.
+description: Design, implement, review, debug, and test Minecraft Paper minigame plugins built on MCZJUGameCore (MGC). Use when working on an MGC child plugin involving game lifecycle, game/room classes, wait/death/quit strategies, mid-game joining, registration, PlayerExt, persistent PlayerData, inventory isolation, menus, leaderboards, parties, MGCItem, reusable game.kit mechanisms, or related MGC managers and utilities.
 ---
 
 # Develop MCZJUGameCore plugins
@@ -15,6 +15,7 @@ Read only the matching references; do not preload every optional feature. Use [r
 | --- | --- |
 | Lifecycle, rooms, registration, reconnect and shutdown | [core-workflow.md](references/core-workflow.md) |
 | PlayerExt, managers, persistent data | [player-data.md](references/player-data.md) |
+| Game equipment, inventory clearing and automatic profile isolation | [profiles.md](references/profiles.md) |
 | Tab names, prefixes and suffixes | [tab-display.md](references/tab-display.md) |
 | Menus, categories and lobbies | [menus-lobbies.md](references/menus-lobbies.md) |
 | Leaderboards | [leaderboards.md](references/leaderboards.md) |
@@ -52,6 +53,7 @@ For future optional features, add a focused reference and a task row here. Keep 
 - Give every game, menu, item, leaderboard, and data namespace a stable, globally collision-resistant ID. Follow the existing project's naming scheme, for example `colorblindparty` or `myplugin_game`. The ID becomes a directory name under `plugins/MCZJUGameCore/`, so it must not contain `\ / : * ? " < > |` or control characters; a namespaced form such as `plugin:game` fails on Windows with an invalid-filename error, and game registration rejects it.
 - Never call lifecycle hooks such as `onGameInit`, `onGameStart`, `onGameCancel`, `onGameAbort`, or `onGameEnd` directly. Request transitions through `MCZJUGameCore.getGameManager()`.
 - Do not mutate game/room states or framework-owned membership collections to force a transition. Use managers.
+- Never manually call profile switching, capture/apply, storage, or cache APIs, including `PlayerExt.switchProfile`; profile transitions belong exclusively to the core. Before giving or clearing game items, read [references/profiles.md](references/profiles.md). Give/reset round loadouts after automatic game-profile switching (normally `onGameStart`, whose state is `STATING`, or accepted admission/mid-join hooks). Core leave/end restores the lobby; never give/clear items afterward through cached players or delayed cleanup. Recheck exact instance ownership and allowed phase when callbacks run.
 - All child-plugin changes to in-game Tab player names, including prefixes and suffixes, **must** go through `MCZJUGameCore.getTabManager()` (`setPrefix`, `setSuffix`, and `resetPlayer` as appropriate). Never bypass it with Paper/Bukkit `playerListName(Component)` or `setPlayerListName(...)`, scoreboard team prefixes/suffixes intended to alter Tab names, or custom display-name packets. The core owns name snapshots, batched refreshes, and lifecycle cleanup; direct writes can be overwritten or conflict with that state. Read [references/tab-display.md](references/tab-display.md) before implementing these changes.
 - Treat `onGameInit()` as room preparation triggered when a game instance is created, often when the first player begins waiting—not as the start signal.
 - Return `false` from `onGameInit()` when required room settings are missing or preparation fails cleanly.

@@ -29,7 +29,7 @@ hand.applyLayout(seat);
 hand.set(seat, initialCards);
 ```
 
-`Hand` exposes scan/count/has/first, set/give/take/clear, overflow access/flush, sort, and forget. Humans use inventory slots; bots use memory. Overflow is runtime state, not a dropped-world item or persistent player data. `forget(seat)` discards bot/overflow records; it does not clear a human inventory. `clear(seat)` clears hand slots and overflow, leaving reserved slots/offhand intact. Coordinate clearing with MGC profile restoration to avoid touching a restored lobby inventory. No comparator means sorting does nothing.
+`Hand` exposes scan/count/has/first, set/give/take/clear, overflow access/flush, sort, and forget. Humans use inventory slots; bots use memory. Overflow is runtime state, not a dropped-world item or persistent player data. `forget(seat)` discards bot/overflow records; it does not clear a human inventory. `clear(seat)` clears hand slots and overflow, leaving reserved slots/offhand intact. Follow [profiles.md](profiles.md): clear only at an owned game-inventory phase before core restoration, never after exit/end through cached seats. Never call profile APIs to coordinate this manually. No comparator means sorting does nothing.
 
 Register `new HandGuardListener(layout, hand::owns, inThisGame)` in the child plugin. Its `Predicate<Player>` must resolve the exact owning game instance and allowed role/phase; matching a class or world is insufficient. The listener guards dropping, swapping offhand, inventory clicks/drags, interactions and placing owned items. The game still owns legal plays, control buttons, turn checks and isolation between rooms. Do not globally freeze all players' inventories.
 
