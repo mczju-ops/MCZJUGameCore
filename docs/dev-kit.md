@@ -223,8 +223,7 @@ public final class MyPlugin extends JavaPlugin {
 GameThread thread = new GameThread(this, "mygame");
 PromptTimer prompts = new PromptTimer(this, thread);
 MenuInteraction<Card> interaction = new MenuInteraction<>(this, thread, codec)
-        .withPromptTimer(prompts)
-        .withNotifier((seat, msg) -> /* 发提示 */);
+        .withPromptTimer(prompts);
 interaction.setBotAnswerer(new MyBotAnswerer(game));
 prompts.bindCurrentTurn(game::currentPlayer);
 thread.start(() -> game.play());
