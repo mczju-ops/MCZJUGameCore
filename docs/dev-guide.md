@@ -583,6 +583,9 @@ public void onPlayerPunch(EntityDamageByEntityEvent event) {
 
 `MCZJUGameCore` 还为你提供了许多便捷功能，详见[进阶文档](dev-advanced.md)。
 
+写游戏逻辑前建议先读[游戏机制工具包 `game.kit`](dev-kit.md)：回合计时、询问玩家、背包即手牌、
+侧边栏这些「每款游戏都要重写一遍」的东西已经抽成公共 API，不必自己再写一套。
+
 ## 六、配置游戏类别
 
 在 MCZJUGameCore 的 `config.yml` 中配置类别，键名是稳定的类别 ID，`name` 和逐行 `lore` 支持 MiniMessage。`icon` 使用 Bukkit Material 名称，主菜单、分类管理和类别大厅设置菜单均使用该图标；未配置时默认 `CHEST`，无效、空气或非物品材质会记录警告并回退为 `CHEST`：
