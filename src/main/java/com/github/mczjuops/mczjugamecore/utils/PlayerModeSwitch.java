@@ -27,12 +27,17 @@ import java.util.concurrent.atomic.AtomicLong;
  *       因此切模式前统一解除旁观相机、关闭界面、下坐骑。</li>
  * </ul>
  *
- * <p>另外 {@code PlayerGameModeChangeEvent} 可能被其它插件取消，本工具会在下一 tick
- * 检查一次结果并补切，避免模式修改静默失败。
+ * <p>另外 {@code PlayerGameModeChangeEvent} 可能被其它插件取消：只有当场被否决
+ * （调用后模式仍不是目标值）才会在下一 tick 补一次，正常的切换不留下延迟任务。
+ *
+ * <p><b>后续流程优先：</b>死亡界面路径只负责"先落模式 + 下一 tick 发重生包"，
+ * 重生后不再强改模式；这样游戏结束时核心恢复的大厅档案模式（通常为冒险）
+ * 不会被晚到的任务覆盖。
  *
  * <p><b>延迟任务会失效：</b>每次切换都会领一个代次标记，只有最新一次操作排下的任务才会执行。
  * 玩家离局、游戏结束或被新的切换操作取代时，旧任务自动作废，不会在玩家已经回到大厅、
- * 进入别的房间之后还把模式改回去。需要主动作废时调用 {@link #invalidate(Player)}。
+ * 进入别的房间之后还把模式改回去。需要主动作废时调用 {@link #invalidate(Player)}；
+ * 核心在恢复大厅档案前会作废待执行的切换（死亡界面中的重生任务除外）。
  *
  * <p>所有方法必须在服务器主线程调用，并且只做"模式与相机"层面的事情：
  * 不修改背包、档案、血量恢复或计分板，这些仍由调用方（通常是 game.kit 的旁观会话）负责。
@@ -90,23 +95,25 @@ public final class PlayerModeSwitch {
         long token = nextToken(player.getUniqueId());
         boolean deathScreen = isOnDeathScreen(player);
         prepare(player);
-        if (player.getGameMode() != mode) player.setGameMode(mode);
+        boolean applied = applyMode(player, mode);
 
         if (deathScreen) {
-            // 死亡界面：模式已在服务端生效，下一 tick 再发重生包，客户端随重生包进入目标模式
+            // 死亡界面：模式已在服务端生效，下一 tick 只发重生包，客户端随重生包进入目标模式。
+            // 这里不再补切模式，避免覆盖随后由核心执行的大厅档案恢复。
             runNextTick(player, token, () -> {
                 if (isOnDeathScreen(player)) player.spigot().respawn();
-                if (player.isOnline() && player.getGameMode() != mode) player.setGameMode(mode);
                 if (after != null) after.run();
             });
             return;
         }
 
-        // 模式切换可能被其它插件取消，下一 tick 确认一次，避免玩家停在旧模式
-        runNextTick(player, token, () -> {
-            if (!player.isOnline() || isOnDeathScreen(player)) return;
-            if (player.getGameMode() != mode) player.setGameMode(mode);
-        });
+        // 仅当切换当场被否决时才补一次，避免任务在档案恢复后再改模式
+        if (!applied) {
+            runNextTick(player, token, () -> {
+                if (!player.isOnline() || isOnDeathScreen(player)) return;
+                if (player.getGameMode() != mode) player.setGameMode(mode);
+            });
+        }
         if (after != null) after.run();
     }
 
@@ -154,6 +161,13 @@ public final class PlayerModeSwitch {
      */
     public static boolean hasPending(Player player) {
         return player != null && GENERATIONS.containsKey(player.getUniqueId());
+    }
+
+    /** 应用模式；返回 false 表示被取消或玩家已经不再适用，需要补一次。 */
+    private static boolean applyMode(Player player, GameMode mode) {
+        if (player.getGameMode() == mode) return true;
+        player.setGameMode(mode);
+        return player.getGameMode() == mode;
     }
 
     /** 切模式前的统一准备：关界面、下坐骑、解除旁观相机。 */

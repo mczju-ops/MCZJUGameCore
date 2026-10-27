@@ -398,6 +398,11 @@ public final class SpectatorSession {
         Player p = player.player();
         SpectatorState state = states.get(p.getUniqueId());
         if (state == null || !p.isOnline()) return;
+        // 重连后可能已经不在本局（回大厅或进了别的房间），此时不能抢它的模式与位置
+        if (player.getGame() != game) {
+            discard(p, state);
+            return;
+        }
 
         enterSpectator(p, state.anchor, null);
         if (state.awaitingRespawn && state.countdown == null) {
@@ -511,19 +516,24 @@ public final class SpectatorSession {
     /** 切旁观 + 传送锚点；死亡界面下由 PlayerModeSwitch 在重生包之后回调。 */
     private void enterSpectator(Player p, @Nullable Location anchor, @Nullable Runnable done) {
         PlayerModeSwitch.toSpectator(p, () -> {
-            if (!p.isOnline()) return;
+            if (!stillInGame(p)) return;
             if (anchor != null && anchor.getWorld() != null) p.teleport(anchor);
             if (done != null) done.run();
         });
     }
 
     private void startCountdown(Player p, SpectatorState state, int seconds) {
-        if (!p.isOnline() || states.get(p.getUniqueId()) != state || !state.awaitingRespawn) return;
+        if (!stillInGame(p) || states.get(p.getUniqueId()) != state) {
+            discard(p, state);
+            return;
+        }
+        if (!state.awaitingRespawn) return;
         state.remainingSeconds = seconds;
         CountDown countdown = CountDown.builder(MCZJUGameCore.getInstance(), seconds)
                 .onTick((left, cd) -> {
-                    if (!p.isOnline() || states.get(p.getUniqueId()) != state) {
+                    if (!stillInGame(p) || states.get(p.getUniqueId()) != state) {
                         cd.cancel();
+                        discard(p, state);
                         return;
                     }
                     state.remainingSeconds = left;
@@ -534,6 +544,10 @@ public final class SpectatorSession {
                 })
                 .onComplete(() -> {
                     if (states.get(p.getUniqueId()) != state) return;
+                    if (!stillInGame(p)) {
+                        discard(p, state);
+                        return;
+                    }
                     if (p.isOnline()) revive(state, p);
                 })
                 .build();
@@ -543,12 +557,17 @@ public final class SpectatorSession {
 
     private void revive(SpectatorState state, Player p) {
         PlayerExt player = new PlayerExt(p);
+        // 玩家已离局（主动退出、加入别的游戏）时只摘登记，不再回传、重置状态或触发回调
+        if (!stillInGame(p)) {
+            discard(p, state);
+            return;
+        }
         // 先摘除登记：复活回调里重新登记时不会被旧状态干扰
         if (!states.remove(p.getUniqueId(), state)) return;
         cancelCountdown(state);
 
         PlayerModeSwitch.toMode(p, GameMode.SURVIVAL, () -> {
-            if (!p.isOnline()) return;
+            if (!stillInGame(p)) return;
             Location target = state.respawnLocation == null ? state.anchor : state.respawnLocation.apply(p);
             if (target == null) target = state.anchor;
             if (target != null && target.getWorld() != null) p.teleport(target);
@@ -571,7 +590,7 @@ public final class SpectatorSession {
 
     private void fireSpectate(PlayerExt player, boolean permanent) {
         Consumer<SpectatorTransition> callback = spectateCallback;
-        if (callback != null && player.player().isOnline()) {
+        if (callback != null && player.player().isOnline() && player.getGame() == game) {
             callback.accept(new SpectatorTransition(player, permanent));
         }
     }
@@ -586,6 +605,20 @@ public final class SpectatorSession {
         CountDown countdown = state.countdown;
         state.countdown = null;
         if (countdown != null) countdown.cancel();
+    }
+
+    /**
+     * 登记已失效（玩家离局或进了别的游戏）时摘下状态并停表，
+     * 避免旧倒计时继续切模式、传送到旧地图或执行旧回调。
+     */
+    private void discard(Player p, SpectatorState state) {
+        cancelCountdown(state);
+        states.remove(p.getUniqueId(), state);
+    }
+
+    /** 玩家仍在线且仍属于本局（比较具体游戏实例）。 */
+    private boolean stillInGame(Player p) {
+        return p.isOnline() && new PlayerExt(p).getGame() == game;
     }
 
     private List<PlayerExt> onlinePlayers(boolean onlyWaiting) {

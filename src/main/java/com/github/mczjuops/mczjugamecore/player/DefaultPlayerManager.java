@@ -116,6 +116,11 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
             game.getPlayerQuitStrategy().onPlayerQuit(player, reason);
         }
 
+        // 档案恢复是离场后最终模式的来源；先作废旧的在途切换，
+        // 只有仍停在死亡界面的玩家需要保留重生任务，否则他会卡在死亡页
+        if (!PlayerModeSwitch.isOnDeathScreen(player.player())) {
+            PlayerModeSwitch.invalidate(player.player());
+        }
         player.switchProfile(null);
         if (reason != PlayerQuitReason.DISCONNECT) {
             player.player().playerListName(null);
@@ -138,6 +143,10 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
         // 先清理整局展示，再恢复档案，避免档案恢复失败遗留 Tab 修改。
         MCZJUGameCore.getTabManager().onGameEnd(game);
         for (PlayerExt player : players) {
+            // 同理：档案恢复决定最终模式，但死亡界面里的重生包仍要发出
+            if (!PlayerModeSwitch.isOnDeathScreen(player.player())) {
+                PlayerModeSwitch.invalidate(player.player());
+            }
             player.switchProfile(null);
             player.player().playerListName(null);
         }

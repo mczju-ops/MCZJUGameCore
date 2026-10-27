@@ -5,6 +5,7 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.utils.VoiceGroupUtil;
 import com.github.mczjuops.mczjugamecore.utils.sender.impl.ConsoleSender;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
@@ -132,7 +133,7 @@ public final class TeamSession {
         requireMainThread();
         if (player == null) return;
         if (assignments.remove(player.getUniqueId()) == null) return;
-        safeResetTab(player);
+        safeClearTabPrefix(player);
     }
 
     /**
@@ -283,7 +284,7 @@ public final class TeamSession {
         requireMainThread();
         if (player == null || !tabPrefixEnabled) return;
         GameTeam team = teamOf(player);
-        if (team == null) safeResetTab(player);
+        if (team == null) safeClearTabPrefix(player);
         else safeApplyTabPrefix(player, team);
     }
 
@@ -297,12 +298,12 @@ public final class TeamSession {
         }
     }
 
-    /** 撤销全部在线成员的 Tab 前缀。 */
+    /** 撤销全部在线成员的 Tab 前缀（只动前缀，后缀与隐藏状态保持原样）。 */
     public void resetTabPrefixes() {
         requireMainThread();
         for (UUID uuid : List.copyOf(assignments.keySet())) {
             Player p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline()) safeResetTab(new PlayerExt(p));
+            if (p != null && p.isOnline()) safeClearTabPrefix(new PlayerExt(p));
         }
     }
 
@@ -368,7 +369,7 @@ public final class TeamSession {
     public void onPlayerQuit(PlayerExt player) {
         requireMainThread();
         if (player == null) return;
-        if (assignments.remove(player.getUniqueId()) != null) safeResetTab(player);
+        if (assignments.remove(player.getUniqueId()) != null) safeClearTabPrefix(player);
     }
 
     /**
@@ -428,9 +429,11 @@ public final class TeamSession {
         }
     }
 
-    private void safeResetTab(PlayerExt player) {
+    private void safeClearTabPrefix(PlayerExt player) {
         try {
-            MCZJUGameCore.getTabManager().resetPlayer(game, player);
+            // 只撤销本会话设置的前缀；resetPlayer 会连带清掉游戏自己设置的后缀、
+            // 隐藏名单与旁观样式，整局 Tab 清理由核心的退出/结束流程负责
+            MCZJUGameCore.getTabManager().setPrefix(game, player, (Component) null);
         } catch (IllegalArgumentException | IllegalStateException e) {
             logger.debug("无法撤销 %s 的队伍 Tab 前缀：%s".formatted(player.getName(), e.getMessage()));
         }
