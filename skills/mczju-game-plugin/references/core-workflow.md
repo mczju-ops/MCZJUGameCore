@@ -72,6 +72,10 @@ After successful async profile loading and restoration, `ProfileManager` emits `
 
 Verify interface opt-in with a quit strategy that lets remaining players continue, normal quit-strategy invocation, termination when all players leave or other end conditions are met, repeated reconnects, end while offline, a new round in the same room, multiple rooms, command leave, waiting disconnect, rejected mid-join, unavailable lobby, profile-load failure, and inventory restoration on Paper. Do not report these as server-tested without actually running a server.
 
+## Inventory ownership and hook timing
+
+Read [profiles.md](profiles.md) before giving, clearing or restoring items. Child plugins must never call profile APIs. Core applies the game inventory before admission/mid-join hooks; `onGameInit()` precedes admission and is not a loadout hook. `onGameStart()` runs in `STATING`, with players already on game profiles. Normal end/abort/cancel hooks precede core lobby restoration; any optional inventory cleanup must be synchronous and limited to current members before restoration. Once a manager leave/end call returns, do not touch inventories via cached participants. Quit strategies run after membership removal and may trigger nested termination; dispose of runtime resources there and let the core restore inventories.
+
 ## Rooms
 
 Define one room class for the game type. Each room instance holds map-specific settings; multiple instances allow concurrent rounds.
