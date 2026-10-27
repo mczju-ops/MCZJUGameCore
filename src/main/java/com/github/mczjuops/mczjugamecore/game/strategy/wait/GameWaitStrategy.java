@@ -8,7 +8,7 @@ import com.github.mczjuops.mczjugamecore.player.party.Party;
 public abstract class GameWaitStrategy {
 
     protected final AbstractGame game;
-    GameWaitStrategy(AbstractGame game){
+    public GameWaitStrategy(AbstractGame game){
         this.game = game;
     }
 
