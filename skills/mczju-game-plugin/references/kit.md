@@ -11,6 +11,7 @@ Keep reusable mechanisms in kit and game-specific rules in the child plugin. Win
 | Human/bot seats, sequential logic, cross-thread calls and cleanup | [kit-runtime.md](kit-runtime.md) |
 | Ask for targets/items/options/confirmation/numbers; concurrent responses; GUI | [kit-prompts.md](kit-prompts.md) |
 | Base + extra action time, prompt display, inventory hands, sidebar | [kit-state-display.md](kit-state-display.md) |
+| Team assignment (manual), same-team damage, team Tab prefix and voice groups; death-to-spectator with permanent elimination or respawn wait | [kit-team-spectator.md](kit-team-spectator.md) |
 
 When composing blocking prompts with inventory/HUD operations, read the runtime contract and the relevant feature file. Do not load unrelated modules. The Chinese developer guide is `docs/dev-kit.md` in the MGC source repository; verify exact overloads and behavior against `game/kit/` source rather than treating examples as a complete game implementation.
 

@@ -1,6 +1,8 @@
 package com.github.mczjuops.mczjugamecore.initialize;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.game.kit.spectator.SpectatorGuardListener;
+import com.github.mczjuops.mczjugamecore.game.kit.team.TeamGuardListener;
 import com.github.mczjuops.mczjugamecore.mention.MentionChatListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerDeathListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerQuitListener;
@@ -23,6 +25,8 @@ public class ListenerInitializer {
         register(MCZJUGameCore.getProfileManager());
         register(MCZJUGameCore.getTabManager());
         register(new MentionChatListener(MCZJUGameCore.getMentionManager()));
+        register(new TeamGuardListener());
+        register(new SpectatorGuardListener());
     }
 
     private static void register(Listener listener){
