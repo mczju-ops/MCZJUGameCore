@@ -215,4 +215,22 @@ public final class SpectatorNotices {
         this.reviveSound = revive;
         return this;
     }
+
+    /**
+     * 替换三种音效的音量。
+     * @param eliminate 淘汰音效音量，不能为负数
+     * @param countdown 倒计时音效音量，不能为负数
+     * @param revive 复活音效音量，不能为负数
+     * @return 本配置，便于链式编写
+     * @throws IllegalArgumentException 任一音量为负数
+     */
+    public SpectatorNotices volumes(float eliminate, float countdown, float revive) {
+        if (eliminate < 0 || countdown < 0 || revive < 0) {
+            throw new IllegalArgumentException("音效音量不能为负数");
+        }
+        this.eliminateVolume = eliminate;
+        this.countdownVolume = countdown;
+        this.reviveVolume = revive;
+        return this;
+    }
 }

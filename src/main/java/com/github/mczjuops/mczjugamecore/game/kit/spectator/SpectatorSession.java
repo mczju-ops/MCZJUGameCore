@@ -131,7 +131,8 @@ public final class SpectatorSession {
                 .eliminateText(source.eliminateChat(), source.eliminateTitle(), source.eliminateSubtitle())
                 .reviveText(source.reviveChat(), source.reviveTitle(), source.reviveSubtitle())
                 .respawnText(source.awaitingChat(), source.countdownText())
-                .sounds(source.eliminateSound(), source.countdownSound(), source.reviveSound());
+                .sounds(source.eliminateSound(), source.countdownSound(), source.reviveSound())
+                .volumes(source.eliminateVolume(), source.countdownVolume(), source.reviveVolume());
         return this;
     }
 

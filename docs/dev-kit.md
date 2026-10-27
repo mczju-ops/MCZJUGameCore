@@ -212,6 +212,10 @@ Hand<Tile> hand = new Hand<>(codec, layout, Comparator.comparing(Tile::kind));  
 `team` 只解决「谁在哪一支队」和队伍相关的通用表现，**不替你分队**：没有自动平衡、没有选队菜单，
 也不假设「红蓝两队」。谁进哪支队由游戏规则或管理员指令决定。
 
+**与 `Party` 的区别：** `Party` 是跨局的玩家组队（大厅组队、`splitParty()` 会真的把它拆散），
+`GameTeam` / `TeamSession` 是**局内阵营**，只在本局有效、结束后消失，也不影响 `Party`。
+所以不能拿 `splitParty()` 当局内分队用，两者可以同时存在（同一 `Party` 的人被分到不同阵营）。
+
 ```java
 public static final GameTeam RED  = new GameTeam("red",  "<red>红队",  NamedTextColor.RED,  Material.RED_GLAZED_TERRACOTTA);
 public static final GameTeam BLUE = new GameTeam("blue", "<blue>蓝队", NamedTextColor.BLUE, Material.BLUE_GLAZED_TERRACOTTA);

@@ -8,6 +8,8 @@ Both kits are per-round session objects keyed by the exact `AbstractGame` instan
 
 Packages: `game.kit.team`. `GameTeam` is an immutable definition (`id`, MiniMessage `displayName`, `NamedTextColor`, `Material`). `TeamSession` only stores who is on which team; there is no auto-balance and no team-pick menu unless the game implements one.
 
+This is not `Party`. `Party` is a cross-round lobby group and `splitParty()` really disbands it; `TeamSession` tracks round-local factions only, disappears when the round ends, never touches parties, and can put party members on opposite teams.
+
 ```java
 // onGameStart(): after profile switching, before giving round loadouts
 TeamSession teams = new TeamSession(this, List.of(RED, BLUE))
