@@ -1,9 +1,11 @@
 package com.github.mczjuops.mczjugamecore.command;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.command.ReloadManager.ReloadResult;
 import com.github.mczjuops.mczjugamecore.game.room.menu.GameRoomSettingMenu;
 import com.github.mczjuops.mczjugamecore.menu.AlertMenu;
 import com.github.mczjuops.mczjugamecore.menu.GameCategorySettingMenu;
+import com.github.mczjuops.mczjugamecore.menu.GameWikiSettingMenu;
 import com.github.mczjuops.mczjugamecore.lobby.LobbySettingMenu;
 import com.github.mczjuops.mczjugamecore.player.PlayerExt;
 import com.github.mczjuops.mczjugamecore.score.leaderboard.ClearRecordResult;
@@ -34,6 +36,8 @@ import java.util.Set;
 
 public class MGCOPCommand implements BrigadierCommand {
 
+    private final ReloadManager reloadManager = new ReloadManager();
+
     @Override
     public String getName() {
         return "mgcop";
@@ -54,12 +58,39 @@ public class MGCOPCommand implements BrigadierCommand {
         return Commands.literal(getName())
                 .requires(src -> src.getSender().hasPermission("mgc.dev"))
                 .executes(ctx -> {
-                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop reload|lobby|category|room"));
+                    ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>用法：/mgcop reload|lobby|wiki|category|room"));
                     return 0;
                 })
                 .then(Commands.literal("reload")
                         .executes(this::executeReload)
+                        .then(Commands.literal("game")
+                                .executes(ctx -> {
+                                    ctx.getSource().getSender().sendMessage(Component.text("用法：/mgcop reload game <gameId>", NamedTextColor.YELLOW));
+                                    return 0;
+                                })
+                                .then(Commands.argument("gameId", StringArgumentType.string())
+                                        .suggests((ctx, builder) -> CommandUtils.suggestMatching(
+                                                MCZJUGameCore.getGameManager().getRegisteredGameIds(), builder))
+                                        .executes(ctx -> {
+                                            explainGameReload(ctx);
+                                            return reportReloads(ctx, List.of(reloadManager
+                                                    .reloadGame(StringArgumentType.getString(ctx, "gameId"))));
+                                        })))
+                        .then(Commands.argument("module", StringArgumentType.word())
+                                .suggests((ctx, builder) -> CommandUtils.suggestMatching(
+                                        reloadManager.getModuleIds(), builder))
+                                .executes(ctx -> reportReloads(ctx, List.of(reloadManager
+                                        .reload(StringArgumentType.getString(ctx, "module"))))))
                 )
+                .then(Commands.literal("wiki")
+                        .executes(ctx -> {
+                            if (!(ctx.getSource().getSender() instanceof Player player)) {
+                                ctx.getSource().getSender().sendMessage("此命令只能由玩家执行");
+                                return 0;
+                            }
+                            new GameWikiSettingMenu(player).open();
+                            return Command.SINGLE_SUCCESS;
+                        }))
                 .then(Commands.literal("lobby")
                         .executes(this::executeLobbyMenu)
                 )
@@ -314,9 +345,28 @@ public class MGCOPCommand implements BrigadierCommand {
     }
 
     private int executeReload(CommandContext<CommandSourceStack> ctx) {
-        ctx.getSource().getSender().sendMessage(TextParser.parse("<yellow>正在重新加载插件配置"));
-        MCZJUGameCore.getConfigManager().reload();
-        return Command.SINGLE_SUCCESS;
+        explainGameReload(ctx);
+        return reportReloads(ctx, reloadManager.reloadAll());
+    }
+
+    private void explainGameReload(CommandContext<CommandSourceStack> ctx) {
+        ctx.getSource().getSender().sendMessage(Component.text(
+                "游戏重载仅处理所选游戏房间，不读取子插件 config.yml；有活动对局（含等待）或未保存房间修改时拒绝，需处理后重试，不自动排队。成功后仅用于新建对局，请重新打开房间菜单。",
+                NamedTextColor.YELLOW));
+    }
+
+    private int reportReloads(CommandContext<CommandSourceStack> ctx, List<ReloadResult> results) {
+        CommandSender sender = ctx.getSource().getSender();
+        int successes = 0;
+        for (ReloadResult result : results) {
+            if (result.success()) successes++;
+            sender.sendMessage(Component.text((result.success() ? "重载成功 [" : "重载失败 [")
+                    + result.target() + "]：" + result.message(),
+                    result.success() ? NamedTextColor.GREEN : NamedTextColor.RED));
+        }
+        sender.sendMessage(Component.text("重载完成：成功 %d 项，失败 %d 项".formatted(successes, results.size() - successes),
+                successes == results.size() ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
+        return successes == results.size() ? Command.SINGLE_SUCCESS : 0;
     }
 
     private int executeCategoryMenu(CommandContext<CommandSourceStack> ctx) {

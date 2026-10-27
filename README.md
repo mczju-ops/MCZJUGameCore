@@ -103,6 +103,7 @@ python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github
 - `Party`：组队系统（类似于 hypixel 的），处理需要多人参与游戏的情况。
 - `ScoreManager`：单局的计分管理器，具体插件调用它来设置玩家分数。未来会添加排行榜功能。
 - `ItemManager`：特殊物品管理器，提供物品辨别（`isThis`）等功能（识别物品的 pdc）。
+- `MentionManager`：聊天提醒，输入 `@ 玩家名` 让对方听到提示音、`@@ 玩家名` 额外显示 title，`@ all` / `@@ all` 作用于全服，配置见 `mention.yml`。
 
 工具：
 

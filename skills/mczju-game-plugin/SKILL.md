@@ -50,7 +50,7 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
 7. Make shutdown and end paths idempotent. Cancel plugin-owned schedulers, remove spawned entities, restore/reset maps as required, and avoid retaining stale `PlayerExt`, `Player`, game, or room references.
 8. When adding features, update the relevant development documentation, document public classes/functions with comments or Javadoc, and synchronize this project skill and its references.
 9. Build and run available tests, respecting repository instructions about tests. For behavior that requires a server, state the exact Paper test steps and lifecycle transitions to exercise.
-10. In the final report, summarize the important features implemented and explicitly state whether voice groups are used. If used, describe how players are grouped; distinguish implemented integration from server verification and report any unavailable voice-service limitation.
+10. Deliver the completion report described below, including rule assumptions, setup steps, verification limits, and any required user-run safety tests. Always report voice-group usage.
 
 ## Non-negotiable constraints
 
@@ -63,9 +63,11 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
 - Treat `onGameInit()` as room preparation triggered when a game instance is created, often when the first player begins waiting—not as the start signal.
 - Return `false` from `onGameInit()` when required room settings are missing or preparation fails cleanly.
 - Mark modified persistent player data with `setModified(true)` after changes.
-- Whenever a child plugin stores configuration in its own `config.yml`, it **must** provide its own reload command (for example, `/<plugin-command> reload`) to hot-reload that configuration without restarting the server. This applies regardless of the number or type of settings; MGC's `/mgcop reload` does not reload child-plugin configuration.
+- Whenever a child plugin stores configuration in its own `config.yml`, it **must** provide its own reload command (for example, `/<plugin-command> reload`) to hot-reload that configuration without restarting the server. This applies regardless of the number or type of settings.
 - Use Bukkit/Paper APIs on the server thread unless their API explicitly permits async access. Keep filesystem/database work off-thread, then marshal world/entity/player changes back to the server thread.
 - Do not blindly copy version numbers from this skill. Preserve or verify the target project's Paper and MGC versions.
+
+Explain MGC reload commands only when the user asks how to reload. These are user-facing operations; do not add child-plugin adaptation instructions or proactively include reload guidance in development work.
 
 ## Gameplay experience and configuration
 
@@ -82,7 +84,8 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
 - Verify party joins are atomic from the game's perspective and fit the wait strategy's capacity.
 - Verify room state and modified fields are restored/saved appropriately.
 - Verify player inventory/profile isolation is not bypassed by custom teleport or membership logic.
-- Verify listeners ignore players outside this game and, for multi-room games, outside the relevant game instance.
+- Verify gameplay listeners, commands, items, and delayed callbacks enforce the current game-instance, phase, participant, and target ownership checks below, including after a player leaves or joins a different round.
+- If maps are reset or NPCs/entities are removed, verify cleanup ownership and boundaries below and include the user-run safety test request in the completion report.
 - Verify scheduled tasks stop when their owning game ends or aborts.
 - Verify persistent fields are serializable by the chosen MGC data/room implementation; keep transient fields private where the JSON reflection convention requires it.
 - Verify MiniMessage strings and permissions, and exercise menu close/click behavior.
@@ -90,3 +93,22 @@ This skill is distributed in the MGC repository under `skills/mczju-game-plugin/
 - Verify requested settings are exposed in `GameRoom` where practical. Whenever the child plugin uses `config.yml`, verify its own reload command, permission and feedback, updated runtime values/caches, and retention of previous effective settings on invalid input; state when changes take effect.
 - Verify explicitly defined two-team opposing games default to separate team voice groups and cleanup; all other games use none unless requested. Always report whether voice groups are created, how players are grouped when used, and the important implemented features at delivery.
 - Report server-only verification separately from compilation/unit tests.
+
+## Gameplay scope and cleanup safety
+
+- Before canceling an event or changing damage, inventory, score, movement, effects, or other gameplay state, resolve the player's current MGC game and verify it is the exact owning game instance, is still `RUNNING`, and permits that player's role to perform the action. A matching game class, room ID, world, cached player list, or previous participation is insufficient. Ignore players who have left, are in a lobby, or belong to another round; spectators and eliminated players must follow the game's explicit rules.
+- Waiting-room, join/quit, result, and cleanup logic may intentionally run outside `RUNNING`. Give each such path an explicit allowed phase and ownership boundary consistent with the actual framework hook ordering; do not apply an unconditional `RUNNING` guard that breaks admission or restoration.
+- Recheck current membership, owning round, and allowed phase when delayed tasks or async results actually apply changes on the server thread. Cancel obsolete work on leave/end and prevent callbacks from a previous round from affecting a new round in the same room. For damage, projectiles, and indirect interactions, verify both the actor/source and affected player/entity belong to the intended interaction before applying game rules.
+- Track NPCs and other spawned entities by handles/UUIDs owned by this plugin and game instance. Use plugin-specific ownership metadata with a room/round identity where persistent identification is needed. Remove only confirmed owned entities; never use name, entity type, proximity, or a world-wide entity sweep as sole deletion criteria. Do not delete another game's or any lobby's NPCs, including MGC-managed entry NPCs.
+- Limit map reset, block restoration, and template/world operations to the validated room region or a world exclusively owned by this game. Validate world identity and bounds and prevent overlapping active-room resets. Being inside a reset region does not establish ownership of an entity. If ownership or boundaries cannot be established, skip the destructive operation and report the unresolved requirement instead of broadening its scope.
+- Apply these limits to normal end, abort, cancellation, initialization failure, plugin disable, and repeated cleanup. Code review and compilation do not establish runtime isolation. Whenever implementation includes map reset or NPC/entity removal, explicitly ask the user in the completion report to perform the safety test below; this is a handoff recommendation for testing by the user, not a requirement for the agent to run a server or a request for permission to finish the code.
+
+## Completion report
+
+After implementing code, use the following compact structure in the user's language. Scale detail to the change; mark a category as not applicable when appropriate rather than inventing configuration or commands. Never hide rule assumptions or a required cleanup safety test merely to shorten the report.
+
+1. **Implemented behavior**: Summarize player-visible features and lifecycle behavior. Always state whether voice groups are created, how players are grouped if used, and any unavailable voice-service limitation.
+2. **Rules to confirm**: Identify gameplay rules left unspecified or ambiguous by the request, the default actually implemented, and the concrete player-visible consequence that may differ from the user's intent. Cover relevant win/tie rules, elimination/respawn, disconnect/leave/rejoin, mid-game joins, teams, scoring/rewards, or timeouts. Distinguish implemented assumptions from missing features; explicitly say when no unresolved rule assumptions were identified. Proceed with reasonable reversible defaults when possible, but ask before implementing dependent behavior if the ambiguity prevents a correct or safe implementation.
+3. **Setup and operation**: Give the actual artifact location, required runtime dependencies/permissions, and remaining administrator steps in execution order. Where applicable, include exact commands and IDs to create/edit/save rooms, required spawn/map/NPC parameters, game-category configuration and assignment, lobby/entry setup, joining/starting the game, and the child plugin's reload command with when changes take effect. Verify syntax against the target source/version; do not guess commands or claim a room/category is already configured merely because code exists. Call out relevant configuration migrations, backups, or restart requirements.
+4. **Verification and remaining work**: Separate successful builds and checks actually performed from untested Paper behavior. List concrete user-run scenarios for the changed behavior, including exit-to-lobby isolation and concurrent rooms where relevant. State known limitations or unfinished work and the next action; do not present compilation as gameplay verification.
+5. **Cleanup safety test — required when applicable**: If map reset or NPC/entity removal exists in the implementation, describe the ownership/bounds used and explicitly recommend that the user test on a backed-up test server with another active game/room and NPCs in other games and lobbies (including entry NPCs and nearby entities). Exercise normal end, abort/cancel, initialization failure and plugin disable/repeated cleanup where applicable. Ask them to confirm only this round's intended map/entities change, while other rooms, maps, NPCs, and players remain intact. State whether this runtime safety test has been performed; if not, leave it explicitly pending user verification.

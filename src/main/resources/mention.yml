@@ -1,0 +1,61 @@
+# 聊天提醒（移植自 MCDR 插件 Beep）：@ 玩家 播放提示音，@@ 玩家 额外显示 title。
+#
+# 用法（@ / @@ 与名字之间必须有空格）：
+#   @ Steve 打不打        -> Steve 听到提示音，消息照常广播
+#   @@ Steve 打不打       -> Steve 听到提示音并在屏幕中央看到 title
+#   @@ Steve Alex         -> 一次提醒多个玩家
+#   @ all                 -> 提醒全服玩家（也可写 @ everyone）
+#   @@ all                -> 给全服玩家播放 title
+#
+# 全服提醒需要权限 mgc.mention.all（默认所有人可用，可在权限插件中按玩家收回），
+# 也可以用下面的 allow-all: false 直接关闭。
+#
+# 修改后使用 /mgcop reload mention 生效。
+enabled: true
+
+# true：带提醒的消息不广播（同 Beep，只给发送者「已提醒」回执）；false：消息照常广播，所有人都能看到内容。
+hide-message: false
+
+# true：@ / @@ 与玩家名之间必须有空格，避免 "a@b.com" 这类文本误触发。建议保持 true。
+# 名字按空白分词、整词精确匹配（不区分大小写）；中文同样按整词处理，不做前缀截断。
+# 因此 "@ Steve，来一下" 不会命中，应写成 "@ Steve 来一下"。
+require-space: true
+
+# 是否允许用 "@ all" / "@ everyone" 提醒全服玩家（仍需 mgc.mention.all 权限，且要求空格）。
+allow-all: true
+
+# 一条消息最多提醒多少个玩家，0 表示不限。
+max-targets: 0
+
+# 同一玩家两次提醒之间的最小间隔（毫秒），0 表示不限制。
+cooldown-millis: 0
+
+# 收到提醒时显示的动作栏文字，MiniMessage 格式，{player} 为发送者名字；留空不显示。
+ping-actionbar: "<gray>{player} 提醒了你</gray>"
+
+# 隐藏消息时给发送者的回执，{targets} 为被提醒的玩家；留空不显示。
+sender-feedback: "<gray>已提醒：</gray><white>{targets}</white>"
+
+# 消息以 @ / @@ 开头但没有任何在线玩家命中时，私下提示发送者；留空不提示。
+sender-hint: "<gray>提醒未生效：名字需用空格分隔，例如 <white>@ Steve 你好</white>、<white>@@ Steve</white>；并确认玩家在线</gray>"
+
+# @ 提醒（小提醒）
+ping:
+  # 音效键名；留空或 none 表示静音
+  sound: "minecraft:entity.arrow.hit_player"
+  volume: 1.0
+  pitch: 1.0
+
+# @@ 提醒（大提醒）
+big:
+  # 音效会连续播放两次
+  sound: "minecraft:entity.arrow.hit_player"
+  volume: 1.0
+  pitch: 1.0
+  # MiniMessage 格式，{player} 为发送者名字
+  title: "<aqua>{player}</aqua>"
+  subtitle: "<gray>在 @ 你</gray>"
+  # 淡入、停留、淡出（tick）
+  fade-in: 2
+  stay: 15
+  fade-out: 5

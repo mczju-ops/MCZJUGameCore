@@ -25,6 +25,7 @@ public class MainMenu extends Menu {
 
     private final AbstractGameManager gameManager;
     private final String categoryId;
+    private final boolean wiki;
 
     // 用于决定小游戏的布局
     private static final int COLUMNS = 9;
@@ -42,7 +43,17 @@ public class MainMenu extends Menu {
      * @param categoryId 类别 ID；null 表示主菜单
      */
     public MainMenu(Player player, String categoryId) {
-        super(player, new Object[0], categoryTitle(categoryId));
+        this(player, categoryId, false);
+    }
+
+    /**
+     * @param player 打开菜单的玩家
+     * @param categoryId 类别 ID；null 表示首页
+     * @param wiki true 时保留游戏布局及类别导航，点击游戏提供 Wiki 链接
+     */
+    public MainMenu(Player player, String categoryId, boolean wiki) {
+        super(player, new Object[0], wiki ? "小游戏 Wiki" : categoryTitle(categoryId));
+        this.wiki = wiki;
         this.gameManager = MCZJUGameCore.getGameManager();
         this.categoryId = categoryId;
     }
@@ -73,7 +84,7 @@ public class MainMenu extends Menu {
                         .customName("<#DEB12D>MCZJU<b>小游戏世界")
                         .lore(List.of(
                                 "<yellow>欢迎来到小游戏世界",
-                                "<yellow>你可以在此菜单浏览、加入小游戏"
+                                wiki ? "<yellow>点击游戏查看 Wiki" : "<yellow>你可以在此菜单浏览、加入小游戏"
                         ))
                         .glint(true)
                         .build()
@@ -88,7 +99,7 @@ public class MainMenu extends Menu {
                 var category = categories.get(id);
                 setSlot(entry.getKey(), ItemBuilder.of(Material.CHEST).itemModel(category.icon())
                         .customName(category.name()).lore(category.lore()).build(),
-                        (p, event) -> new MainMenu(p.player(), id).open());
+                        (p, event) -> new MainMenu(p.player(), id, wiki).open());
             }
         } else {
             setupGames(categories.size() > 1 ? categoryId : null);
@@ -96,7 +107,7 @@ public class MainMenu extends Menu {
         if (categories.size() > 1 && !showCategories) {
             setSlot(inventory.getSize() - 5, ItemBuilder.of(Material.ARROW)
                     .customName("<yellow>返回游戏类别").build(),
-                    (p, event) -> new MainMenu(p.player()).open());
+                    (p, event) -> new MainMenu(p.player(), null, wiki).open());
         }
 
         setupUtilities();
@@ -119,7 +130,10 @@ public class MainMenu extends Menu {
             lore.add("");
             lore.add("<yellow>作者：<white>%s".formatted(meta.author()));
             lore.add("");
-            if (hasLobby && playerSelectable) {
+            if (wiki) {
+                lore.add(MCZJUGameCore.getGameWikiManager().getLink(gameId) == null
+                        ? "<red>尚未设置 Wiki" : "<yellow>▶ 点击查看 Wiki");
+            } else if (hasLobby && playerSelectable) {
                 lore.add("<yellow><b>▶ 左键 进入游戏大厅");
                 lore.add("<yellow><b>▶ 右键 选择游戏房间");
             } else if (hasLobby) {
@@ -140,6 +154,12 @@ public class MainMenu extends Menu {
                             .build(),
                     (player, event) -> {
                         player.player().closeInventory();
+                        if (wiki) {
+                            if (player.player().hasPermission(getPermission())) {
+                                MCZJUGameCore.getGameWikiManager().sendLink(player.player(), gameId);
+                            }
+                            return;
+                        }
                         if (hasLobby && playerSelectable) {
                             if (event.getClick() == ClickType.LEFT) {
                                 teleportToGameLobby(player, gameId);
