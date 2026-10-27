@@ -3,8 +3,11 @@ package com.github.mczjuops.mczjugamecore.player;
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameState;
+import com.github.mczjuops.mczjugamecore.game.kit.spectator.SpectatorSession;
+import com.github.mczjuops.mczjugamecore.game.kit.team.TeamSession;
 import com.github.mczjuops.mczjugamecore.player.strategy.PlayerQuitReason;
 import com.github.mczjuops.mczjugamecore.player.party.Party;
+import com.github.mczjuops.mczjugamecore.utils.PlayerModeSwitch;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
@@ -74,6 +77,13 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
      */
     @Override
     public void leaveGame(PlayerExt player, PlayerQuitReason reason) {
+        // 离场先作废旧的在途任务，再撤销 kit 登记的旁观/队伍状态，避免把旁观模式或队友关系带出本局；
+        // 最后补一次重生包，防止离局时仍停在死亡界面
+        PlayerModeSwitch.invalidate(player.player());
+        SpectatorSession.releaseFor(player);
+        TeamSession.forgetPlayer(player);
+        PlayerModeSwitch.forceRespawn(player.player(), null);
+
         if (!playerGameMap.containsKey(player)) return;
 
         AbstractGame currentGame = playerGameMap.get(player);

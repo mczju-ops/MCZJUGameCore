@@ -32,15 +32,32 @@ import java.util.function.Function;
  *       复活后短暂无敌并复位血量/饥饿/药水。</li>
  * </ul>
  *
+ * <p><b>由死亡策略调用。</b>在游戏的 {@code AbstractPlayerDeathStrategy#onPlayerDeath} 里
+ * 调用本会话，不要自己 {@code setGameMode}；退出与结束的清理由核心接管：
+ * 玩家离局时核心调用 {@link #releaseFor(PlayerExt)}，
+ * 游戏结束/中止/取消时核心调用 {@link #reset()}，子插件不需要自己兜底
+ * （仍建议在自己的终局钩子里调用一次，重复调用是幂等的）。
+ *
  * <p><b>为什么不会卡住客户端：</b>死亡界面里直接改游戏模式会让服务端与客户端错位
  * （服务端已是旁观，客户端还躺在死亡页面）。本会话统一走 {@link PlayerModeSwitch}：
  * 先让模式在服务端生效，下一 tick 发重生包，重生时由守卫监听器把重生点钉在观战锚点，
  * 再补切一次旁观；复活时同样先解除旁观相机再切生存，避免视角黏在别人身上。
+ * 这些延迟任务带代次标记，玩家离局、结束或被新操作取代后自动失效。
+ *
+ * <p><b>展示与机制分离：</b>标题、聊天文案与音效全部来自 {@link SpectatorNotices}，
+ * 默认给一套通用展示，可以逐项替换、整体静音，或用
+ * {@link #onSpectate(Consumer)} / {@link #onRevive(Consumer)} 回调自己渲染。
  *
  * <p><b>只处理"模式与位置"。</b>背包、掉落物、计分板、淘汰名单广播仍由游戏负责；
  * 本类不会清空背包，也不会调用档案、Tab 或玩家数据接口。
  *
- * <p>用法：在 {@code onGameStart()} 创建一个实例，在游戏的死亡策略里调用
+ * <p><b>关于自动重连：</b>本会话不负责把掉线玩家拉回游戏。重连由核心的
+ * {@code AutoReconnect} 接口与 {@code PlayerReconnectListener} 完成（前提是游戏实现了
+ * {@code AutoReconnect}，且退出策略在 {@code DISCONNECT} 时不把玩家移出本局）。
+ * 玩家成功重新入局、档案加载完成后，守卫监听器才会调用 {@link #reapply(PlayerExt)}
+ * 恢复旁观与剩余倒计时；没有入局就没有恢复。
+ *
+ * <p>用法：在 {@code onGameStart()} 创建一个实例，在死亡策略里调用
  * {@link #eliminate(PlayerExt)} 或 {@link #awaitRespawn(PlayerExt, Location)}，
  * 并在 {@code onGameEnd()} / {@code onGameAbort()} / {@code onGameCancel()} 中
  * 调用 {@link #reset()}。所有方法必须在服务器主线程调用。
@@ -51,14 +68,30 @@ public final class SpectatorSession {
     public static final int DEFAULT_RESPAWN_SECONDS = 5;
 
     private static final Map<AbstractGame, SpectatorSession> SESSIONS = new IdentityHashMap<>();
+    private static final Title.Times ELIMINATE_TIMES =
+            Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500));
+    private static final Title.Times REVIVE_TIMES =
+            Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ofMillis(500));
 
     private final AbstractGame game;
     private final Map<UUID, SpectatorState> states = new HashMap<>();
+    private final SpectatorNotices notices = new SpectatorNotices();
 
     private int respawnSeconds = DEFAULT_RESPAWN_SECONDS;
     private int reviveInvulnerableTicks = 40;
     private boolean restoreHealthOnRevive = true;
     private @Nullable Location defaultAnchor;
+    private @Nullable Consumer<SpectatorTransition> spectateCallback;
+    private @Nullable Consumer<SpectatorTransition> reviveCallback;
+
+    /**
+     * 一次旁观状态变化，用于把展示交给游戏自己渲染。
+     *
+     * @param player 发生变化的玩家
+     * @param permanent true 表示永久旁观（淘汰），false 表示等复活/重新进入旁观
+     */
+    public record SpectatorTransition(PlayerExt player, boolean permanent) {
+    }
 
     /**
      * 创建本局旁观会话；同一游戏实例重复创建时，旧会话会先被 {@link #reset()} 收拾掉。
@@ -75,6 +108,51 @@ public final class SpectatorSession {
     /** @return 本会话所属的游戏实例 */
     public AbstractGame game() {
         return game;
+    }
+
+    /**
+     * 本会话的展示配置，可直接修改（例如 {@code session.notices().sounds(false)}）。
+     * @return 展示配置实例
+     */
+    public SpectatorNotices notices() {
+        return notices;
+    }
+
+    /**
+     * 替换展示配置。
+     * @param config 新的展示配置；null 时恢复默认展示
+     * @return 本会话，便于链式配置
+     */
+    public SpectatorSession notices(@Nullable SpectatorNotices config) {
+        SpectatorNotices source = config;
+        SpectatorNotices target = notices;
+        if (source == null) source = new SpectatorNotices();
+        target.chat(source.chat()).titles(source.titles()).sounds(source.sounds())
+                .eliminateText(source.eliminateChat(), source.eliminateTitle(), source.eliminateSubtitle())
+                .reviveText(source.reviveChat(), source.reviveTitle(), source.reviveSubtitle())
+                .respawnText(source.awaitingChat(), source.countdownText())
+                .sounds(source.eliminateSound(), source.countdownSound(), source.reviveSound());
+        return this;
+    }
+
+    /**
+     * 注册"玩家进入旁观"之后的回调，用于游戏自己播报或刷新记分板。
+     * @param callback 回调，可为 null 表示取消
+     * @return 本会话，便于链式配置
+     */
+    public SpectatorSession onSpectate(@Nullable Consumer<SpectatorTransition> callback) {
+        this.spectateCallback = callback;
+        return this;
+    }
+
+    /**
+     * 注册"玩家复活完成"之后的回调，用于游戏自己播报或发装备。
+     * @param callback 回调，可为 null 表示取消
+     * @return 本会话，便于链式配置
+     */
+    public SpectatorSession onRevive(@Nullable Consumer<SpectatorTransition> callback) {
+        this.reviveCallback = callback;
+        return this;
     }
 
     // ==================== 规则配置 ====================
@@ -141,10 +219,11 @@ public final class SpectatorSession {
     }
 
     /**
-     * 让玩家永久旁观（饥饿游戏式淘汰），并可以自定义观战位置与淘汰提示。
+     * 让玩家永久旁观（饥饿游戏式淘汰），并可以自定义观战位置与淘汰文案。
      * @param player 本局在线玩家
      * @param anchor 观战位置；null 时使用本会话默认锚点，再退化到死亡地点
-     * @param message 直接发给该玩家的淘汰文案（MiniMessage）；null 时使用默认文案
+     * @param message 直接发给该玩家的淘汰文案（MiniMessage）；给出时会无视
+     *                {@link SpectatorNotices#chat()} 的开关强制发送
      * @throws IllegalArgumentException 玩家已离线或不在本局
      * @throws IllegalStateException 不在服务器主线程调用
      */
@@ -156,16 +235,19 @@ public final class SpectatorSession {
         SpectatorState state = new SpectatorState(false, watch);
         cancelCountdown(states.put(p.getUniqueId(), state));
 
-        player.sender().info(message == null || message.isBlank()
-                ? "<gray>你已被淘汰，现在以旁观者身份观战"
-                : message);
-        p.showTitle(Title.title(
-                TextParser.parse("<red>你已被淘汰"),
-                TextParser.parse("<gray>现在以旁观者身份观战"),
-                Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500))
-        ));
-        p.playSound(p.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.6f, 1f);
-        enterSpectator(p, watch);
+        String chat = message != null && !message.isBlank()
+                ? message
+                : (notices.chat() ? notices.eliminateChat() : null);
+        if (chat != null) player.sender().info(chat);
+        if (notices.titles()) {
+            p.showTitle(Title.title(
+                    TextParser.parse(notices.eliminateTitle()),
+                    TextParser.parse(notices.eliminateSubtitle()),
+                    ELIMINATE_TIMES
+            ));
+        }
+        playSound(p, notices.eliminateSound(), notices.eliminateVolume(), 1f);
+        enterSpectator(p, watch, () -> fireSpectate(player, true));
     }
 
     // ==================== 等复活 ====================
@@ -204,9 +286,11 @@ public final class SpectatorSession {
         state.onRevived = onRevived;
         cancelCountdown(states.put(p.getUniqueId(), state));
 
-        player.actionBarSender().info("<yellow>你已阵亡，%d 秒后复活".formatted(seconds));
-        p.playSound(p.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.6f, 1.2f);
-        enterSpectator(p, watch);
+        if (notices.chat()) {
+            player.actionBarSender().info(format(notices.awaitingChat(), seconds));
+        }
+        playSound(p, notices.eliminateSound(), notices.eliminateVolume(), 1.2f);
+        enterSpectator(p, watch, () -> fireSpectate(player, false));
         // 死亡界面里的重生要等到下一 tick，倒计时同样延后启动，避免"倒计时跑完了人还躺着"
         runNextTick(p, () -> startCountdown(p, state, seconds));
     }
@@ -240,7 +324,7 @@ public final class SpectatorSession {
         if (state == null || !state.awaitingRespawn) return false;
         state.awaitingRespawn = false;
         cancelCountdown(state);
-        player.actionBarSender().info("<gray>复活已取消");
+        if (notices.chat()) player.actionBarSender().info("<gray>复活已取消");
         return true;
     }
 
@@ -300,6 +384,10 @@ public final class SpectatorSession {
     /**
      * 重连或脚本重新施加旁观状态：把玩家放回旁观模式并传送到观战锚点；
      * 等复活的玩家会接着剩余秒数继续倒计时。
+     *
+     * <p>只在该玩家已经重新入局时生效（{@link PlayerExt#getGame()} 就是本局），
+     * 本身不会把离线玩家拉回游戏。
+     *
      * @param player 本局在线玩家
      * @throws IllegalStateException 不在服务器主线程调用
      */
@@ -310,7 +398,7 @@ public final class SpectatorSession {
         SpectatorState state = states.get(p.getUniqueId());
         if (state == null || !p.isOnline()) return;
 
-        enterSpectator(p, state.anchor);
+        enterSpectator(p, state.anchor, null);
         if (state.awaitingRespawn && state.countdown == null) {
             int seconds = Math.max(1, state.remainingSeconds);
             runNextTick(p, () -> startCountdown(p, state, seconds));
@@ -330,8 +418,37 @@ public final class SpectatorSession {
     }
 
     /**
-     * 结束本局：停掉全部倒计时，把仍留在本局的旁观者（含等复活中）恢复成生存模式，
+     * 玩家离开本局（主动退出、被移出、加入失败回滚）：撤销旁观登记，
+     * 取消倒计时与延迟任务，并把玩家切回与大厅一致的安全模式，避免带着旁观模式离场。
+     *
+     * <p>由核心在离局流程中调用；子插件一般不需要自己调。
+     *
+     * @param player 离场玩家
+     * @return 该玩家原本在旁观名单里并已释放时为 true
+     * @throws IllegalStateException 不在服务器主线程调用
+     */
+    public boolean release(@Nullable PlayerExt player) {
+        requireMainThread();
+        if (player == null) return false;
+        Player p = player.player();
+        SpectatorState state = states.remove(p.getUniqueId());
+        if (state == null) return false;
+        cancelCountdown(state);
+        if (p.isOnline()) {
+            PlayerModeSwitch.invalidate(p);
+            p.resetTitle();
+            // 离局后玩家会回大厅，用大厅一致的冒险模式，不用生存模式
+            PlayerModeSwitch.toMode(p, GameMode.ADVENTURE, null);
+        }
+        return true;
+    }
+
+    /**
+     * 结束本局：停掉全部倒计时，把仍留在本局的旁观者（含等复活中）从旁观模式里放出来，
      * 避免他们把旁观模式带回大厅；随后清空登记并注销会话。幂等。
+     *
+     * <p>由核心在结束/中止/取消流程中调用；子插件在自己的终局钩子里再调一次是安全的。
+     *
      * @throws IllegalStateException 不在服务器主线程调用
      */
     public void reset() {
@@ -346,10 +463,23 @@ public final class SpectatorSession {
             AbstractGame current = player.getGame();
             // 已经去了别的游戏时不要抢它的模式设置
             if (current != null && current != game) continue;
+            PlayerModeSwitch.invalidate(p);
             p.resetTitle();
-            PlayerModeSwitch.toMode(p, GameMode.SURVIVAL, null);
+            PlayerModeSwitch.toMode(p, GameMode.ADVENTURE, null);
         }
+        spectateCallback = null;
+        reviveCallback = null;
         if (SESSIONS.get(game) == this) SESSIONS.remove(game);
+    }
+
+    /**
+     * 撤销玩家在所有活动旁观会话中的登记（核心离局流程使用）。
+     * @param player 离场玩家
+     * @throws IllegalStateException 不在服务器主线程调用
+     */
+    public static void releaseFor(@Nullable PlayerExt player) {
+        if (player == null) return;
+        for (SpectatorSession session : activeSessions()) session.release(player);
     }
 
     /**
@@ -378,10 +508,11 @@ public final class SpectatorSession {
     // ==================== 内部 ====================
 
     /** 切旁观 + 传送锚点；死亡界面下由 PlayerModeSwitch 在重生包之后回调。 */
-    private void enterSpectator(Player p, @Nullable Location anchor) {
+    private void enterSpectator(Player p, @Nullable Location anchor, @Nullable Runnable done) {
         PlayerModeSwitch.toSpectator(p, () -> {
             if (!p.isOnline()) return;
             if (anchor != null && anchor.getWorld() != null) p.teleport(anchor);
+            if (done != null) done.run();
         });
     }
 
@@ -395,8 +526,10 @@ public final class SpectatorSession {
                         return;
                     }
                     state.remainingSeconds = left;
-                    new PlayerExt(p).actionBarSender().info("<yellow>%d 秒后复活".formatted(left));
-                    p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.5f, 1.4f);
+                    if (notices.chat()) {
+                        new PlayerExt(p).actionBarSender().info(format(notices.countdownText(), left));
+                    }
+                    playSound(p, notices.countdownSound(), notices.countdownVolume(), 1.4f);
                 })
                 .onComplete(() -> {
                     if (states.get(p.getUniqueId()) != state) return;
@@ -421,15 +554,30 @@ public final class SpectatorSession {
             if (restoreHealthOnRevive) player.resetState();
             if (reviveInvulnerableTicks > 0) p.setNoDamageTicks(reviveInvulnerableTicks);
 
-            p.showTitle(Title.title(
-                    TextParser.parse("<green>你已复活"),
-                    Component.empty(),
-                    Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ofMillis(500))
-            ));
-            p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1.5f);
-            player.sender().info("<green>你已复活");
+            if (notices.chat()) player.sender().info(notices.reviveChat());
+            if (notices.titles()) {
+                p.showTitle(Title.title(
+                        TextParser.parse(notices.reviveTitle()),
+                        TextParser.parse(notices.reviveSubtitle()),
+                        REVIVE_TIMES
+                ));
+            }
+            playSound(p, notices.reviveSound(), notices.reviveVolume(), 1.5f);
             if (state.onRevived != null) state.onRevived.accept(player);
+            fireRevive(player);
         });
+    }
+
+    private void fireSpectate(PlayerExt player, boolean permanent) {
+        Consumer<SpectatorTransition> callback = spectateCallback;
+        if (callback != null && player.player().isOnline()) {
+            callback.accept(new SpectatorTransition(player, permanent));
+        }
+    }
+
+    private void fireRevive(PlayerExt player) {
+        Consumer<SpectatorTransition> callback = reviveCallback;
+        if (callback != null) callback.accept(new SpectatorTransition(player, false));
     }
 
     private void cancelCountdown(SpectatorState state) {
@@ -456,6 +604,16 @@ public final class SpectatorSession {
         if (!p.isOnline()) throw new IllegalArgumentException("只能处理在线玩家");
         if (player.getGame() != game) throw new IllegalArgumentException("只能处理本局玩家");
         return p;
+    }
+
+    private void playSound(Player p, @Nullable Sound sound, float volume, float pitch) {
+        if (!notices.sounds() || sound == null) return;
+        p.playSound(p.getLocation(), sound, volume, pitch);
+    }
+
+    /** 按 %d 占位填充秒数；没有占位时原样返回。 */
+    private static String format(String template, int seconds) {
+        return template == null ? "" : template.replace("%d", Integer.toString(seconds));
     }
 
     private static Location firstNonNull(@Nullable Location first, @Nullable Location second, Location fallback) {

@@ -231,8 +231,9 @@ teams.syncVoiceGroups();                      // 成员变化后重建语音组
 | 队伍语音组 | 开启 | 每队一个 Simple Voice Chat 群组，组名为队伍显示名（多房间时带房间名） |
 
 查询：`teamOf(player)` / `isTeammate(a, b)` / `membersOf(team)` / `onlineMembersOf(team)` / `hasTeam(uuid)`，
-换队直接再 `assign` 一次即可。`reset()` 必须在这一局的 `onGameEnd()` / `onGameAbort()` / `onGameCancel()`
-中调用：撤销 Tab 前缀、移除语音组并注销会话。
+换队直接再 `assign` 一次即可。**清理由核心接管**：游戏结束/中止/取消时核心会自动 `reset()`
+（撤销 Tab 前缀、移除语音组、注销会话），玩家离局时核心会清除其登记；
+在自己的终局钩子里再调一次是安全的（幂等）。
 
 **边界：** 队友关系只认本局登记，未登记的玩家（裁判、旁观者）保持原版伤害规则；
 队伍显示名同时用作语音组名，同一房间不能出现同名队伍。
@@ -255,7 +256,9 @@ private SpectatorSession spectators;
 spectators = new SpectatorSession(this)
         .respawnSeconds(5)
         .reviveInvulnerableTicks(40)
-        .defaultAnchor(room.getSpectatorSpawn());
+        .defaultAnchor(room.getSpectatorSpawn())
+        .onSpectate(t -> { /* 游戏自己的淘汰播报、侧边栏刷新 */ })
+        .onRevive(t -> { /* 游戏自己的复活播报、发装备 */ });
 
 // 死亡策略里（此时服务端还没发重生包）
 @Override
@@ -268,9 +271,35 @@ public void onPlayerDeath(PlayerExt player, PlayerDeathEvent event) {
 - `awaitRespawn(player, seconds, watch, respawnLocation, onRevived)`：倒计时期间旁观，到点复活；
   `respawnLocation` 是 `Function<Player, Location>`，返回 null 时用观战位置；`onRevived` 在玩家已复活后执行；
 - `revive(player)` 立即复活；`cancelAwaitRespawn(player)` 取消倒计时（人仍留在旁观）；
-- 查询：`isSpectating` / `isWaitingRespawn` / `isEliminated` / `anchorFor` / `secondsLeft` / `spectators()` / `waitingRespawn()`；
-- 结束：在 `onGameEnd()` / `onGameAbort()` / `onGameCancel()` 调用 `reset()`，它会把仍在本局的旁观者切回生存模式，
-  避免玩家带着旁观模式回大厅。
+- 查询：`isSpectating` / `isWaitingRespawn` / `isEliminated` / `anchorFor` / `secondsLeft` / `spectators()` / `waitingRespawn()`。
+
+### 展示与机制分开
+
+标题、聊天、动作栏倒计时与音效都在 `notices()` 里配置，默认给一套通用展示：
+
+```java
+spectators.notices().sounds(false);                                  // 只要机制、不要音效
+spectators.notices().chat(false).titles(false);                       // 完全交给游戏自己播报
+spectators.notices(SpectatorNotices.silent());                        // 关闭全部内置展示
+spectators.notices().eliminateText("<red>你出局了", "<red>出局", "<gray>观战中");
+spectators.notices().respawnText("<yellow>%d 秒后复活", "<yellow>%d 秒");
+```
+
+含 `%d` 的文案会用剩余秒数填充；`eliminate(player, anchor, message)` 显式传入的文案会无视 `chat()` 开关强制发送。
+需要完全自定义时关掉内置展示，改用 `onSpectate` / `onRevive` 回调渲染。
+
+### 清理、离局与自动重连
+
+- **结束/中止/取消**：核心的结束流程会自动调用 `reset()`，把仍在本局的旁观者从旁观模式里放出来
+  （切到与大厅一致的冒险模式），不会把旁观模式带回大厅。子插件在自己的终局钩子里再调一次是幂等的。
+- **离局**（`/quit`、被移出、加入失败回滚）：核心在离局流程中会撤销该玩家的登记、停掉倒计时与在途的
+  延迟任务，并把玩家从旁观切到冒险模式。所以不要在退出策略里再手动切模式。
+- **延迟任务失效**：所有模式切换排队时都会领一个代次标记，玩家离局、游戏结束或被新的切换操作取代后，
+  旧任务自动作废，不会在玩家已经回到大厅或进入别的房间之后又把模式改回去。
+- **自动重连不由本 kit 提供**：重连依赖核心的 `AutoReconnect` 接口与 `PlayerReconnectListener`。
+  前提是游戏实例实现 `AutoReconnect`，并且退出策略在 `DISCONNECT` 时不把玩家移出本局；
+  满足后核心会在档案加载完成时把玩家重新加入原局，守卫监听器随后调用 `reapply` 恢复旁观与剩余倒计时。
+  仅创建一个 `SpectatorSession` 不会让掉线玩家自动回到游戏。
 
 **不要自己 `player.setGameMode(...)`。** 死亡界面里只改模式不发重生包，会让服务端已是旁观、客户端还躺在死亡页面；
 从旁观切回生存不解除旁观相机，画面会黏在上一个目标身上。kit 统一走 `PlayerModeSwitch`：

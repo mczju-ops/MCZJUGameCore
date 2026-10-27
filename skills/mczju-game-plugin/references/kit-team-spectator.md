@@ -2,7 +2,7 @@
 
 Reusable mechanisms extracted from the CoreWar and HungerGame child plugins. Verify the resolved MGC dependency actually contains these packages before using them.
 
-Both kits are per-round session objects keyed by the exact `AbstractGame` instance, so two rooms of the same game never share state. All methods must run on the server thread. Neither kit changes membership, profiles, inventories, scoring, or lifecycle transitions — keep those in the child plugin and its death strategy.
+Both kits are per-round session objects keyed by the exact `AbstractGame` instance, so two rooms of the same game never share state. All methods must run on the server thread. Neither kit changes membership, profiles, inventories or scoring; the core invokes their cleanup from its end/abort/cancel and leave-game flows, and the game calls the gameplay entry points from its death strategy.
 
 ## Team kit
 
@@ -24,8 +24,8 @@ teams.syncVoiceGroups();               // rebuild groups after membership change
 - Same-team damage cancellation is handled by the core-registered `TeamGuardListener` for melee, projectiles, primed TNT and area effect clouds. Unassigned players (referees, spectators) keep vanilla damage rules.
 - Tab prefixes go through `MCZJUGameCore.getTabManager()`; never set player list names directly. Prefix failures after the game ended are swallowed and logged at debug level, so team data stays valid.
 - Voice groups use `VoiceGroupUtil`. Group name is the team's plain display name, suffixed with the room name when the room is known. Call `syncVoiceGroups()` after joins, quits, assignments and at start; `cleanupVoiceGroups()` runs from `reset()`.
-- `onPlayerQuit(PlayerExt)` clears that player's assignment and Tab prefix; the core-registered listener calls it for every live session.
-- Call `reset()` from `onGameEnd`, `onGameAbort` and `onGameCancel`. It unassigns Tab prefixes, removes voice groups, clears assignments and unregisters the session.
+- `onPlayerQuit(PlayerExt)` clears that player's assignment and Tab prefix; the core-registered listener calls it, and the core calls `TeamSession.forgetPlayer(player)` from its own leave-game path.
+- The core calls `reset()` from its end/abort/cancel flow, so Tab prefixes, voice groups and session registration are cleaned even if the child plugin forgets. Calling it again from the game's terminal hooks is idempotent and recommended, but never rely on it alone for voice-group refreshes during play.
 
 ## Spectator kit
 
@@ -55,7 +55,16 @@ public void onPlayerDeath(PlayerExt player, PlayerDeathEvent event) {
 - Extended form: `awaitRespawn(player, seconds, watchLocation, Function<Player, Location> respawnLocation, Consumer<PlayerExt> onRevived)`. A null respawn result falls back to the watch location; `onRevived` runs after the player is back in survival at the destination.
 - `revive(player)` forces an early revive; `cancelAwaitRespawn(player)` stops the countdown but leaves the player spectating.
 - Queries: `isSpectating`, `isWaitingRespawn`, `isEliminated`, `anchorFor`, `secondsLeft`, `spectators()`, `waitingRespawn()`.
-- Call `reset()` from `onGameEnd`, `onGameAbort` and `onGameCancel`. It cancels countdowns and returns players who are still in this round to `SURVIVAL`, so nobody carries spectator mode into the lobby. Profile capture does not store gamemode, so this cleanup is what prevents the leak.
+
+### Display is configurable, not hard-coded
+
+Titles, chat/action-bar text and sounds live in `SpectatorNotices`, reachable through `session.notices()`. Templates containing `%d` receive the remaining seconds. `SpectatorNotices.silent()`, `notices().sounds(false)`, `notices().chat(false)` and `notices().titles(false)` switch the built-in presentation off while the mechanism keeps working; `eliminateText`, `reviveText`, `respawnText` and `sounds(eliminate, countdown, revive)` replace it. For full control turn the built-in display off and use `onSpectate(Consumer<SpectatorTransition>)` / `onRevive(...)`, which run after the mode and position changes are applied. An explicit message passed to `eliminate(player, anchor, message)` is sent even when `chat(false)`.
+
+### Cleanup, leaving the round and auto-reconnect
+
+- The core calls `reset()` from its end/abort/cancel flow (before members are removed) and `SpectatorSession.releaseFor(player)` from its leave-game flow. Both drop the registration, cancel the countdown and queued mode switches, and put the player into `ADVENTURE` so spectator mode never leaks into the lobby. Calling `reset()` again from the game's terminal hooks is idempotent.
+- Do not re-apply modes in the game's quit strategy: membership removal already handles it.
+- **Auto-reconnect is not provided by this kit.** It depends on the game implementing `AutoReconnect` and its quit strategy keeping the player in the round on `DISCONNECT`. Only then does the core re-add the player on profile load and the guard listener restore spectator mode, anchor and remaining countdown through `reapply`. Creating a `SpectatorSession` alone never reconnects anyone.
 
 ### Mode switching safety
 
@@ -64,6 +73,7 @@ Never call `player.setGameMode(...)` for death or revive transitions. Use `utils
 - `toSpectator/toSurvival/toMode(player, mode, after)` closes the open inventory, leaves vehicles, clears `setSpectatorTarget(null)`, applies the mode, and — when the player is still on the death screen — sends `spigot().respawn()` on the next tick and re-applies the mode. Only applying the mode without the respawn packet leaves the client on the death screen while the server already sees a spectator.
 - Leaving spectator without clearing the spectator target leaves the camera following the previous target, which looks like a freeze.
 - `isOnDeathScreen(player)` detects `isDead()`/health `<= 0`; `forceRespawn(player, after)` drains a pending death screen without changing mode.
+- Every switch takes a generation token; a queued task only runs if it is still the newest switch for that player. `PlayerModeSwitch.invalidate(player)` (called by the core on leave-game) and any newer switch make pending work obsolete, so a late task cannot rewrite the mode after the player returned to the lobby or joined another room.
 
 ### Core-registered guard listener
 
@@ -76,7 +86,7 @@ Never call `player.setGameMode(...)` for death or revive transitions. Use `utils
 
 ## Checklist
 
-- Create the session after the game profile has been applied (normally `onGameStart`); `reset()` on every terminal path, including cancel and abort.
-- Keep elimination broadcasts, drops, win checks and score changes in the game; the kits only own mode, position, countdown and team metadata.
+- Create the session after the game profile has been applied (normally `onGameStart`). The core cleans up on end/abort/cancel and on leave-game; explicit `reset()` in the game's terminal hooks is idempotent.
+- Keep elimination broadcasts, drops, win checks and score changes in the game (or in `onSpectate`/`onRevive` callbacks); the kits only own mode, position, countdown, team metadata and the default notices.
 - Confirm the game still validates round ownership before applying damage results or delayed callbacks: both kits resolve state by the exact game instance and return null/no-op for players outside it.
-- Server verification needed for: same-team melee/projectile/TNT damage, Tab prefix cleanup after end, voice group creation/removal, death screen without freeze, camera release after revive, spectator respawn point, and reconnect during a respawn countdown.
+- Server verification needed for: same-team melee/projectile/TNT damage, Tab prefix cleanup after end, voice group creation/removal, death screen without freeze, camera release after revive, spectator respawn point, reconnect during a respawn countdown with `AutoReconnect` enabled, and a player leaving mid-countdown not keeping spectator mode.

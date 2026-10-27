@@ -406,6 +406,17 @@ public final class TeamSession {
         return List.copyOf(SESSIONS.values());
     }
 
+    /**
+     * 清除玩家在所有活动队伍会话中的登记（核心离局流程使用）；
+     * 不重建语音组，需要时由游戏在成员变化后调用 {@link #syncVoiceGroups()}。
+     * @param player 离场玩家
+     * @throws IllegalStateException 不在服务器主线程调用
+     */
+    public static void forgetPlayer(@Nullable PlayerExt player) {
+        if (player == null) return;
+        for (TeamSession session : activeSessions()) session.onPlayerQuit(player);
+    }
+
     // ==================== 内部 ====================
 
     private void safeApplyTabPrefix(PlayerExt player, GameTeam team) {

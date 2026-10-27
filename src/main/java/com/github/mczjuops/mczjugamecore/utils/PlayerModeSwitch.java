@@ -6,7 +6,11 @@ import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 玩家游戏模式的安全切换工具，专治"模式切了但客户端卡住"。
@@ -26,10 +30,18 @@ import java.util.Objects;
  * <p>另外 {@code PlayerGameModeChangeEvent} 可能被其它插件取消，本工具会在下一 tick
  * 检查一次结果并补切，避免模式修改静默失败。
  *
+ * <p><b>延迟任务会失效：</b>每次切换都会领一个代次标记，只有最新一次操作排下的任务才会执行。
+ * 玩家离局、游戏结束或被新的切换操作取代时，旧任务自动作废，不会在玩家已经回到大厅、
+ * 进入别的房间之后还把模式改回去。需要主动作废时调用 {@link #invalidate(Player)}。
+ *
  * <p>所有方法必须在服务器主线程调用，并且只做"模式与相机"层面的事情：
  * 不修改背包、档案、血量恢复或计分板，这些仍由调用方（通常是 game.kit 的旁观会话）负责。
  */
 public final class PlayerModeSwitch {
+
+    /** 每个玩家最近一次切换的代次标记；没有条目表示该玩家没有待执行的任务。 */
+    private static final Map<UUID, Long> GENERATIONS = new ConcurrentHashMap<>();
+    private static final AtomicLong TOKENS = new AtomicLong();
 
     private PlayerModeSwitch() {
     }
@@ -75,13 +87,14 @@ public final class PlayerModeSwitch {
         Objects.requireNonNull(mode, "mode");
         if (!player.isOnline()) return;
 
+        long token = nextToken(player.getUniqueId());
         boolean deathScreen = isOnDeathScreen(player);
         prepare(player);
         if (player.getGameMode() != mode) player.setGameMode(mode);
 
         if (deathScreen) {
             // 死亡界面：模式已在服务端生效，下一 tick 再发重生包，客户端随重生包进入目标模式
-            runNextTick(player, () -> {
+            runNextTick(player, token, () -> {
                 if (isOnDeathScreen(player)) player.spigot().respawn();
                 if (player.isOnline() && player.getGameMode() != mode) player.setGameMode(mode);
                 if (after != null) after.run();
@@ -90,7 +103,7 @@ public final class PlayerModeSwitch {
         }
 
         // 模式切换可能被其它插件取消，下一 tick 确认一次，避免玩家停在旧模式
-        runNextTick(player, () -> {
+        runNextTick(player, token, () -> {
             if (!player.isOnline() || isOnDeathScreen(player)) return;
             if (player.getGameMode() != mode) player.setGameMode(mode);
         });
@@ -111,10 +124,36 @@ public final class PlayerModeSwitch {
             if (after != null) after.run();
             return;
         }
-        runNextTick(player, () -> {
+        long token = nextToken(player.getUniqueId());
+        runNextTick(player, token, () -> {
             if (isOnDeathScreen(player)) player.spigot().respawn();
             if (after != null) after.run();
         });
+    }
+
+    /**
+     * 作废该玩家尚未执行的模式切换任务（玩家离局、游戏结束、被新操作取代时调用）。
+     * @param player 目标玩家，可为 null
+     */
+    public static void invalidate(@Nullable Player player) {
+        if (player != null) invalidate(player.getUniqueId());
+    }
+
+    /**
+     * 作废该玩家尚未执行的模式切换任务。
+     * @param uuid 玩家 UUID，可为 null
+     */
+    public static void invalidate(@Nullable UUID uuid) {
+        if (uuid != null) GENERATIONS.remove(uuid);
+    }
+
+    /**
+     * 该玩家当前是否还有待执行的任务。
+     * @param player 目标玩家，可为 null
+     * @return 有排队中的切换任务时为 true
+     */
+    public static boolean hasPending(Player player) {
+        return player != null && GENERATIONS.containsKey(player.getUniqueId());
     }
 
     /** 切模式前的统一准备：关界面、下坐骑、解除旁观相机。 */
@@ -124,9 +163,28 @@ public final class PlayerModeSwitch {
         if (player.getGameMode() == GameMode.SPECTATOR) player.setSpectatorTarget(null);
     }
 
-    private static void runNextTick(Player player, Runnable task) {
+    private static long nextToken(UUID uuid) {
+        long token = TOKENS.incrementAndGet();
+        GENERATIONS.put(uuid, token);
+        return token;
+    }
+
+    private static boolean isCurrent(UUID uuid, long token) {
+        Long current = GENERATIONS.get(uuid);
+        return current != null && current == token;
+    }
+
+    private static void runNextTick(Player player, long token, Runnable task) {
+        UUID uuid = player.getUniqueId();
         Bukkit.getScheduler().runTaskLater(MCZJUGameCore.getInstance(), () -> {
-            if (player.isOnline()) task.run();
+            if (!player.isOnline()) {
+                GENERATIONS.remove(uuid, token);
+                return;
+            }
+            // 离局、结束或新的切换操作已让本次任务失效
+            if (!isCurrent(uuid, token)) return;
+            GENERATIONS.remove(uuid, token);
+            task.run();
         }, 1L);
     }
 
