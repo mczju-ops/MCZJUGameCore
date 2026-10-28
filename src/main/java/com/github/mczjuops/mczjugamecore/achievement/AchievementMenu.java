@@ -97,10 +97,11 @@ public final class AchievementMenu extends Menu {
             List<String> lore = new ArrayList<>();
             lore.add(definition.description());
             lore.add("进度：" + progress.progress() + " / " + definition.target());
-            if (progress.unlocked()) lore.add("解锁时间：" + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            if (progress.unlocked()) lore.add("解锁时间：" + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
                     .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(progress.unlockedAt())));
-            lore.add("全服达成：%d / %d（%.2f%%）".formatted(global.unlockedPlayers(), global.loggedInPlayers(), global.completionRatio() * 100));
-            lore.add("分母：登录过小游戏服的所有玩家（含离线）");
+            double completionRatio = global.completionRatio();
+            lore.add("全服达成：" + rarityColor(completionRatio)
+                    + String.format(Locale.ROOT, "%.2f%%", completionRatio * 100));
             if (definition.parent() != null) manager.getDefinitions(gameId).stream()
                     .filter(parent -> parent.key().equals(definition.parent())).findFirst()
                     .ifPresent(parent -> lore.add("<gray>父节点：<reset>" + parent.name()));
@@ -114,6 +115,14 @@ public final class AchievementMenu extends Menu {
         var meta = MCZJUGameCore.getGameManager().getGameMetas().get(gameId);
         setSlot(40, item(meta.icon(), "<gold>我的完成数量：" + completed + " / " + all.size(), List.of(gameName())));
         navigation(filtered.size());
+    }
+    /** 全服达成率越低，颜色越稀有：金、紫、蓝、绿、灰。 */
+    private String rarityColor(double completionRatio) {
+        if (completionRatio <= 0.01) return "<gold>";
+        if (completionRatio <= 0.05) return "<light_purple>";
+        if (completionRatio <= 0.10) return "<blue>";
+        if (completionRatio <= 0.25) return "<green>";
+        return "<gray>";
     }
     private String gameName() {
         var meta = MCZJUGameCore.getGameManager().getGameMetas().get(gameId);
