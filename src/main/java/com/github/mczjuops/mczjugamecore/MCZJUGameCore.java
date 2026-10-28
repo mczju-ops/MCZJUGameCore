@@ -1,5 +1,8 @@
 package com.github.mczjuops.mczjugamecore;
 
+import com.github.mczjuops.mczjugamecore.achievement.AchievementStorage;
+import com.github.mczjuops.mczjugamecore.achievement.AchievementManager;
+import com.github.mczjuops.mczjugamecore.statistics.GameStatisticsManager;
 import com.github.mczjuops.mczjugamecore.command.BrigadierCommand;
 import com.github.mczjuops.mczjugamecore.command.MGCCommand;
 import com.github.mczjuops.mczjugamecore.command.MGCOPCommand;
@@ -69,7 +72,26 @@ public final class MCZJUGameCore extends JavaPlugin {
     private ProfileStorageManager profileStorageManager;
     private PlayerDataManager playerDataManager;
     private LeaderboardManager leaderboardManager;
+    private AchievementStorage achievementStorage;
+    private AchievementManager achievementManager;
+    private GameStatisticsManager gameStatisticsManager;
 
+    /** @return 统计管理器；服务器主线程调用，按游戏及 UUID 持久化 */
+    public static GameStatisticsManager getGameStatisticsManager() {
+        return getInstance().gameStatisticsManager;
+    }
+
+    /** @return 成就管理器；子插件先注册游戏，再注册成就定义 */
+    public static AchievementManager getAchievementManager() {
+        return getInstance().achievementManager;
+    }
+
+    /** @return 核心内部共享存储，子插件应通过统计/成就管理器操作 */
+    public static AchievementStorage getAchievementStorage() {
+        return getInstance().achievementStorage;
+    }
+
+    /** 初始化核心服务，加载统计成就记录，并导入历史登录玩家及启动采集/保存任务。 */
     @Override
     public void onEnable() {
         // Plugin startup logic
@@ -99,6 +121,20 @@ public final class MCZJUGameCore extends JavaPlugin {
         leaderboardManager = new LeaderboardManager();
         leaderboardManager.startAutoRefresh(20 * 60 * 10L); // 每 10 分钟自动刷新
 
+        achievementStorage = new AchievementStorage(playerDataManager);
+        achievementManager = new AchievementManager(achievementStorage);
+        gameStatisticsManager = new GameStatisticsManager(achievementStorage);
+        // 导入服务器保留的真实历史登录记录，不将仅通过 API 构造的 OfflinePlayer 计入分母。
+        for (var player : getServer().getOfflinePlayers()) {
+            if (player.hasPlayedBefore() || player.isOnline()) achievementStorage.recordLogin(player.getUniqueId());
+        }
+        getServer().getOnlinePlayers().forEach(player -> {
+            achievementStorage.recordLogin(player.getUniqueId());
+            achievementStorage.recordMinigamesEntry(player.getUniqueId());
+        });
+        achievementManager.getNativeDisplay().scheduleRebuild();
+        getServer().getScheduler().runTaskTimer(this, gameStatisticsManager::tick, 1L, 1L);
+
         ListenerInitializer.initialize();
         ItemInitializer.initialize();
         tabManager.refresh();
@@ -112,6 +148,7 @@ public final class MCZJUGameCore extends JavaPlugin {
         );
     }
 
+    /** 停止游戏并保存各管理器；统计成就复用玩家数据的停服保存。 */
     @Override
     public void onDisable() {
         // Plugin shutdown logic

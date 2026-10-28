@@ -82,6 +82,16 @@ public class MGCOPCommand implements BrigadierCommand {
                                 .executes(ctx -> reportReloads(ctx, List.of(reloadManager
                                         .reload(StringArgumentType.getString(ctx, "module"))))))
                 )
+                .then(Commands.literal("achievements")
+                        .executes(ctx -> {
+                            var display = MCZJUGameCore.getAchievementManager().getNativeDisplay();
+                            for (Player player : Bukkit.getOnlinePlayers()) {
+                                ctx.getSource().getSender().sendMessage(display.diagnose(player));
+                                display.sync(player);
+                                ctx.getSource().getSender().sendMessage("After sync: " + display.diagnose(player));
+                            }
+                            return Command.SINGLE_SUCCESS;
+                        }))
                 .then(Commands.literal("wiki")
                         .executes(ctx -> {
                             if (!(ctx.getSource().getSender() instanceof Player player)) {

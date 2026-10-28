@@ -18,6 +18,7 @@ Read only the matching references; do not preload every optional feature. Use [r
 | Game equipment, inventory clearing and automatic profile isolation | [profiles.md](references/profiles.md) |
 | Tab names, prefixes and suffixes | [tab-display.md](references/tab-display.md) |
 | Menus, categories and lobbies | [menus-lobbies.md](references/menus-lobbies.md) |
+| Statistics, achievements, native advancement trees | [achievements-statistics.md](references/achievements-statistics.md) |
 | Leaderboards | [leaderboards.md](references/leaderboards.md) |
 | Items, parties, general utilities | [items-parties-utilities.md](references/items-parties-utilities.md) |
 | TurnTimer or PlayerTargetSelector | [timers-selection.md](references/timers-selection.md) |

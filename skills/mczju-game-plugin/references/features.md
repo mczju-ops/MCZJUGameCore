@@ -8,6 +8,7 @@ Read only the reference matching the task. This file remains a lightweight index
 | Automatic inventory/profile isolation and safe give/clear timing | [profiles.md](profiles.md) |
 | Managed Tab names, prefixes and suffixes | [tab-display.md](tab-display.md) |
 | Menus, categories, category lobbies and lobby storage | [menus-lobbies.md](menus-lobbies.md) |
+| Statistics, achievements, native advancement trees | [achievements-statistics.md](achievements-statistics.md) |
 | Leaderboards and record clearing | [leaderboards.md](leaderboards.md) |
 | MGCItem, parties and general utilities | [items-parties-utilities.md](items-parties-utilities.md) |
 | Existing TurnTimer and PlayerTargetSelector | [timers-selection.md](timers-selection.md) |

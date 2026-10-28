@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.menu;
 
+import com.github.mczjuops.mczjugamecore.achievement.AchievementMenu;
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.manager.AbstractGameManager;
@@ -111,6 +112,10 @@ public class MainMenu extends Menu {
         }
 
         setupUtilities();
+        setSlot(inventory.getSize() - 6, ItemBuilder.of(Material.BOOK)
+                .customName("<gold>我的统计与成就")
+                .lore(List.of("<yellow>查看游玩统计、已达成及未达成成就", "<gray>/mgc achievements")).build(),
+                (p, event) -> new AchievementMenu(p.player(), false).open());
     }
 
     private void setupGames(String selectedCategory) {

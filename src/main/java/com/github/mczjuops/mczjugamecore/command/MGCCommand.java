@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.command;
 
+import com.github.mczjuops.mczjugamecore.achievement.AchievementMenu;
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameState;
@@ -41,6 +42,7 @@ public class MGCCommand implements BrigadierCommand {
         return List.of();
     }
 
+    /** 注册小游戏命令及玩家自己的统计、成就查询子命令，沿用 mgc.mgc 权限。 */
     @Override
     public LiteralCommandNode<CommandSourceStack> getNode() {
         return Commands.literal(getName())
@@ -52,6 +54,8 @@ public class MGCCommand implements BrigadierCommand {
                                 .suggests((ctx, builder) -> CommandUtils.suggestMatching(
                                         MCZJUGameCore.getGameManager().getRegisteredGameIds(), builder))
                                 .executes(ctx -> executeWiki(ctx, StringArgumentType.getString(ctx, "game")))))
+                .then(progressCommand("stats", true))
+                .then(progressCommand("achievements", false))
                 .then(Commands.literal("help")
                         .executes(this::showHelp))
                 .then(Commands.literal("join")
@@ -106,6 +110,28 @@ public class MGCCommand implements BrigadierCommand {
                 .build();
     }
 
+    private com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> progressCommand(String name, boolean statistics) {
+        return Commands.literal(name)
+                .executes(ctx -> openProgress(ctx, null, statistics))
+                .then(Commands.argument("game", StringArgumentType.string())
+                        .suggests((ctx, builder) -> CommandUtils.suggestMatching(
+                                MCZJUGameCore.getGameManager().getRegisteredGameIds(), builder))
+                        .executes(ctx -> openProgress(ctx, StringArgumentType.getString(ctx, "game"), statistics)));
+    }
+
+    private int openProgress(CommandContext<CommandSourceStack> ctx, String game, boolean statistics) {
+        if (!(ctx.getSource().getSender() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage("此命令只能由玩家执行");
+            return 0;
+        }
+        if (game != null && !MCZJUGameCore.getGameManager().getRegisteredGameIds().contains(game)) {
+            player.sendMessage("不存在该游戏");
+            return 0;
+        }
+        new AchievementMenu(player, game, statistics).open();
+        return Command.SINGLE_SUCCESS;
+    }
+
     private int executeWiki(CommandContext<CommandSourceStack> ctx, String gameId) {
         if (!(ctx.getSource().getSender() instanceof Player player)) {
             ctx.getSource().getSender().sendMessage("此命令只能由玩家执行");
@@ -125,6 +151,8 @@ public class MGCCommand implements BrigadierCommand {
         sender.sendMessage(TextParser.parse("<#DEB12D><b>命令列表："));
         sender.sendMessage(TextParser.parse("<yellow>/mgc <gray>-</gray> <aqua>打开小游戏菜单"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc wiki [游戏] <gray>-</gray> <aqua>查看小游戏 Wiki"));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc stats [游戏] <gray>-</gray> <aqua>查询我的统计"));
+        sender.sendMessage(TextParser.parse("<yellow>/mgc achievements [游戏] <gray>-</gray> <aqua>查询成就进度及全服完成比例"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc help <gray>-</gray> <aqua>查看命令帮助"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc join <游戏> <gray>-</gray> <aqua>加入指定游戏"));
         sender.sendMessage(TextParser.parse("<yellow>/mgc joinroom <游戏> <房间> <gray>-</gray> <aqua>加入指定游戏房间（部分游戏可用）"));
