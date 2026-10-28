@@ -8,6 +8,8 @@ import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.GameState;
 import com.github.mczjuops.mczjugamecore.game.MidGameJoinable;
+import com.github.mczjuops.mczjugamecore.game.kit.spectator.SpectatorSession;
+import com.github.mczjuops.mczjugamecore.game.kit.team.TeamSession;
 import com.github.mczjuops.mczjugamecore.game.room.AbstractGameRoom;
 import com.github.mczjuops.mczjugamecore.game.room.GameRoomState;
 import com.github.mczjuops.mczjugamecore.game.room.PlayerSelectable;
@@ -174,9 +176,31 @@ public class DefaultGameManager implements AbstractGameManager {
 
     private void solveGameEnd(AbstractGame game){
         game.setState(GameState.END);
+        // 先退出 kit 的旁观/队伍状态（此时玩家仍属本局），再由核心恢复大厅档案
+        releaseGameKits(game);
         MCZJUGameCore.getPlayerManager().removeAllPlayer(game);
         game.getGameRoom().setState(GameRoomState.READY);
         gameList.remove(game);
+    }
+
+    /**
+     * 收拾本局创建过的 game.kit 会话：旁观者退出旁观、撤销 Tab 前缀、移除语音组。
+     * kit 未使用时无任何副作用；单个会话出错不影响其余清理。
+     * @param game 即将结束的游戏实例
+     */
+    private void releaseGameKits(AbstractGame game) {
+        try {
+            SpectatorSession spectators = SpectatorSession.of(game);
+            if (spectators != null) spectators.reset();
+        } catch (RuntimeException e) {
+            logger.error("结束旁观会话时出错，已继续清理：%s".formatted(e.getMessage()));
+        }
+        try {
+            TeamSession teams = TeamSession.of(game);
+            if (teams != null) teams.reset();
+        } catch (RuntimeException e) {
+            logger.error("结束队伍会话时出错，已继续清理：%s".formatted(e.getMessage()));
+        }
     }
 
     @Override

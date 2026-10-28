@@ -25,6 +25,7 @@ Read only the matching references; do not preload every optional feature. Use [r
 | Voice groups or /party voice | [voice-chat.md](references/voice-chat.md) |
 | Wiki links; core reload commands when requested | [wiki-reload.md](references/wiki-reload.md) |
 | Reusable game.kit mechanisms: seats, prompts, clocks, hands, HUD | [kit.md](references/kit.md), then only its relevant detail files |
+| Teams (manual assignment, same-team damage, team Tab/voice) or death-to-spectator transitions | [kit-team-spectator.md](references/kit-team-spectator.md) |
 | Explicit MGC/skill update or version check | [version-updates.md](references/version-updates.md) |
 
 For future optional features, add a focused reference and a task row here. Keep shared lifecycle and safety constraints in this entrypoint; keep feature-specific APIs, examples, and edge cases in references. Split a feature further only when it has independently useful subtopics, and link those from its overview. Update the corresponding `docs/` guide and verify examples against source without copying the entire guide into the skill.
