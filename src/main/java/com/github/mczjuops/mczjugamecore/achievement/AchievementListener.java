@@ -7,6 +7,7 @@ import io.papermc.paper.event.server.ServerResourcesReloadedEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.event.*;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.server.PluginDisableEvent;
 
 /** 核心登录分母、统计变更和原生成就同步监听器。 */
@@ -24,6 +25,14 @@ public final class AchievementListener implements Listener {
             MCZJUGameCore.getAchievementManager().getNativeDisplay().sync(event.getPlayer());
         }, 20L);
     }
+    /** 切换世界后补同步全服共享进度，已完成的投影不会重复授予。 */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldChanged(PlayerChangedWorldEvent event) {
+        Bukkit.getScheduler().runTask(MCZJUGameCore.getInstance(), () -> {
+            if (!event.getPlayer().isOnline()) return;
+            MCZJUGameCore.getAchievementManager().getNativeDisplay().sync(event.getPlayer());
+        });
+    }
     /** 成就仅订阅统计变更，统计服务不直接依赖成就触发逻辑。 */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onStatisticChanged(GameStatisticChangedEvent event) {
@@ -34,11 +43,15 @@ public final class AchievementListener implements Listener {
     public void onResourcesReloaded(ServerResourcesReloadedEvent event) {
         MCZJUGameCore.getAchievementManager().getNativeDisplay().scheduleRebuild();
     }
-    /** 防止通过原生命令绕过核心记录解锁投影成就。 */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    /**
+     * MGC 自定义投影以核心记录为准，在所有世界允许已解锁成就的原生授予和弹窗。
+     * 恢复世界插件取消的合法投影，拒绝绕过核心记录的授予；不干预其他命名空间。
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onCriterion(PlayerAdvancementCriterionGrantEvent event) {
-        if (!MCZJUGameCore.getAchievementManager().getNativeDisplay().mayGrant(event.getPlayer(), event.getAdvancement().getKey()))
-            event.setCancelled(true);
+        var key = event.getAdvancement().getKey();
+        if (!key.getNamespace().equals("mgc_achievements")) return;
+        event.setCancelled(!MCZJUGameCore.getAchievementManager().getNativeDisplay().mayGrant(event.getPlayer(), key));
     }
     /** 子插件停用时保留数据，仅移除可触发的定义。 */
     @EventHandler

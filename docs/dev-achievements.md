@@ -160,4 +160,4 @@ MCZJUGameCore.getGameStatisticsManager().reportDeath(this, victimId, killerId);
 
 原版进度界面展示核心保存的解锁结果。子插件停用后会隐藏其成就，数据仍保留。更改原版成就标题或父子关系后，需重载数据或重启服务器；箱子菜单会立即读取新定义。
 
-管理员或控制台可执行 `/mgcop achievements`，查看在线玩家的原版进度状态并重新同步展示，此操作不会修改核心成就记录。兼容 Multiverse-Core 的 `allow-advancement-grant: false` 设置，无需为此开启原版进度授予。
+管理员或控制台可执行 `/mgcop achievements`，查看在线玩家的原版进度状态并重新同步展示，此操作不会修改核心成就记录。MGC 自定义成就以核心解锁记录为准，在所有世界恢复合法投影的授予与右上角弹窗，包括 Multiverse-Core 设置 `allow-advancement-grant: false` 的世界；普通原版成就仍遵循世界设置。切换世界后下一 tick 补同步全服共享进度，已完成的投影不会重复授予；无需返回大厅。
