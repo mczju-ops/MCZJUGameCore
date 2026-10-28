@@ -1,5 +1,6 @@
 package com.github.mczjuops.mczjugamecore.initialize;
 
+import com.github.mczjuops.mczjugamecore.achievement.AchievementListener;
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
 import com.github.mczjuops.mczjugamecore.mention.MentionChatListener;
 import com.github.mczjuops.mczjugamecore.player.listener.PlayerDeathListener;
@@ -12,10 +13,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 
 public class ListenerInitializer {
+    /** 注册核心监听器，包括死亡统计、登录分母、结算和原生成就投影同步。 */
     public static void initialize(){
         register(MCZJUGameCore.getMenuFacade());
         register(LocationSelector.getInstance());
         register(new PlayerDeathListener());
+        register(MCZJUGameCore.getGameStatisticsManager());
+        register(new AchievementListener(MCZJUGameCore.getAchievementStorage()));
         register(new PlayerReconnectListener());
         register(new PlayerQuitListener());
         register(new PlayerSpectatorTeleportListener());

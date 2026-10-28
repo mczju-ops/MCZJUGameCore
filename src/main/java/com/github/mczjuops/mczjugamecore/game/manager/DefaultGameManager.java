@@ -1,6 +1,9 @@
 package com.github.mczjuops.mczjugamecore.game.manager;
 
 import com.github.mczjuops.mczjugamecore.MCZJUGameCore;
+import com.github.mczjuops.mczjugamecore.event.GameStartEvent;
+import com.github.mczjuops.mczjugamecore.event.PlayerGameJoinEvent;
+import org.bukkit.Bukkit;
 import com.github.mczjuops.mczjugamecore.game.AbstractGame;
 import com.github.mczjuops.mczjugamecore.game.GameMeta;
 import com.github.mczjuops.mczjugamecore.game.GameState;
@@ -112,9 +115,11 @@ public class DefaultGameManager implements AbstractGameManager {
         }
     }
 
+    /** 启动游戏；成功进入运行状态后发布 GameStartEvent，异常或已结束时不发布。 */
     @Override
     public void startGame(AbstractGame game) {
         game.gameStart();
+        if (game.getState() == GameState.RUNNING) Bukkit.getPluginManager().callEvent(new GameStartEvent(game));
     }
 
     /**
@@ -311,6 +316,8 @@ public class DefaultGameManager implements AbstractGameManager {
     private boolean tryMidJoin(PlayerExt player, AbstractGame game) {
         MCZJUGameCore.getPlayerManager().joinGame(player, game);
         if (((MidGameJoinable) game).onPlayerMidJoin(player)) {
+            if (game.getState() == GameState.RUNNING && player.getGame() == game)
+                Bukkit.getPluginManager().callEvent(new PlayerGameJoinEvent(game, player));
             return true;
         }
 

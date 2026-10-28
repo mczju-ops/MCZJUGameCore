@@ -670,3 +670,8 @@ MGC 停用时会尝试清理所有本工具创建的群组。子插件仍应在�
 | `/mgcop reload lobby` | 重载 `lobbies.json` 和 `category-lobbies.json` 中的大厅位置 |
 | `/mgcop reload mention` | 重载 `mention.yml` 中的聊天提醒配置 |
 | `/mgcop reload game <gameId>` | 仅重载指定游戏的房间，不读取子插件 `config.yml` |
+
+
+## 游戏统计与成就
+
+常见统计、胜负结算事件、手动复杂成就、原生父子成就树和玩家查询菜单见 [游戏统计与成就开发指南](dev-achievements.md)。完成比例使用全服历史登录玩家作为分母，包含离线玩家。
