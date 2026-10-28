@@ -7,7 +7,7 @@ MGC 自动记录参赛、游玩时间、击杀和死亡。子插件负责报告�
 | 入口 | 内容 |
 | --- | --- |
 | `/mgc` → “我的统计与成就” | 选择游戏，查看统计和成就 |
-| `/mgc stats [游戏ID]` | 查看自己的累计统计 |
+| `/mgc stats [游戏ID]` | 查看自己的累计统计及子插件自定义统计 |
 | `/mgc achievements [游戏ID]` | 查看成就进度、首次解锁时间和全服达成比例 |
 | 原版进度界面（默认 L 键） | 在“进入小游戏世界”标签页中查看各游戏的成就树 |
 
@@ -38,6 +38,30 @@ stats.set(playerId, "myplugin_duel", GameStatistic.KILLS, 120);
 游戏必须已经注册。查询无记录时返回 0；修改支持有登录记录的离线玩家。`add` 可以扣减，结果不能为负或溢出；`set` 只能设置非负值。修改统计会检查相关成就，降低统计不会撤销已解锁的成就。
 
 游玩时间按 tick 累计，服务器卡顿时可能少于实际经过时间。离线、离局、换局或切换为旁观时，不足一秒的部分不保留。开放式游戏的参赛次数按游戏实例计算，内部小回合不会额外增加参赛次数。
+
+## 自定义统计展示
+
+子插件可以直接向统计菜单添加 KD、胜率、积分等展示项，不需要注册成就。先注册游戏，再在 `onEnable()` 中调用：
+
+```java
+var stats = MCZJUGameCore.getGameStatisticsManager();
+String gameId = "myplugin_duel";
+stats.register(this, List.of(StatisticDisplay.of(
+        new StatisticKey(gameId, "kd"), "KD 比", Material.IRON_SWORD, playerId -> {
+    long kills = stats.get(playerId, gameId, GameStatistic.KILLS);
+    long deaths = stats.get(playerId, gameId, GameStatistic.DEATHS);
+    if (deaths == 0) return kills == 0 ? "暂无统计信息" : "∞";
+    return String.format(java.util.Locale.ROOT, "%.2f", (double) kills / deaths);
+})));
+```
+
+接口与成就注册保持一致：`register(owner, List.of(定义...))`，可一次注册多个统计项。展示定义通过 `StatisticDisplay.of(key, name, icon, value)` 创建，`key` 使用 `new StatisticKey(gameId, statisticId)`，与成就的 `AchievementKey` 形式一致，相关类型位于 `statistics` 包；取值逻辑也可传 `this::getKd` 等方法引用。`value` 是 `Function<UUID, String>`，接收当前查看者的 UUID，返回已经格式化的文本。名称和返回文本支持 MiniMessage；返回 `null` 显示“暂无统计信息”，返回 `"0"` 则正常显示零。零死亡时的 KD 规则由子插件决定，上例使用无穷大。
+
+取值函数在打开、翻页或手动刷新时于服务器主线程执行，只计算当前页。应快速读取内存数据，不要在回调中读文件或查询数据库。回调抛出运行时异常时，该项显示“暂时无法读取”，核心记录日志，其余条目继续展示。
+
+自定义项按注册顺序排列在内置统计之后，超出一页自动分页。同一游戏内自定义 ID 必须唯一，格式为小写字母、数字、下划线或短横线；未知游戏、重复 ID、无效物品图标或已停用的插件会被拒绝；批量注册先校验整批，失败不会留下部分定义。插件停用后自动移除其展示定义；已经打开的菜单在下次刷新时更新。
+
+核心不保存回调结果，也不为这些条目自动采集数据或触发成就。KD 等派生值直接计算；自定义累计数据可从子插件自己的 `JsonPlayerData` 读取，修改数据后仍需调用 `setModified(true)`。可通过 `getDisplays(gameId)` 获取已注册展示项的只读快照。
 
 ## 报告胜负
 

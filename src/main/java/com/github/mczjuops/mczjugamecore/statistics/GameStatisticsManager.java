@@ -10,6 +10,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.GameMode;
 import org.bukkit.event.*;
+import org.bukkit.event.server.PluginDisableEvent;
+import org.bukkit.plugin.Plugin;
 import java.util.*;
 
 /** 通用统计服务。所有公开方法在服务器线程调用，数据修改发布通知，成就系统独立监听。 */
@@ -19,14 +21,54 @@ public final class GameStatisticsManager implements Listener {
     private final Set<DeathKey> reported = new HashSet<>();
     private int reportTick = -1;
     private final Map<AbstractGame, Set<UUID>> participants = new WeakHashMap<>();
+    private final Map<StatisticKey, OwnedDisplay> displays = new LinkedHashMap<>();
+    private record OwnedDisplay(Plugin owner, StatisticDisplay display) {}
     private record Clock(AbstractGame game, int ticks) {}
     private record DeathKey(AbstractGame game, UUID victim) {}
 
     /** 核心初始化共享存储。 */
     public GameStatisticsManager(AchievementStorage storage) { this.storage = storage; }
-    private void validate(String gameId, GameStatistic stat) {
+    /**
+     * 批量注册独立的统计菜单展示项，按注册顺序排列在内置统计之后，不保存取值结果。
+     * 先校验整批定义，重复游戏内 ID、未知游戏或已停用的插件会被拒绝，不会部分注册。
+     * 插件停用时自动移除定义。
+     * @param owner 所属子插件
+     * @param additions 新展示定义，其取值函数在主线程执行，不得进行阻塞 I/O
+     */
+    public void register(Plugin owner, Collection<StatisticDisplay> additions) {
         AchievementStorage.requireMainThread();
+        Objects.requireNonNull(owner);
+        if (!owner.isEnabled()) throw new IllegalArgumentException("Owner is disabled");
+        var batch = List.copyOf(additions);
+        Set<StatisticKey> keys = new HashSet<>(displays.keySet());
+        for (var display : batch) {
+            validateGame(display.key().gameId());
+            if (!keys.add(display.key()))
+                throw new IllegalArgumentException("Duplicate statistic display: " + display.key());
+        }
+        for (var display : batch) {
+            displays.put(display.key(), new OwnedDisplay(owner, display));
+        }
+    }
+    /** @return 指定已注册游戏的自定义展示项只读快照，按注册顺序排列；未注册展示项时为空 */
+    public List<StatisticDisplay> getDisplays(String gameId) {
+        validateGame(gameId);
+        return displays.values().stream().map(OwnedDisplay::display)
+                .filter(display -> display.key().gameId().equals(gameId)).toList();
+    }
+    /** 移除子插件的全部统计展示定义，不修改任何玩家数据。 */
+    @EventHandler
+    public void onDisable(PluginDisableEvent event) {
+        AchievementStorage.requireMainThread();
+        displays.values().removeIf(entry -> entry.owner() == event.getPlugin());
+    }
+
+    private void validate(String gameId, GameStatistic stat) {
+        validateGame(gameId);
         Objects.requireNonNull(stat);
+    }
+    private void validateGame(String gameId) {
+        AchievementStorage.requireMainThread();
         if (!MCZJUGameCore.getGameManager().getRegisteredGameIds().contains(gameId))
             throw new IllegalArgumentException("Unknown game: " + gameId);
     }

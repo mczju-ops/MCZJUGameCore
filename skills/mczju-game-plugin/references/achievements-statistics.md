@@ -22,6 +22,26 @@ Core consumes uncancelled results at MONITOR; **each event counts once, child pl
 
 `statistics.get(uuid,gameId,stat)` reads without creating data; `add(...,signedDelta)`/`set(...,nonnegativeValue)` support known offline players, reject negative totals/overflow, and emit changes. Avoid recursive same-stat changes in listeners.
 
+## Custom statistic displays
+
+Register games first, then call `statistics.register(plugin, List.of(StatisticDisplay.of(key, name, icon, Function<UUID, String>)))` in child `onEnable()`. No achievement definition or custom class is required:
+
+```java
+var statistics = MCZJUGameCore.getGameStatisticsManager();
+String gameId = "myplugin_game";
+statistics.register(this, List.of(StatisticDisplay.of(
+        new StatisticKey(gameId, "kd"), "KD 比", Material.IRON_SWORD, uuid -> {
+    long kills = statistics.get(uuid, gameId, GameStatistic.KILLS);
+    long deaths = statistics.get(uuid, gameId, GameStatistic.DEATHS);
+    if (deaths == 0) return kills == 0 ? null : "∞";
+    return String.format(java.util.Locale.ROOT, "%.2f", (double) kills / deaths);
+})));
+```
+
+The callback returns formatted MiniMessage text; null shows “暂无统计信息”, while "0" remains zero. Names support MiniMessage too. Child chooses zero-denominator semantics. Callbacks run on the server thread only for the visible page when opening, paging or refreshing; read/compute memory data only, never block on I/O. Runtime exceptions show “暂时无法读取” for that item and are logged without aborting other items.
+
+Use `new StatisticKey(gameId, statisticId)` just as achievements use `AchievementKey`; both key and display types are in `statistics`. IDs `[a-z0-9_-]+` must be unique among custom displays within a game; unknown games, disabled owners, invalid item icons and duplicates are rejected. Batch registration validates all definitions before inserting any; method references such as `this::getKd` can keep registration short. Custom entries follow built-ins in registration order and paginate together. Plugin disable removes its callbacks; already-open menus update on refresh. `getDisplays(gameId)` returns an immutable snapshot of `StatisticDisplay` records. Core does not persist callback results, auto-collect custom values or trigger achievements. Read derived values from built-in statistics or child-owned JsonPlayerData (mark modified on writes).
+
 ## Definitions and triggers
 
 Register games first, then immutable achievement definitions:

@@ -41,13 +41,7 @@ public final class AchievementMenu extends Menu {
         if (!MCZJUGameCore.getGameManager().getRegisteredGameIds().contains(gameId)) {
             setSlot(22, item(Material.BARRIER, "此游戏当前不可用", List.of()));
         } else if (statistics) {
-            int slot = 10;
-            for (GameStatistic stat : GameStatistic.values()) {
-                long value = MCZJUGameCore.getGameStatisticsManager().get(player.getUniqueId(), gameId, stat);
-                String formatted = value == 0 ? "暂无统计信息" : stat == GameStatistic.PLAY_TIME_SECONDS
-                        ? "%d 小时 %d 分 %d 秒".formatted(value / 3600, value / 60 % 60, value % 60) : Long.toString(value);
-                setSlot(slot++, item(stat.icon(), "<gold>" + stat.displayName(), List.of(gameName(), formatted)));
-            }
+            statistics();
         } else {
             achievements();
         }
@@ -63,6 +57,34 @@ public final class AchievementMenu extends Menu {
             page = 0;
             refresh();
         });
+    }
+    private void statistics() {
+        var manager = MCZJUGameCore.getGameStatisticsManager();
+        var builtin = GameStatistic.values();
+        var custom = manager.getDisplays(gameId);
+        int total = builtin.length + custom.size();
+        clamp(total);
+        for (int index = page * 36; index < Math.min(total, (page + 1) * 36); index++) {
+            if (index < builtin.length) {
+                GameStatistic stat = builtin[index];
+                long value = manager.get(player.getUniqueId(), gameId, stat);
+                String formatted = value == 0 ? "暂无统计信息" : stat == GameStatistic.PLAY_TIME_SECONDS
+                        ? "%d 小时 %d 分 %d 秒".formatted(value / 3600, value / 60 % 60, value % 60) : Long.toString(value);
+                setSlot(index % 36, item(stat.icon(), "<gold>" + stat.displayName(), List.of(gameName(), formatted)));
+            } else {
+                var display = custom.get(index - builtin.length);
+                String formatted;
+                try {
+                    formatted = Objects.requireNonNullElse(display.value().apply(player.getUniqueId()), "暂无统计信息");
+                } catch (RuntimeException exception) {
+                    formatted = "暂时无法读取";
+                    MCZJUGameCore.getInstance().getLogger().log(java.util.logging.Level.WARNING,
+                            "Cannot read statistic display: " + display.key(), exception);
+                }
+                setSlot(index % 36, item(display.icon(), "<gold>" + display.name(), List.of(gameName(), formatted)));
+            }
+        }
+        navigation(total);
     }
     private void games() {
         List<String> games = MCZJUGameCore.getGameManager().getRegisteredGameIds().stream().sorted().toList();
