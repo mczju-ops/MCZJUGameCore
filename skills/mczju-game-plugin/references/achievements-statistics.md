@@ -2,9 +2,27 @@
 
 Use core managers on the server thread. Statistics/achievements reuse `AchievementPlayerData extends JsonPlayerData`, registered under reserved namespace `mgc_achievements`, separate from child data. Public non-final nested DTO fields are required by the existing serializer; do not persist records directly. Changes mark modified and use existing PlayerDataManager loading/autosave/quit/shutdown. There is no dedicated JSON writer, game UUID, settlement ID, or persistent result ledger.
 
+## Required minigame integration
+
+Unless the user explicitly forbids adding statistics, integrate each minigame's applicable statistics with the core even when statistics were not requested. Analyze the gameplay for useful additional metrics, such as objectives completed, rescues, best completion times, or cumulative scores, and implement suitable ones directly without requiring separate confirmation. Keep the metrics meaningful to the game rather than adding unrelated counters. In the final delivery report, list the added metrics, what counts toward each, and how players view them. Respect an explicit no-statistics instruction; existing core automatic collection is separate from child-added features, so do not claim it was disabled merely because no child metrics were added.
+
+Use `MCZJUGameCore.getGameStatisticsManager()` on the server thread. Determine which gameplay events the core already sees before adding manual reports:
+
+| Statistic / gameplay path | Core behavior and child responsibility |
+| --- | --- |
+| `PLAY_TIME_SECONDS` | Automatic during `RUNNING` for online, non-spectator members, one second per 20 active ticks. Do not add a separate timer to increment it. |
+| `GAMES_PLAYED` | Automatic on successful start or accepted mid-join, once per player per runtime instance; reconnecting to that instance does not add another participation. Do not increment again on join/start/end. `OpenSessionGame` internal subrounds are not separate participations by default. |
+| `DEATHS` / `KILLS`, normal death reaching the core | Automatic from `PlayerGameDeathEvent`, published before the death strategy. A strategy that subsequently cancels death, respawns, or spectates the player does not require a manual report. Do not also call `reportDeath` or `add`/`set` for the same death/kill. |
+| `DEATHS` / `KILLS`, custom elimination bypassing core death notification | If it represents a death under the game rules, call `statistics.reportDeath(game, victimUUID, nullableKillerUUID)` once while the game is `RUNNING` and before removing/spectating the victim. Examples include lethal damage intercepted before vanilla death, custom health reaching zero, or elimination without a vanilla death event. One call collects both death and any eligible kill; do not increment kills separately. |
+| `WINS` / `LOSSES` / `DRAWS` | Never inferred by core end/leave/death. Emit one `GameResultEvent` per settled player with the appropriate outcome, or `GameWinEvent` for a winner. A winner event does not report opponents' losses; report those separately. Do not emit both win event forms or also increment the statistic for the same result. |
+
+Automatic death/kill collection requires a `RUNNING` game and an online, non-spectator victim belonging to that exact instance. A kill additionally requires a different online, non-spectator killer belonging to that same instance; environmental death with no valid killer counts only the death. Filter friendly fire or correct custom kill attribution through the events below rather than incrementing another kill.
+
+Do not manufacture combat statistics for games without combat/death mechanics or results for sessions without settlement rules. Waiting cancellation and runtime abort are not automatically losses. Define leave/disconnect/forfeit outcomes according to the game's rules, and guard normal end, leave, timeout, and delayed callbacks so they cannot settle the same result twice. Custom display registration only displays values; it does not replace reporting or persistence.
+
 ## Event boundaries
 
-Core lifecycle publishes `GameStartEvent` (successful RUNNING entry, member snapshot), `PlayerGameJoinEvent` (accepted mid-join only), `PlayerGameDeathEvent` (before death strategy). These notifications do not cancel gameplay. Statistics listens independently; it emits `GameStatisticChangedEvent`, which achievements listens to. Do not wire statistic calls into lifecycle hooks or use statistic-specific AbstractGame overrides.
+Core lifecycle publishes `GameStartEvent` (successful RUNNING entry, member snapshot), `PlayerGameJoinEvent` (accepted mid-join only), `PlayerGameDeathEvent` (before death strategy). These notifications do not cancel gameplay. Statistics listens independently; it emits `GameStatisticChangedEvent`, which achievements listens to. Do not duplicate automatic collection in lifecycle hooks or introduce statistic-specific AbstractGame overrides; child-owned result settlement and custom elimination reporting belong in their corresponding gameplay paths.
 
 `GameStatistic`: PLAY_TIME_SECONDS, KILLS, DEATHS, GAMES_PLAYED, WINS, LOSSES, DRAWS. Time is 20 active ticks per second, RUNNING/online/non-spectator only; subsecond remainder is lost on leaving/changing instances. Successful participation counts once per player per runtime instance, including reconnect dedup; open-session subround counts are not inferred.
 
