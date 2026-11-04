@@ -1,4 +1,4 @@
-# Statistics and achievements (MGC 1.5.0)
+# Statistics and achievements (MGC 1.5.1)
 
 Use core managers on the server thread. Statistics/achievements reuse `AchievementPlayerData extends JsonPlayerData`, registered under reserved namespace `mgc_achievements`, separate from child data. Public non-final nested DTO fields are required by the existing serializer; do not persist records directly. Changes mark modified and use existing PlayerDataManager loading/autosave/quit/shutdown. There is no dedicated JSON writer, game UUID, settlement ID, or persistent result ledger.
 
@@ -61,6 +61,8 @@ The callback returns formatted MiniMessage text; null shows “暂无统计信�
 Use `new StatisticKey(gameId, statisticId)` just as achievements use `AchievementKey`; both key and display types are in `statistics`. IDs `[a-z0-9_-]+` must be unique among custom displays within a game; unknown games, disabled owners, invalid item icons and duplicates are rejected. Batch registration validates all definitions before inserting any; method references such as `this::getKd` can keep registration short. Custom entries follow built-ins in registration order and paginate together. Plugin disable removes its callbacks; already-open menus update on refresh. `getDisplays(gameId)` returns an immutable snapshot of `StatisticDisplay` records. Core does not persist callback results, auto-collect custom values or trigger achievements. Read derived values from built-in statistics or child-owned JsonPlayerData (mark modified on writes).
 
 ## Definitions and triggers
+
+When the user has not specified which achievements to implement, finish the game first, analyze its mechanics for meaningful achievements, and propose names with concrete unlock conditions or thresholds in the completion report. Wait for user confirmation before writing achievement definitions, registration, or unlock logic. Automatically adding useful statistics does not authorize automatically adding achievements, including achievements bound to those statistics. If the user explicitly forbids achievements, do not add or propose them. For user-specified achievements, implement the requested scope directly.
 
 Register games first, then immutable achievement definitions:
 
