@@ -71,11 +71,13 @@ def download(url, dest, checksum, algorithm="sha256"):
         return dest
     dest.parent.mkdir(parents=True, exist_ok=True)
     curl = shutil.which("curl.exe" if os.name == "nt" else "curl")
+    # urllib uses Windows proxy settings even when no proxy variables are set.
+    curl_attempts = (1,) if os.name == "nt" else (0, 2)
     for attempt in range(3):
         with tempfile.NamedTemporaryFile(dir=dest.parent, delete=False) as temp:
             temporary = Path(temp.name)
             try:
-                if attempt != 1 and curl:
+                if curl and attempt in curl_attempts:
                     temp.close()
                     subprocess.run(
                         [curl, "--fail", "--location", "--silent", "--show-error", "--max-time", "180",
@@ -136,10 +138,21 @@ def resolve_java(cache, os_name, arch):
     candidates.append(cache / f"jdk-25-{os_name}-{arch}" / relative)
     for candidate in candidates:
         if candidate.is_file():
-            version = subprocess.run([str(candidate), "-version"], capture_output=True, text=True, timeout=15)
-            javac = candidate.with_name("javac" + extension)
-            if version.returncode == 0 and javac.is_file() and re.search(r'version "25(?:[.+"-])', version.stderr):
-                return candidate.resolve()
+            try:
+                version = subprocess.run(
+                    [str(candidate), "-Dstderr.encoding=UTF-8", "-XshowSettings:properties", "-version"],
+                    capture_output=True, encoding="utf-8", errors="replace", timeout=15,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                continue
+            if version.returncode != 0 or not re.search(r"(?m)^\s*java\.specification\.version = 25$", version.stderr):
+                continue
+            # PATH can point to a launcher shim outside the JDK, such as Oracle's javapath.
+            if java_home_match := re.search(r"(?m)^\s*java\.home = (.+)$", version.stderr):
+                bin_dir = Path(java_home_match[1]) / "bin"
+                java = bin_dir / ("java" + extension)
+                if java.is_file() and (bin_dir / ("javac" + extension)).is_file():
+                    return java.resolve()
     adoptium_os = {"win": "windows", "osx": "mac", "linux": "linux"}[os_name]
     assets = metadata(f"https://api.adoptium.net/v3/assets/latest/25/hotspot?architecture={arch}&image_type=jdk&os={adoptium_os}&vendor=eclipse")
     if not assets:

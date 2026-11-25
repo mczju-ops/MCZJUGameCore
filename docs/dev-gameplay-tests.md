@@ -1,6 +1,6 @@
 # 小游戏联机自动测试
 
-使用 [mczju-game-test skill](../skills/mczju-game-test/SKILL.md) 时，可以直接让 AI 安装 Minecraft 测试环境，或者测试当前基于 MGC 的小游戏插件。AI 会根据运行环境选择安装入口，构建小游戏并启动独立的本地 Paper，通过 Minecraft Console Client（MCC）的内置 MCP 操作真实玩家会话。Windows 已适配原生入口，联机验收待测试。
+使用 [mczju-game-test skill](../skills/mczju-game-test/SKILL.md) 时，可以直接让 AI 安装 Minecraft 测试环境，或者测试当前基于 MGC 的小游戏插件。AI 会根据运行环境选择安装入口，构建小游戏并启动独立的本地 Paper，通过 Minecraft Console Client（MCC）的内置 MCP 操作真实玩家会话。原生 Windows x64 已通过双人猜羊毛的胜利和中途退出用例。
 
 默认使用本地测试服。首次启动需要你明确同意 [Minecraft EULA](https://aka.ms/MinecraftEULA)。如果明确指定已有服务器，可以使用为该场景准备好的测试房间和账号连接。
 

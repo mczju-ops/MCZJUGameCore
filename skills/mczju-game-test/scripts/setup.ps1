@@ -3,9 +3,10 @@ $setupArguments = $args
 foreach ($name in @('python.exe', 'py.exe')) {
     $command = Get-Command $name -ErrorAction SilentlyContinue
     if ($command -and $command.Source -notlike '*WindowsApps*') {
-        & $command.Source -c 'import sys; sys.exit(sys.version_info < (3, 12))'
-        if ($LASTEXITCODE -eq 0) {
-            & $command.Source (Join-Path $PSScriptRoot 'mgc_test.py') setup @setupArguments
+        $python = & $command.Source -c 'import sys; print(sys.executable); sys.exit(sys.version_info < (3, 12))'
+        if ($LASTEXITCODE -eq 0 -and $python -and (Test-Path -LiteralPath $python -PathType Leaf)) {
+            # Run the selected interpreter directly so py.exe cannot pick another one from the shebang.
+            & $python (Join-Path $PSScriptRoot 'mgc_test.py') setup @setupArguments
             exit $LASTEXITCODE
         }
     }

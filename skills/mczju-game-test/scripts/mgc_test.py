@@ -2,6 +2,7 @@
 """Run a repository's Minecraft gameplay scenarios with local MCC clients."""
 
 import argparse
+import filecmp
 import json
 import os
 from pathlib import Path
@@ -125,6 +126,14 @@ def plugin_jar(project, output, previous):
                     if previous.get(jar) != stamp:
                         fresh.append(jar)
     candidates = fresh or candidates
+    # Maven Shade can leave both names for identical output on Windows.
+    duplicates = set()
+    for jar in candidates:
+        if jar.stem.endswith("-shaded"):
+            primary = jar.with_stem(jar.stem.removesuffix("-shaded"))
+            if primary in candidates and filecmp.cmp(primary, jar, shallow=False):
+                duplicates.add(jar)
+    candidates = [jar for jar in candidates if jar not in duplicates]
     if not candidates:
         raise Blocked("No packaged plugin JAR found; set --artifact to the build output")
     if len(candidates) != 1:
@@ -416,7 +425,8 @@ def candidate_scenarios(args):
 
 def execute_run(args):
     sources = candidate_scenarios(args)
-    output = private_dir(args.output or args.cache / "runs", "run-")
+    # Fixture containment checks compare canonical paths, including Windows' redirected cache.
+    output = private_dir(args.output or args.cache / "runs", "run-").resolve()
     print(f"Run artifacts: {output}", flush=True)
     results = []
     tools = None
@@ -515,8 +525,7 @@ def main():
             return execute_run(args)
         tools = resolve_tools(args.cache, args.mcc, args.paper)
         accepted = local_eula(args.cache, args.accept_eula)
-        print(json.dumps({"python": sys.executable, "platform": sys.platform,
-                          "windowsStatus": "pending testing", "eulaAccepted": accepted,
+        print(json.dumps({"python": sys.executable, "platform": sys.platform, "eulaAccepted": accepted,
                           **{name: str(path) for name, path in tools.items()}}, indent=2))
     except (Blocked, SetupError, OSError, subprocess.SubprocessError, ValueError, KeyError) as exc:
         print(f"Blocked: {exc}", file=sys.stderr)
