@@ -1,0 +1,11 @@
+{
+  "guessLoc": {"world": "world", "x": 8, "y": 80, "z": 8},
+  "answerLoc": {"world": "world", "x": 8, "y": 80, "z": 10},
+  "woolCount": 1,
+  "slotCount": 1,
+  "guessChance": 2,
+  "countTime": 90,
+  "blockInterval": 1,
+  "tpLocation": {"world": "world", "x": 7.5, "y": 80, "z": 6.5},
+  "noBackProb": 1.0
+}

@@ -1,0 +1,300 @@
+{
+  "schema": 1,
+  "game": "MCWordleGame",
+  "room": "mcc_wordle",
+  "players": [
+    "WordleA",
+    "WordleB"
+  ],
+  "probe": true,
+  "files": {
+    "plugins/MCZJUGameCore/rooms/${game}/${room}.json": "fixtures/room.json"
+  },
+  "prepare": [
+    "forceload add 0 0",
+    "fill 4 79 4 14 79 14 minecraft:stone"
+  ],
+  "steps": [
+    {
+      "id": "room-ready",
+      "op": "snapshot",
+      "args": [
+        "room",
+        "${game}",
+        "${room}"
+      ],
+      "expect": {
+        "registered": true,
+        "active": false,
+        "roomState": "READY"
+      }
+    },
+    {
+      "id": "join-a",
+      "op": "mcc",
+      "player": "WordleA",
+      "tool": "mcc_send_chat",
+      "args": {
+        "text": "/mgc join ${game}"
+      }
+    },
+    {
+      "id": "await-second-player",
+      "op": "snapshot",
+      "args": [
+        "room",
+        "${game}",
+        "${room}"
+      ],
+      "expect": {
+        "state": "WAITING",
+        "players": [
+          "WordleA"
+        ]
+      }
+    },
+    {
+      "id": "join-b",
+      "op": "mcc",
+      "player": "WordleB",
+      "tool": "mcc_send_chat",
+      "args": {
+        "text": "/mgc join ${game}"
+      }
+    },
+    {
+      "id": "start-two-player-game",
+      "op": "event",
+      "expect": {
+        "type": "game_start",
+        "game": "${game}",
+        "room": "${room}",
+        "state": "RUNNING",
+        "players": [
+          "WordleA",
+          "WordleB"
+        ]
+      }
+    },
+    {
+      "id": "resolve-turn-order",
+      "op": "bind_turn",
+      "players": [
+        "WordleA",
+        "WordleB"
+      ],
+      "contains": "你是先手"
+    },
+    {
+      "id": "second-player-tries-blue-wool",
+      "op": "mcc",
+      "player": "${second}",
+      "tool": "mcc_place_block",
+      "args": {
+        "x": 8,
+        "y": 79,
+        "z": 8,
+        "face": "Up",
+        "lookAtBlock": true
+      }
+    },
+    {
+      "id": "second-player-placement-cancelled",
+      "op": "event",
+      "expect": {
+        "type": "block_place",
+        "player": "${second}",
+        "x": 8,
+        "y": 80,
+        "z": 8,
+        "cancelled": true,
+        "material": "BLUE_WOOL"
+      }
+    },
+    {
+      "id": "wrong-turn-left-slot-empty",
+      "op": "snapshot",
+      "args": [
+        "block",
+        "world",
+        8,
+        80,
+        8
+      ],
+      "expect": {
+        "material": "AIR"
+      }
+    },
+    {
+      "id": "first-player-selects-confirm-rod",
+      "op": "mcc",
+      "player": "${first}",
+      "tool": "mcc_change_hotbar_slot",
+      "args": {
+        "slot": 3
+      }
+    },
+    {
+      "id": "first-player-submits-empty-slot",
+      "op": "mcc",
+      "player": "${first}",
+      "tool": "mcc_use_item_on_block",
+      "args": {
+        "x": 8,
+        "y": 79,
+        "z": 8
+      }
+    },
+    {
+      "id": "empty-slot-warning",
+      "op": "chat",
+      "player": "${first}",
+      "contains": "还有几个方块没放完"
+    },
+    {
+      "id": "empty-guess-keeps-round-running",
+      "op": "snapshot",
+      "args": [
+        "room",
+        "${game}",
+        "${room}"
+      ],
+      "expect": {
+        "active": true,
+        "state": "RUNNING"
+      }
+    },
+    {
+      "id": "first-player-selects-blue-wool",
+      "op": "mcc",
+      "player": "${first}",
+      "tool": "mcc_change_hotbar_slot",
+      "args": {
+        "slot": 1
+      }
+    },
+    {
+      "id": "first-player-places-blue-wool",
+      "op": "mcc",
+      "player": "${first}",
+      "tool": "mcc_place_block",
+      "args": {
+        "x": 8,
+        "y": 79,
+        "z": 8,
+        "face": "Up",
+        "lookAtBlock": true
+      }
+    },
+    {
+      "id": "first-player-placement-accepted",
+      "op": "event",
+      "expect": {
+        "type": "block_place",
+        "player": "${first}",
+        "x": 8,
+        "y": 80,
+        "z": 8,
+        "cancelled": false,
+        "material": "BLUE_WOOL"
+      }
+    },
+    {
+      "id": "blue-wool-in-guess-slot",
+      "op": "snapshot",
+      "args": [
+        "block",
+        "world",
+        8,
+        80,
+        8
+      ],
+      "expect": {
+        "material": "BLUE_WOOL"
+      }
+    },
+    {
+      "id": "first-player-holds-confirm-rod",
+      "op": "mcc",
+      "player": "${first}",
+      "tool": "mcc_change_hotbar_slot",
+      "args": {
+        "slot": 3
+      }
+    },
+    {
+      "id": "first-player-submits-guess",
+      "op": "mcc",
+      "player": "${first}",
+      "tool": "mcc_use_item_on_block",
+      "args": {
+        "x": 8,
+        "y": 79,
+        "z": 8
+      }
+    },
+    {
+      "id": "correct-guess-announces-winner",
+      "op": "chat",
+      "player": "${second}",
+      "contains": "${first}赢得了本场游戏"
+    },
+    {
+      "id": "correct-guess-orange-feedback",
+      "op": "snapshot",
+      "args": [
+        "block",
+        "world",
+        8,
+        80,
+        10
+      ],
+      "expect": {
+        "material": "ORANGE_WOOL"
+      }
+    },
+    {
+      "id": "completed-round-frees-room",
+      "op": "snapshot",
+      "args": [
+        "room",
+        "${game}",
+        "${room}"
+      ],
+      "expect": {
+        "registered": true,
+        "active": false,
+        "roomState": "READY"
+      }
+    },
+    {
+      "id": "winner-recorded-once",
+      "op": "event",
+      "expect": {
+        "type": "game_result",
+        "game": "${game}",
+        "player": "${first}",
+        "outcome": "WIN"
+      }
+    },
+    {
+      "id": "loser-recorded-once",
+      "op": "event",
+      "expect": {
+        "type": "game_result",
+        "game": "${game}",
+        "player": "${second}",
+        "outcome": "LOSS"
+      }
+    },
+    {
+      "id": "exactly-two-results",
+      "op": "event",
+      "expect": {
+        "type": "game_result",
+        "game": "${game}"
+      },
+      "count": 2
+    }
+  ]
+}

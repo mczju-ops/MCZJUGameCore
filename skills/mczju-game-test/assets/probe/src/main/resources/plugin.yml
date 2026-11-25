@@ -1,0 +1,9 @@
+name: MGCTestProbe
+version: '1.0.0'
+main: com.github.mczjuops.mgctest.TestProbe
+api-version: '26.2'
+depend: [MCZJUGameCore]
+commands:
+  mgctest:
+    description: Read a snapshot from the local Minecraft test server
+    usage: mgctest snapshot <request> room|player|block <arguments>

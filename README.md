@@ -16,17 +16,20 @@
 
 - [小游戏插件开发流程](./docs/dev-guide.md)
 - [小游戏插件开发进阶指南](./docs/dev-advanced.md)
+- [小游戏联机自动测试](./docs/dev-gameplay-tests.md)
 
 ## Codex Skill
 
 本项目附带用于开发基于 `MCZJUGameCore` 的 Minecraft 小游戏插件的 Codex skill，位于 [`skills/mczju-game-plugin`](./skills/mczju-game-plugin)。
+
+[`skills/mczju-game-test`](./skills/mczju-game-test) 可安装本地测试工具，并用 MCC 玩家自动执行子插件的玩法案例。
 
 从 GitHub 安装：
 
 ```bash
 python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
   --repo mczju-ops/MCZJUGameCore \
-  --path skills/mczju-game-plugin
+  --path skills/mczju-game-plugin skills/mczju-game-test
 ```
 
 也可以在 Codex 的 skill 安装器中使用同一个 GitHub 仓库路径安装。skill 的更新会随本项目提交发布；重新执行安装命令前，请先删除本地已有的 `mczju-game-plugin` 目录，因为安装器默认不会覆盖已存在的 skill。
