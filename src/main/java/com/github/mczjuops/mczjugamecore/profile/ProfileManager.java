@@ -289,6 +289,13 @@ public class ProfileManager implements Listener {
                 }
                 maxHealth.setBaseValue(20.0D);
             }
+            var knockbackResistance = player.getAttribute(Attribute.KNOCKBACK_RESISTANCE);
+            if (knockbackResistance != null) {
+                for (var modifier : Set.copyOf(knockbackResistance.getModifiers())) {
+                    knockbackResistance.removeModifier(modifier);
+                }
+                knockbackResistance.setBaseValue(knockbackResistance.getDefaultValue());
+            }
             player.setHealthScaled(false);
             player.setHealth(20.0D);
             player.setAbsorptionAmount(0.0D);
