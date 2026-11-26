@@ -7,11 +7,15 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import com.github.mczjuops.mczjugamecore.utils.TextParser;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import java.util.*;
 
 /** 成就注册及更新入口。所有方法仅限主线程；定义按注册顺序展示，数据按稳定 ID 保留。 */
 public final class AchievementManager {
+    static final String ENTRY_NAME = "进入小游戏世界";
+    static final String ENTRY_DESCRIPTION = "啪啪啪啪啪";
+
     private final AchievementStorage storage;
     private final Map<AchievementKey, AchievementDefinition> definitions = new LinkedHashMap<>();
     private final Map<AchievementKey, Long> unlockedCounts = new HashMap<>();
@@ -146,20 +150,26 @@ public final class AchievementManager {
             var player = Bukkit.getPlayer(id);
             if (player != null) {
                 if (!historical) {
-                    Component name = TextParser.parseNonItalic(definition.name()).colorIfAbsent(NamedTextColor.GOLD);
-                    Component description = TextParser.parseNonItalic(definition.description()).colorIfAbsent(NamedTextColor.GRAY);
-                    player.sendMessage(Component.text("✦ ", NamedTextColor.GOLD)
-                            .append(Component.text("成就达成 ", NamedTextColor.GREEN))
-                            .append(Component.text("[", NamedTextColor.DARK_GRAY))
-                            .append(name)
-                            .append(Component.text("]", NamedTextColor.DARK_GRAY))
-                            .hoverEvent(description));
+                    announceUnlock(player, definition.name(), definition.description());
                 }
                 nativeDisplay.sync(player);
             }
             Bukkit.getPluginManager().callEvent(new PlayerAchievementUnlockedEvent(id, key, historical));
         }
         return new AchievementUpdateResult(changed, newlyUnlocked, next);
+    }
+    static void announceUnlock(Player player, String name, String description) {
+        Component achievement = Component.text("[", NamedTextColor.DARK_GRAY)
+                .append(TextParser.parseNonItalic(name).colorIfAbsent(NamedTextColor.GOLD))
+                .append(Component.text("]", NamedTextColor.DARK_GRAY))
+                .hoverEvent(TextParser.parseNonItalic(description).colorIfAbsent(NamedTextColor.GRAY));
+        Component message = Component.text("✦ ", NamedTextColor.GOLD)
+                .append(Component.text(player.getName(), NamedTextColor.WHITE))
+                .append(Component.text(" 达成了成就 ", NamedTextColor.GREEN))
+                .append(achievement);
+        for (Player recipient : Bukkit.getOnlinePlayers()) {
+            recipient.sendMessage(message);
+        }
     }
     private void check(UUID id, AchievementDefinition definition, boolean historical) {
         if (storage.progress(id, definition.key()).unlocked()) return;
