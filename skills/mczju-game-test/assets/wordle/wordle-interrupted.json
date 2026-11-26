@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "game": "MCWordleGame",
+  "room": "mcc_wordle",
+  "players": [
+    "WordleA",
+    "WordleB"
+  ],
+  "probe": true,
+  "files": {
+    "plugins/MCZJUGameCore/rooms/${game}/${room}.json": "fixtures/room.json"
+  },
+  "prepare": [
+    "forceload add 0 0",
+    "fill 4 79 4 14 79 14 minecraft:stone"
+  ],
+  "steps": [
+    {
+      "id": "room-ready",
+      "op": "snapshot",
+      "args": [
+        "room",
+        "${game}",
+        "${room}"
+      ],
+      "expect": {
+        "registered": true,
+        "active": false,
+        "roomState": "READY"
+      }
+    },
+    {
+      "id": "join-a",
+      "op": "mcc",
+      "player": "WordleA",
+      "tool": "mcc_send_chat",
+      "args": {
+        "text": "/mgc join ${game}"
+      }
+    },
+    {
+      "id": "await-second-player",
+      "op": "snapshot",
+      "args": [
+        "room",
+        "${game}",
+        "${room}"
+      ],
+      "expect": {
+        "state": "WAITING",
+        "players": [
+          "WordleA"
+        ]
+      }
+    },
+    {
+      "id": "join-b",
+      "op": "mcc",
+      "player": "WordleB",
+      "tool": "mcc_send_chat",
+      "args": {
+        "text": "/mgc join ${game}"
+      }
+    },
+    {
+      "id": "start-two-player-game",
+      "op": "event",
+      "expect": {
+        "type": "game_start",
+        "game": "${game}",
+        "room": "${room}",
+        "state": "RUNNING",
+        "players": [
+          "WordleA",
+          "WordleB"
+        ]
+      }
+    },
+    {
+      "id": "resolve-turn-order",
+      "op": "bind_turn",
+      "players": [
+        "WordleA",
+        "WordleB"
+      ],
+      "contains": "你是先手"
+    },
+    {
+      "id": "before-interruption",
+      "op": "mark",
+      "name": "before_quit"
+    },
+    {
+      "id": "second-player-disconnects",
+      "op": "disconnect",
+      "player": "${second}"
+    },
+    {
+      "id": "server-observes-disconnect",
+      "op": "event",
+      "expect": {
+        "type": "quit",
+        "player": "${second}"
+      },
+      "after": "before_quit"
+    },
+    {
+      "id": "aborted-round-frees-room",
+      "op": "snapshot",
+      "args": [
+        "room",
+        "${game}",
+        "${room}"
+      ],
+      "expect": {
+        "registered": true,
+        "active": false,
+        "roomState": "READY"
+      }
+    },
+    {
+      "id": "no-win-loss-or-draw",
+      "op": "event",
+      "expect": {
+        "type": "game_result",
+        "game": "${game}"
+      },
+      "count": 0
+    }
+  ]
+}

@@ -14,6 +14,7 @@ Read only the matching references; do not preload every optional feature. Use [r
 | Task | Read |
 | --- | --- |
 | Lifecycle, rooms, registration, reconnect and shutdown | [core-workflow.md](references/core-workflow.md) |
+| Run a child plugin's gameplay on a live test server | `mczju-game-test` skill |
 | PlayerExt, managers, persistent data | [player-data.md](references/player-data.md) |
 | Game equipment, inventory clearing and automatic profile isolation | [profiles.md](references/profiles.md) |
 | Tab names, prefixes and suffixes | [tab-display.md](references/tab-display.md) |
@@ -46,7 +47,7 @@ For future optional features, add a focused reference and a task row here. Keep 
 6. Register all required framework components in the child plugin's `onEnable()`. Register Bukkit listeners and commands through the child plugin normally.
 7. Make shutdown and end paths idempotent. Cancel plugin-owned schedulers, remove spawned entities, restore/reset maps as required, and avoid retaining stale `PlayerExt`, `Player`, game, or room references.
 8. When adding features, update the relevant development documentation, document public classes/functions with comments or Javadoc, and synchronize this project skill and its references.
-9. Build and run available tests, respecting repository instructions about tests. For behavior that requires a server, state the exact Paper test steps and lifecycle transitions to exercise.
+9. Build and run available tests, respecting repository instructions about tests. After changes to player-facing or server runtime behavior, use `mczju-game-test` to run the child plugin's relevant gameplay cases on a disposable local Paper server. Prefer the project's documented test entrypoint or matching cases under `mc-tests/`. When no case matches, use a temporary case based on the changed rules and available fixtures. Report actual results and any remaining graphical gameplay checks.
 10. Deliver the completion report described below, including rule assumptions, setup steps, verification limits, and any required user-run safety tests. Always report voice-group usage.
 11. After completing the game, if the user's requirements did not specify which achievements to implement and did not forbid achievements, analyze the finished gameplay and propose worthwhile achievements with names and concrete unlock conditions or thresholds. Present these suggestions in the completion report and wait for user confirmation before implementing or registering them. Complete the game and its authorized statistics work before this proposal; permission to add statistics does not authorize adding achievements.
 
