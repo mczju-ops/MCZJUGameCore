@@ -80,7 +80,8 @@ public final class NativeAchievementDisplay {
         branches.clear();
         keys.clear();
         roots.add(ENTRY);
-        requested.put(ENTRY, json("进入小游戏世界", "啪啪啪啪啪", "minecraft:firework_rocket", null, true));
+        requested.put(ENTRY, json(AchievementManager.ENTRY_NAME, AchievementManager.ENTRY_DESCRIPTION,
+                "minecraft:firework_rocket", null, true));
         for (var definition : manager.getDefinitions()) {
             String game = definition.key().gameId();
             NamespacedKey root = root(game);

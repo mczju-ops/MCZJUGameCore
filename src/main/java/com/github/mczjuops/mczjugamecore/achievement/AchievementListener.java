@@ -15,14 +15,17 @@ public final class AchievementListener implements Listener {
     private final AchievementStorage storage;
     /** 核心注入共享存储。 */
     public AchievementListener(AchievementStorage storage) { this.storage = storage; }
-    /** 实际登录记录分母；延迟一秒解锁入口，让首次原生进度包先完成同步以显示入口弹窗。 */
+    /** 实际登录记录分母并播报首次入口解锁；延迟一秒同步原生进度以显示入口弹窗。 */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent event) {
-        storage.recordLogin(event.getPlayer().getUniqueId());
-        storage.recordMinigamesEntry(event.getPlayer().getUniqueId());
+        var player = event.getPlayer();
+        storage.recordLogin(player.getUniqueId());
+        if (storage.recordMinigamesEntry(player.getUniqueId())) {
+            AchievementManager.announceUnlock(player, AchievementManager.ENTRY_NAME, AchievementManager.ENTRY_DESCRIPTION);
+        }
         Bukkit.getScheduler().runTaskLater(MCZJUGameCore.getInstance(), () -> {
-            if (!event.getPlayer().isOnline()) return;
-            MCZJUGameCore.getAchievementManager().getNativeDisplay().sync(event.getPlayer());
+            if (!player.isOnline()) return;
+            MCZJUGameCore.getAchievementManager().getNativeDisplay().sync(player);
         }, 20L);
     }
     /** 切换世界后补同步全服共享进度，已完成的投影不会重复授予。 */
