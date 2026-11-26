@@ -6,6 +6,8 @@
 
 Profiles cover the main inventory, armor, offhand, ender chest, XP level and XP progress. Position, effects, health and arbitrary game state are not a full player snapshot. Each game ID has a persistent inventory profile, shared across that game's rooms and rounds; joining is not guaranteed to give an empty inventory. Reset round equipment at the safe entry point if the rules require a fresh loadout. Keep persistent scores in PlayerData and bot hands in game-owned memory.
 
+When applying the lobby profile, the core removes active knockback-resistance attribute modifiers and restores the vanilla base value.
+
 Normal flow: the core saves the current profile and applies the game profile **before** invoking the wait-admission callback or `onPlayerMidJoin`. At normal leave it invokes the quit/wait strategy and then restores the lobby profile. End/cancel/abort hooks run before the manager removes remaining members and restores their lobby profiles. These orders describe the current implementation, not permission to bypass managers. Admission rejection (`JOIN_FAIL`) is a special rollback path; it is not a child-plugin cleanup hook or a guarantee that lobby restoration has happened.
 
 ## When to give or clear items
