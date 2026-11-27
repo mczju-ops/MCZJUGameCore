@@ -75,6 +75,7 @@ public class DefaultPlayerManager implements AbstractPlayerManager {
 
     /**
      * 移除成员并清理本局 Tab 修改，随后执行原退出策略；加入失败也清理 Tab。
+     * 恢复大厅档案时会清除玩家的无敌标记。
      * @param player 退出玩家，未入局时不处理
      * @param reason 退出原因，决定队伍退出及档案恢复行为
      */
