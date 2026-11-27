@@ -281,6 +281,7 @@ public class ProfileManager implements Listener {
 
         if (ProfileData.LOBBY_PROFILE_ID.equals(profileId)) {
             player.clearActivePotionEffects();
+            player.setInvulnerable(false);
             var maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
             if (maxHealth != null) {
                 // 小游戏可能通过基础值、属性修饰器或血量缩放改变显示上限，全部恢复为原版状态。
