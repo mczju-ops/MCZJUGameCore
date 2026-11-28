@@ -8,6 +8,8 @@ Profiles cover the main inventory, armor, offhand, ender chest, XP level and XP 
 
 When applying the lobby profile, the core clears the player's invulnerability flag (`Player#setInvulnerable(false)`), removes active knockback-resistance attribute modifiers, and restores the vanilla knockback-resistance base value.
 
+Lobby profile application, including login restoration, also clears entity glow regardless of the features toggle; child plugins remain responsible for viewer-specific glow packets.
+
 Normal flow: the core saves the current profile and applies the game profile **before** invoking the wait-admission callback or `onPlayerMidJoin`. At normal leave it invokes the quit/wait strategy and then restores the lobby profile. End/cancel/abort hooks run before the manager removes remaining members and restores their lobby profiles. These orders describe the current implementation, not permission to bypass managers. Admission rejection (`JOIN_FAIL`) is a special rollback path; it is not a child-plugin cleanup hook or a guarantee that lobby restoration has happened.
 
 ## When to give or clear items
