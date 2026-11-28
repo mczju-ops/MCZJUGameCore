@@ -281,6 +281,7 @@ public class ProfileManager implements Listener {
 
         if (ProfileData.LOBBY_PROFILE_ID.equals(profileId)) {
             player.clearActivePotionEffects();
+            player.setGlowing(false);
             player.setInvulnerable(false);
             var maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
             if (maxHealth != null) {

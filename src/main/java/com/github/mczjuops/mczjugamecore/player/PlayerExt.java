@@ -154,6 +154,7 @@ public record PlayerExt(@NotNull Player player) {
         return false;
     }
 
+    /** 恢复生命、饥饿等基础状态，并清除药水效果及实体发光标记。 */
     public void resetState() {
         if (!player.isOnline()) return;
 
@@ -168,6 +169,7 @@ public record PlayerExt(@NotNull Player player) {
         player.setFoodLevel(20);
         player.setSaturation(5f);
         player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+        player.setGlowing(false);
     }
 
     /** 退出当前所在的游戏，不论游戏是否开始 */

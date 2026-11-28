@@ -230,7 +230,7 @@ private void confirmDelete(Player player) {
 
 - `giveItem(ItemStack item)`：给予玩家一个物品，如果物品栏已满就扔在他的脚下。
 - `getDisplayName()`：获取玩家显示名（`MiniMessage` 格式），即按 `EssentialsX` 风格添加颜色的玩家名（管理员为深红色，其他玩家为绿色）。
-- `resetState()`：恢复玩家的生命值、饥饿值、饱和度、着火或冻结状态为默认，清除所有状态效果。
+- `resetState()`：恢复玩家的生命值、饥饿值、饱和度、着火或冻结状态为默认，清除所有状态效果及实体发光标记。游戏若需要玩家在重置后继续发光，应在调用后重新设置。
 - `getData()`：获取存储的该玩家的数据（详见 `PlayerData` 部分）。
 
 更多方法详见源码。
